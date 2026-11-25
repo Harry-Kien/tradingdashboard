@@ -63,6 +63,18 @@ background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px
 .hien{animation:hien .55s cubic-bezier(.2,.7,.2,1) both}
 @keyframes hien{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.hien{animation:none}.dv .ve{animation:none;stroke-dashoffset:0}.vong .gt{transition:none}}
+.hs-the{width:min(880px,94vw);max-width:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.hs-the::backdrop{background:rgba(0,0,0,.62);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.hs-the[open]{animation:the-vao .28s cubic-bezier(.2,.7,.2,1)}
+@keyframes the-vao{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.the-dau{display:flex;justify-content:space-between;align-items:center;gap:10px}.the-dau b{font-size:16px}
+.hs-the canvas{display:block;width:100%;height:auto;aspect-ratio:1200/630;margin:12px 0;border-radius:12px;border:1px solid var(--line);background:#090a08}
+.the-chon{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink2);cursor:pointer}.the-chon input{margin-top:2px}
+.the-nut{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.the-nut button{min-height:38px;padding:0 16px;border-radius:10px;font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
+.the-nut .chinh{background:var(--series);color:#0b0d09;border:0}.the-nut .chinh:hover{filter:brightness(1.08)}
+#hs-chia{background:color-mix(in srgb,var(--series) 14%,transparent);color:var(--series);border-color:color-mix(in srgb,var(--series) 45%,transparent)}
+@media(prefers-reduced-motion:reduce){.hs-the[open]{animation:none}}
 @media(max-width:640px){.hs-k b{font-size:22px}.cot-n{grid-template-columns:74px minmax(0,1fr) 78px}.hs-loc{position:static}}
 """
 
@@ -160,6 +172,59 @@ $('#hs-ngay').addEventListener('click',e=>{const b=e.target.closest('button[data
 $('#hs-chieu').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;st.chieu=b.dataset.v;luu();tai()});
 $('#hs-ma').addEventListener('change',e=>{st.ma=e.target.value;luu();tai()});$('#hs-nguon').addEventListener('change',e=>{st.nguon=e.target.value;luu();tai()});
 $('#hs-mau').addEventListener('click',()=>{st.mau=!st.mau;st.ma='';st.nguon='';luu();tai()});
+const CC={bg:'#090a08',card:'#12150f',line:'#262b21',ink:'#f3f5ee',ink2:'#a4aa9a',series:'#8dff08',gain:'#5fe36a',loss:'#ff6b63'};
+const KY={7:'7 ngày',30:'30 ngày',90:'90 ngày',365:'1 năm',0:'Toàn bộ lịch sử'};
+const hop=(c,x,y,w,h,r)=>{c.beginPath();if(c.roundRect)c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h)};
+const vua=(c,s,dam,co,w)=>{const F='"Be Vietnam Pro","Segoe UI",Arial,sans-serif';do{c.font=dam+' '+co+'px '+F}while(c.measureText(s).width>w&&(co-=2)>16)};
+const coDan=(c,s,w)=>{if(c.measureText(s).width<=w)return s;while(s.length>1&&c.measureText(s+'…').width>w)s=s.slice(0,-1);return s+'…'};
+async function veThe(cv,coTien){
+ const c=cv.getContext('2d'),W=1200,H=630,T=D.tong,tk=D.tai_khoan||{},t=tk.tien||'USD',F='"Be Vietnam Pro","Segoe UI",Arial,sans-serif',v=D.duong_von||[];
+ try{await Promise.all(['800 40px','700 20px','500 20px'].map(f=>document.fonts.load(f+' "Be Vietnam Pro"')))}catch(e){}
+ cv.width=W;cv.height=H;c.textBaseline='alphabetic';
+ c.fillStyle=CC.bg;c.fillRect(0,0,W,H);
+ const gl=c.createRadialGradient(W*.82,40,10,W*.82,40,560);gl.addColorStop(0,'rgba(141,255,8,.16)');gl.addColorStop(1,'rgba(141,255,8,0)');c.fillStyle=gl;c.fillRect(0,0,W,H);
+ c.strokeStyle='rgba(255,255,255,.035)';c.lineWidth=1;for(let x=0;x<W;x+=40){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke()}
+ if(D.mau){c.save();c.translate(W/2,H/2);c.rotate(-.18);c.font='800 150px '+F;c.fillStyle='rgba(255,255,255,.045)';c.textAlign='center';c.fillText('MINH HỌA',0,50);c.restore()}
+ hop(c,56,46,42,42,11);c.fillStyle=CC.series;c.fill();
+ c.strokeStyle=CC.bg;c.lineWidth=4;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(66,76);c.lineTo(75,66);c.lineTo(81,72);c.lineTo(89,60);c.stroke();
+ c.fillStyle=CC.ink;c.font='700 21px '+F;c.fillText(coDan(c,$('#hs-the').dataset.ten||'',420),112,75);
+ const nhan=D.mau?'Dữ liệu minh họa':tk.demo?'Tài khoản demo':'Tài khoản thật';c.font='700 16px '+F;const nw=c.measureText(nhan).width+30;
+ hop(c,W-56-nw,48,nw,38,19);c.fillStyle=D.mau?'rgba(255,196,0,.12)':'rgba(141,255,8,.1)';c.fill();c.strokeStyle=D.mau?'rgba(255,196,0,.55)':'rgba(141,255,8,.45)';c.lineWidth=1.5;c.stroke();
+ c.fillStyle=D.mau?'#ffd34d':CC.series;c.fillText(nhan,W-56-nw+15,73);
+ c.fillStyle=CC.ink;c.font='800 46px '+F;c.fillText('Hiệu suất giao dịch',56,158);
+ let phu=KY[st.ngay]||'';if(v.length)phu+=' · '+ngayNgan(v[0].t)+' – '+ngayNgan(v[v.length-1].t);
+ if(st.ma)phu+=' · '+st.ma;if(st.chieu)phu+=' · '+(st.chieu==='MUA'?'chỉ lệnh mua':'chỉ lệnh bán');
+ c.fillStyle=CC.ink2;c.font='500 21px '+F;c.fillText(coDan(c,phu,540),56,196);
+ const pct=T.so_du_dau>0&&T.rong!=null?T.rong/T.so_du_dau*100:null,dau=x=>x>0?'+':x<0?'−':'';
+ const lon=coTien||pct==null?tien(T.rong,t):dau(pct)+fmt(Math.abs(pct),1)+'%';
+ c.fillStyle=(T.rong||0)>=0?CC.gain:CC.loss;vua(c,lon,800,88,560);c.fillText(lon,52,300);
+ c.fillStyle=CC.ink2;c.font='500 20px '+F;
+ c.fillText(coTien?(pct!=null?dau(pct)+fmt(Math.abs(pct),1)+'% trên vốn đầu kỳ':'lãi ròng'):'lợi nhuận trên vốn đầu kỳ',56,340);
+ const X0=640,X1=W-56,Y0=126,Y1=392;
+ if(v.length>1){const ys=v.map(p=>p.v).concat([0]),lo=Math.min(...ys),hi=Math.max(...ys),sp=(hi-lo)||1,X=i=>X0+i/(v.length-1)*(X1-X0),Y=x=>Y1-(x-lo)/sp*(Y1-Y0);
+  c.setLineDash([5,6]);c.strokeStyle='rgba(255,255,255,.18)';c.lineWidth=1.5;c.beginPath();c.moveTo(X0,Y(0));c.lineTo(X1,Y(0));c.stroke();c.setLineDash([]);
+  const g=c.createLinearGradient(0,Y0,0,Y1);g.addColorStop(0,'rgba(141,255,8,.32)');g.addColorStop(1,'rgba(141,255,8,0)');
+  c.beginPath();v.forEach((p,i)=>i?c.lineTo(X(i),Y(p.v)):c.moveTo(X(i),Y(p.v)));c.lineTo(X(v.length-1),Y1);c.lineTo(X0,Y1);c.closePath();c.fillStyle=g;c.fill();
+  c.beginPath();v.forEach((p,i)=>i?c.lineTo(X(i),Y(p.v)):c.moveTo(X(i),Y(p.v)));c.strokeStyle=CC.series;c.lineWidth=4;c.shadowColor='rgba(141,255,8,.55)';c.shadowBlur=14;c.stroke();c.shadowBlur=0;
+  const ex=X(v.length-1),ey=Y(v[v.length-1].v);c.beginPath();c.arc(ex,ey,7,0,7);c.fillStyle=CC.series;c.fill();c.lineWidth=3;c.strokeStyle=CC.bg;c.stroke()}
+ const o=[['Tỷ lệ thắng',fmt(T.ty_le||0,1)+'%',null],['Hệ số lợi nhuận',T.pf==='inf'?'∞':fmt(T.pf,2),T.pf==='inf'||T.pf>1?CC.gain:T.pf<1?CC.loss:null],
+  ['Sụt vốn lớn nhất',coTien?(T.dd_max?'−'+fmt(T.dd_max)+' '+t:'—'):(T.dd_pct!=null?'−'+fmt(T.dd_pct,1)+'%':'—'),T.dd_max>0?CC.loss:null],['Số lệnh',fmt(T.n||0,0),null]];
+ const bw=(W-112-3*16)/4;o.forEach(([n,g,mau],i)=>{const x=56+i*(bw+16);hop(c,x,428,bw,118,16);c.fillStyle=CC.card;c.fill();c.strokeStyle=CC.line;c.lineWidth=1.5;c.stroke();
+  c.fillStyle=CC.ink2;c.font='600 17px '+F;c.fillText(coDan(c,n,bw-40),x+20,462);c.fillStyle=mau||CC.ink;vua(c,g,800,38,bw-40);c.fillText(coDan(c,g,bw-40),x+20,520)});
+ c.fillStyle='rgba(164,170,154,.85)';c.font='500 15px '+F;c.fillText(coDan(c,'Kết quả quá khứ không bảo đảm kết quả tương lai · không phải lời khuyên đầu tư',820),56,596);
+ c.textAlign='right';c.fillText(ngayNgan(Date.now()),W-56,596);c.textAlign='left'}
+const theDlg=$('#hs-the'),theCv=$('#the-cv'),theTt=$('#the-tt');
+const veLai=()=>veThe(theCv,$('#the-tien').checked).catch(e=>{theTt.textContent=e.message});
+const blob=()=>new Promise((ok,loi)=>theCv.toBlob(b=>b?ok(b):loi(new Error('Không tạo được ảnh')),'image/png'));
+$('#hs-chia').addEventListener('click',()=>{if(!D||!D.san_sang||!D.tong||!D.tong.n){alert('Chưa có lệnh đã đóng để tạo ảnh.');return}
+ theTt.textContent='';if(theDlg.showModal)theDlg.showModal();else theDlg.setAttribute('open','');veLai()});
+$('#the-dong').addEventListener('click',()=>theDlg.close?theDlg.close():theDlg.removeAttribute('open'));
+theDlg.addEventListener('click',e=>{if(e.target===theDlg)theDlg.close()});
+$('#the-tien').addEventListener('change',veLai);
+$('#the-tai').addEventListener('click',async()=>{try{const b=await blob(),u=URL.createObjectURL(b),a=document.createElement('a');
+ a.href=u;a.download='hieu-suat-'+new Date().toISOString().slice(0,10)+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);theTt.textContent='Đã tải ảnh.'}catch(e){theTt.textContent=e.message}});
+$('#the-chep').addEventListener('click',async()=>{try{if(!navigator.clipboard||!window.ClipboardItem)throw new Error('Trình duyệt này không cho sao chép ảnh; hãy dùng nút tải ảnh.');
+ await navigator.clipboard.write([new ClipboardItem({'image/png':blob()})]);theTt.textContent='Đã sao chép ảnh, dán vào bài đăng hoặc tin nhắn.'}catch(e){theTt.textContent=e.message||'Không sao chép được.'}});
 boLoc();tai();setInterval(()=>{if(document.visibilityState==='visible'&&!st.mau)tai()},60000)})();
 """
 
@@ -176,8 +241,14 @@ def trang_hieu_suat(ten: str) -> str:
         f'<div class="hs-loc"><div class="sg" id="hs-ngay">{ngay}</div><div class="sg" id="hs-chieu">{chieu}</div>'
         '<select id="hs-ma" aria-label="Lọc theo mã"><option value="">Mọi mã</option></select><select id="hs-nguon" aria-label="Lọc theo nguồn"><option value="">Mọi nguồn</option></select>'
         '<span class="grow"></span><button type="button" class="ghost" id="hs-mau" aria-pressed="false">Xem dữ liệu minh họa</button>'
-        '<a class="ghost" id="hs-csv" href="/api/hieu-suat.csv" download>Xuất CSV</a></div>',
+        '<a class="ghost" id="hs-csv" href="/api/hieu-suat.csv" download>Xuất CSV</a>'
+        '<button type="button" class="ghost" id="hs-chia">Ảnh chia sẻ</button></div>',
         '<div id="hs-noi"><p class="small">Đang đọc lịch sử lệnh từ MT5…</p></div>',
+        '<dialog class="hs-the" id="hs-the" aria-labelledby="the-tieu" data-ten="' + escape(ten) + '"><div class="the-dau"><b id="the-tieu">Ảnh chia sẻ kết quả</b>'
+        '<button type="button" class="ghost nho" id="the-dong" aria-label="Đóng">✕</button></div><canvas id="the-cv" width="1200" height="630" role="img" aria-label="Ảnh tóm tắt hiệu suất"></canvas>'
+        '<label class="the-chon"><input type="checkbox" id="the-tien"><span>Hiện số tiền. Mặc định ảnh chỉ hiện %, không lộ quy mô tài khoản.</span></label>'
+        '<div class="the-nut"><button type="button" class="chinh" id="the-tai">Tải ảnh PNG</button><button type="button" class="ghost" id="the-chep">Sao chép ảnh</button>'
+        '<span class="small" id="the-tt" role="status"></span></div><p class="small" style="margin:10px 0 0">Ảnh được vẽ ngay trên máy bạn, không tải lên đâu cả.</p></dialog>',
         '<p class="note" style="margin-top:22px"><b>Chỉ đọc.</b> Trang đọc lịch sử lệnh đã đóng trong MT5 (mặc định chỉ tài khoản demo) và không đặt, sửa hay đóng lệnh. '
         'Kết quả quá khứ không bảo đảm kết quả tương lai; không phải lời khuyên đầu tư.</p>',
         '<footer>Lệnh được ghép từ các lần khớp cùng mã vị thế (position); lãi ròng gồm lãi, hoa hồng, phí và swap. R là lãi ròng chia số tiền mất nếu chạm '

@@ -1,8 +1,8 @@
 # Cấu hình và dữ liệu riêng trên từng máy (tạo ra khi chạy)
-cau-hinh.json
-du-lieu/
-out/
-dist/
+/cau-hinh.json
+/du-lieu/
+/out/
+/dist/
 so_cong_khai/dich/thieu_*.json
 # Python
 __pycache__/

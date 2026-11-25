@@ -51,7 +51,7 @@ color:var(--series);font:600 13px inherit;font-family:inherit;cursor:pointer}.tn
 JS = r"""
 (()=>{const T=TT,$=s=>document.querySelector(s),esc=T.esc,fmt=T.fmt,pct=T.pct,cls=T.cls;T.pill($('#song'));
 const VN=ms=>new Date(ms).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'});
-const truoc=ms=>{const p=Math.max(0,Math.round((Date.now()-ms)/60000));return p<1?'vừa xong':p<60?p+' phút trước':p<1440?Math.floor(p/60)+' giờ trước':Math.floor(p/1440)+' ngày trước'};
+const RTF=new Intl.RelativeTimeFormat('vi-VN',{numeric:'auto'});const truoc=ms=>{const p=Math.max(0,Math.round((Date.now()-ms)/60000));return p<1?'vừa xong':p<60?RTF.format(-p,'minute'):p<1440?RTF.format(-Math.floor(p/60),'hour'):RTF.format(-Math.floor(p/1440),'day')};const gon=ms=>{const p=Math.max(0,Math.round(ms/60000)),g=Math.floor(p/60),f=(v,u)=>new Intl.NumberFormat('vi-VN',{style:'unit',unit:u,unitDisplay:'narrow'}).format(v);return g?f(g,'hour')+' '+f(p%60,'minute'):f(p,'minute')};
 const dem=ms=>{const p=Math.max(0,Math.round(ms/60000)),g=Math.floor(p/60);return g?g+' giờ '+(p%60)+' phút':p+' phút'};
 // ---- dải tâm lý tổng hợp (theo giá trực tiếp)
 let FNG=null;
@@ -62,7 +62,7 @@ function dai(){if(!T.S)return;const o=(t,b,s,x='')=>`<div class="tl-o"><span>${t
  if(ds.length)h+=o('Đồng thuận kỹ thuật H1',`<span class="gain">${Math.round(m/ds.length*100)}% mua</span> · <span class="loss">${Math.round(b/ds.length*100)}% bán</span>`,`${ds.length} mã, còn lại trung tính`,`<div class="tl-hai"><u style="width:${m/ds.length*100}%"></u><span style="flex:1"></span><s style="width:${b/ds.length*100}%"></s></div>`);
  const sm=T.sucManh('ngay').filter(a=>a.v!=null);if(sm.length)h+=o('Tiền tệ mạnh / yếu hôm nay',`<span class="gain">${sm[0].c}</span> · <span class="loss">${sm[sm.length-1].c}</span>`,`${pct(sm[0].v)} / ${pct(sm[sm.length-1].v)}`);
  const L=T.S.lich,now=Date.now(),tin=L&&L.ds?L.ds.filter(e=>e.muc>=3&&Date.parse(e.t)>now)[0]:null;
- h+=o('Tin mạnh kế tiếp',tin?`${esc(tin.tien)} · ${dem(Date.parse(tin.t)-now).replace(' phút','p').replace(' giờ','g')}`:'Không có trong 7 ngày',tin?esc(tin.ten)+' · lúc '+VN(Date.parse(tin.t)):'');
+ h+=o('Tin mạnh kế tiếp',tin?`${esc(tin.tien)} · ${gon(Date.parse(tin.t)-now)}`:'Không có trong 7 ngày',tin?esc(tin.ten)+' · lúc '+VN(Date.parse(tin.t)):'');
  $('#tl-dai').innerHTML=h}
 // ---- tin tức
 let NHAN=[],nhan='',q='',chiQT=false,TIN=[],cho=[],daXem=0;try{daXem=+localStorage.getItem('tn-xem')||0;nhan=localStorage.getItem('tn-nhan')||''}catch(e){}
