@@ -20,7 +20,7 @@ import pandas as pd
 
 from . import gia, kiem_chung, phuong_phap
 
-PHIEN_BAN = 14
+PHIEN_BAN = 15                    # 15: nến nhiều năm sửa lệch giờ (so_cong_khai/sua_gio.py, 25/11/2026)
 PHIEN = (('Á', 0, 7), ('Âu', 7, 12), ('Mỹ', 12, 20), ('cuối ngày', 20, 24))        # theo giờ UTC của lúc vào lệnh
 MUC = (0.8, 1.25)                                  # ATR14 H1 so với trung vị 720 nến H1: dưới 0,8 là thấp, trên 1,25 là cao
 TOI_THIEU = 30                                     # số lệnh ít nhất ở mỗi nửa để dám nhận xét
@@ -72,6 +72,8 @@ def _m1_dai(g: dict, tu_nam: int) -> pd.DataFrame:
     moi = kiem_chung._m1(g)
     if cu is None:
         return moi
+    from . import sua_gio                                                    # noqa: PLC0415
+    cu.index = sua_gio.gio_that(cu.index)                                    # tệp nhiều năm lệch giờ ở mùa đông 2015–2024: sửa về UTC lúc nạp
     m1 = pd.concat([cu, moi[moi.index > cu.index[-1]]])
     return m1[~m1.index.duplicated(keep='last')].sort_index()
 

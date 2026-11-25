@@ -173,13 +173,13 @@ CSS = """
 .ctk .rr .tr{height:7px;border-radius:99px;background:var(--track);overflow:hidden}.ctk .rr .tr i{display:block;height:100%;background:var(--gain)}
 .ctk .rr.vua .tr i{background:var(--warn)}.ctk .rr.cao .tr i{background:var(--loss)}.ctk .rr{display:grid;gap:4px;font-size:12.5px}
 .ctk table{font-size:12.5px}.ctk .why{margin:0}.them{display:grid;gap:8px;margin-top:10px}.them .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.them code{font-size:12px;word-break:break-all}.them input{min-width:0;flex:1}
+.them code{font-size:12px;word-break:break-all;flex:1 1 100%}.them input{min-width:0;flex:1 1 160px;min-height:36px;padding:0 10px}
 """
 
 JS = r"""
 (()=>{const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
  f2=v=>v==null?'—':Number(v).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2}),dau=v=>v==null?'—':(v>0?'+':v<0?'−':'')+f2(Math.abs(v)),
- mau=v=>v>0?'gain':v<0?'loss':'',muc=p=>p==null?'':p<2?'':p<5?' vua':' cao';let DL=null;
+ mau=v=>v>0?'gain':v<0?'loss':'',muc=p=>p==null?'':p<2?'':p<5?' vua':' cao',tenTM=d=>{const p=String(d).split(/[\\/]/);return (p[p.length-2]||'MT5').slice(0,40)};let DL=null;
  async function gui(viec,them){const r=await fetch('/api/cac-tai-khoan',{method:'POST',headers:{'Content-Type':'application/json','X-So-Cong-Khai':'1'},body:JSON.stringify({viec,...them})});
   const j=await r.json().catch(()=>({ok:false,ly_do:'lỗi máy chủ'}));$('#tb').textContent=j.ly_do||'';await tai()}
  function the(x){const k=x.kq;let h=`<section class="card"><div class="hd"><b>${esc(x.ten)}</b>`;
@@ -201,9 +201,10 @@ JS = r"""
   if(tg.length)h+='<div class="tiles">'+tg.map(([tien,t])=>`<div class="tile"><span>Tổng ${t.so_tk} tài khoản (${esc(tien)})${t.that?' · '+t.that+' tiền thật':''}</span><b>${f2(t.von)}</b><small>lãi treo <span class="${mau(t.treo)}">${dau(t.treo)}</span> · đang chịu rủi ro ${f2(t.rui_ro)}${t.rui_ro_pct!=null?' ('+String(t.rui_ro_pct).replace('.',',')+'%)':''} · ${t.lenh_mo} lệnh mở</small></div>`).join('')+'</div>';
   h+=DL.ds.length?'<div class="ctk">'+DL.ds.map(the).join('')+'</div>':'<p class="note">Chưa có tài khoản nào. Mở MT5 của tài khoản muốn theo dõi, tự đăng nhập trong MT5, rồi bấm "Thêm" ở danh sách dưới đây.</p>';
   h+='<section class="card them"><h2>Thêm tài khoản</h2><p class="why">Chỉ thêm được MT5 đang mở trên máy này. Webapp không hỏi mật khẩu: bạn tự đăng nhập trong MT5. Muốn thêm tài khoản khác cùng sàn thì cài thêm một bản MT5 ở thư mục khác.</p>';
-  h+=!DL.doc_duoc_tien_trinh?'<p class="why loss">Không đọc được danh sách chương trình đang chạy.</p>':DL.mt5_chua_them.length?DL.mt5_chua_them.map((d,i)=>`<div class="h"><code>${esc(d)}</code><input id="ten${i}" type="text" maxlength="40" placeholder="Tên gợi nhớ, ví dụ: Exness thật" aria-label="Tên gợi nhớ"><button class="act" data-them="${i}">Thêm</button></div>`).join(''):'<p class="why">Không có MT5 nào đang mở mà chưa thêm.</p>';
+  h+=!DL.doc_duoc_tien_trinh?'<p class="why loss">Không đọc được danh sách chương trình đang chạy.</p>':DL.mt5_chua_them.length?DL.mt5_chua_them.map((d,i)=>`<div class="h"><code>${esc(d)}</code><input id="ten${i}" type="text" maxlength="40" value="${esc(tenTM(d))}" aria-label="Tên gợi nhớ (sửa được)"><button class="act" data-them="${i}">Thêm</button></div>`).join('')+(DL.mt5_chua_them.length>1?'<div class="h"><button class="ghost" id="them-het">Thêm tất cả '+DL.mt5_chua_them.length+' MT5 đang mở</button></div>':''):'<p class="why">Không có MT5 nào đang mở mà chưa thêm.</p>';
   h+='<p class="why" id="tb" role="status"></p></section>';el.innerHTML=h;
   el.querySelectorAll('[data-them]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.them;b.disabled=true;gui('them',{duong:DL.mt5_chua_them[i],ten:$('#ten'+i).value})}));
+  const th=$('#them-het');if(th)th.addEventListener('click',async()=>{th.disabled=true;const ds=DL.mt5_chua_them.map((d,i)=>[d,$('#ten'+i).value]);for(const[d,t]of ds)await gui('them',{duong:d,ten:t})});
   el.querySelectorAll('[data-xoa]').forEach(b=>b.addEventListener('click',()=>{if(confirm('Bỏ tài khoản này khỏi danh sách? Webapp chỉ quên đường dẫn; MT5 và tài khoản không bị đụng tới.'))gui('xoa',{id:+b.dataset.xoa})}));
   $('#ctk-luc').textContent='cập nhật '+new Date().toLocaleTimeString('vi-VN')}
  async function tai(){try{DL=await (await fetch('/api/cac-tai-khoan',{cache:'no-store'})).json()}catch(e){}ve()}

@@ -632,10 +632,11 @@ function tkVe(){const el=$('#tk');if(!el)return;let h='<h3>Tài khoản MT5'+(TK
    +(khac>0?`<p class="why">Còn ${khac} lệnh đang mở ở mã khác.</p>`:'');
   if(cho.length)h+='<h3>Lệnh chờ</h3>'+cho.map(c=>`<div class="tkl"><span class="dir">${esc(c.loai)}</span><b>${f2(c.lot)} lot · ${fp(c.gia)}</b><small>SL ${c.sl!=null?fp(c.sl):'chưa đặt'} · TP ${c.tp!=null?fp(c.tp):'chưa đặt'}</small></div>`).join('');
   if(dong.length)h+=`<h3>Đã đóng gần đây trên ${esc(sym)}</h3>`+dong.map(x=>`<div class="tkl"><span class="dir ${x.huong==='MUA'?'up':'dn'}">${x.huong==='MUA'?'▲ MUA':'▼ BÁN'}</span><b>${f2(x.lot)} lot · ${fp(x.gia)}</b>${tien(x.lai)}<small>${vn(Date.parse(x.luc)/1000)}${x.nguon?' · '+esc(x.nguon):''}</small></div>`).join('');
-  h+='<p class="why" style="margin-top:10px">Chỉ đọc tài khoản demo; không đặt, sửa hay đóng lệnh. <a href="/tai-khoan">Báo cáo đầy đủ</a></p>'}
+  h+='<p class="why" style="margin-top:10px">Chỉ đọc tài khoản demo; không đặt, sửa hay đóng lệnh. <a href="/tai-khoan">Báo cáo đầy đủ</a> · <a href="/cac-tai-khoan">Mọi tài khoản đã nối</a></p>'}
  if(h!==tkH){tkH=h;el.innerHTML=h}tktVe()}
 // dải tài khoản cố định: vốn, lãi treo, ký quỹ trống, tổng rủi ro nếu mọi lệnh mở cùng chạm dừng lỗ, các lệnh mở, phiên và tin USD kế tiếp
-let tktH='';const PHIEN=[['Á',0,9],['Âu',7,16],['Mỹ',12,21]];
+let tktH='',TTOI=null;const PHIEN=[['Á',0,9],['Âu',7,16],['Mỹ',12,21]];
+async function ttTai(){try{TTOI=await (await fetch('/api/tin-toi',{cache:'no-store'})).json()}catch(e){}tktVe()}ttTai();setInterval(ttTai,120000);
 function tktVe(){const el=$('#tkt');if(!el)return;let h='';
  if(!TK)h='<p class="why">Đang đọc tài khoản…</p>';
  else if(!TK.san_sang)h=`<p class="why">Chưa đọc được tài khoản: ${esc(TK.ly_do||'chưa rõ lý do')}.</p>`;
@@ -649,9 +650,10 @@ function tktVe(){const el=$('#tkt');if(!el)return;let h='';
   else h+='<div class="ln">Không có lệnh nào đang mở.</div>'}
  const now=new Date(),g=now.getUTCHours()+now.getUTCMinutes()/60,mo=PHIEN.filter(([,a,b])=>g>=a&&g<b).map(x=>x[0]);
  const ke=PHIEN.map(([n,a])=>[n,(a-g+24)%24]).filter(([n])=>!mo.includes(n)).sort((a,b)=>a[1]-b[1])[0];
- const tin=D&&D.luat&&D.luat.tin&&(D.luat.tin.sap_toi||[])[0],phut=tin?Math.round((Date.parse(tin)-Date.now())/60000):null;
+ const t0=TTOI&&TTOI.ds&&TTOI.ds[0],tin=t0?t0.luc:(D&&D.luat&&D.luat.tin&&(D.luat.tin.sap_toi||[])[0]),phut=tin?Math.round((Date.parse(tin)-Date.now())/60000):null;
  h+=`<div class="ph"><span>Phiên: <b>${mo.length?mo.join(', '):'nghỉ'}</b>${ke?' · '+ke[0]+' mở sau '+(ke[1]>=1?Math.floor(ke[1])+' giờ ':'')+Math.round(ke[1]%1*60)+' phút':''}</span>`
-  +(phut!=null&&phut>=0?`<span>Tin USD mạnh: <b>${phut<60?phut+' phút nữa':Math.floor(phut/60)+' giờ '+(phut%60)+' phút nữa'}</b></span>`:'')+(D&&D.luat&&D.luat.tin&&D.luat.tin.dang_ne?'<span class="loss">Đang trong giờ né tin</span>':'')+'</div>';
+  +(phut!=null&&phut>=0?`<span title="Số đo trên các lần ra tin 2015–2026 (cong-cu/phan_ung_tin.py): giá thường chạy bao xa sau tin. Chiều giá sau tin không đoán được: mọi quy tắc thử đều quanh 50%.">Tin USD mạnh: <b>${t0?esc(t0.ten)+' · ':''}${phut<60?phut+' phút nữa':Math.floor(phut/60)+' giờ '+(phut%60)+' phút nữa'}</b>`
+   +(t0&&t0.d15_tv!=null?` · 15 phút sau tin thường chạy ~${String(t0.d15_tv).replace('.',',')} giá, 10% số lần trên ${String(t0.d15_p90).replace('.',',')} giá; chiều không đoán được`:'')+'</span>':'')+(D&&D.luat&&D.luat.tin&&D.luat.tin.dang_ne?'<span class="loss">Đang trong giờ né tin</span>':'')+'</div>';
  if(h!==tktH){tktH=h;el.innerHTML=h}}
 // thẻ chuyển của cột phải: nhớ thẻ đang chọn
 let CTAB='cb';try{CTAB=localStorage.getItem('so-ctab')||'cb'}catch(e){}

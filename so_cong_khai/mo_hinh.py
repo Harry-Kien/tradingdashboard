@@ -21,7 +21,7 @@ import pandas as pd
 from . import gia, hoc, phuong_phap as PP
 from .__main__ import HERE
 
-PHIEN_BAN = 8
+PHIEN_BAN = 9                      # 9: nến nhiều năm sửa lệch giờ (25/11/2026)
 NGUONG = 90                # điểm từ mức này trở lên là "nhóm 10% cao nhất" đã được kiểm ngoài mẫu
 TPS = (0.25, 0.5, 1.0, 1.5, 2.0, 3.0)       # các mức chốt lời được đo, tính theo bội số của khoản rủi ro
 HOC_TOI = 2021             # phép kiểm ngoài mẫu: mô hình chỉ học tới hết năm này, rồi được chấm trên các năm sau

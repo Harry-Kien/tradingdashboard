@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import doc_so, tong_hop
+from . import doc_so, tong_hop, thuong_hieu
 from .doc_so import VN
 
 GIOI_HAN = 500                      # Thread Auto từ chối chú thích dài hơn 500 ký tự
@@ -226,7 +226,7 @@ def tao_ban_nhap(cfg: dict, loai: str, start: datetime, end: datetime, out: Path
     out.mkdir(parents=True, exist_ok=True)
     text = chu_bai(loai, b, start, lang)
     (out / f'{did}.caption.txt').write_text(text, encoding='utf-8')
-    anh_the(out / f'{did}.image.png', loai, b, start, lang, cfg.get('ten', ''), t.get('tai_khoan', ''))
+    anh_the(out / f'{did}.image.png', loai, b, start, lang, thuong_hieu.TEN, t.get('tai_khoan', ''))
     draft = {'id': did, 'channel': t['kenh'], 'account': t['tai_khoan'], 'approved': False,
              'notBefore': now.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z'),
              'expiresAt': (now + timedelta(hours=t.get('het_han_gio', 24))).astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z'),

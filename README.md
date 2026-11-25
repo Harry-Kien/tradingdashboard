@@ -1,4 +1,6 @@
-# Trading Dashboard · Forex & CFD
+<p align="center"><img src="docs/logo.png" alt="Harry · Gold Research" width="128" height="128"></p>
+
+# Harry · Gold Research — Trading Dashboard · Forex & CFD
 
 **Tiếng Việt** · [English](#english)
 

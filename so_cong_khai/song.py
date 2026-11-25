@@ -70,7 +70,7 @@ def _noi(cfgm: dict, g: dict):
         ma, duong = noi_mt5.tim_ma_vang(mt5, g.get('ma_vang')), 'độc lập'
         if ma is None:
             mt5.shutdown()
-            return None, None, 'Sàn trong MT5 này không có mã vàng (XAUUSD hoặc GOLD). Ghi đúng tên mã vào gia.ma_vang trong cau-hinh.json.'
+            return None, None, 'Sàn trong MT5 này không có mã vàng (XAUUSD hoặc GOLD). Chọn đúng mã vàng ở trang Cài đặt (/cai-dat).'
         mt5.symbol_select(ma, True)
     lech, nguon = noi_mt5.lech_gio(mt5, cfgm, ma, LUU_LECH)
     m = noi_mt5.LechGio(mt5, lech)                               # mọi giờ đọc ra đã là UTC

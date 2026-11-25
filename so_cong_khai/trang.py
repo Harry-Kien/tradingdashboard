@@ -12,9 +12,10 @@ from pathlib import Path
 
 from .doc_so import VN
 
-BIEU_TUONG = ('<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E'
-              '%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%232f6fed%27/%3E%3Cpath d=%27M7 21l6-7 5 4 7-9%27 fill=%27none%27 stroke=%27%23fff%27 '
-              'stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E">')
+from .logo import LOGO_NHO  # noqa: E402
+from .thuong_hieu import TEN  # noqa: E402
+
+BIEU_TUONG = f'<link rel="icon" type="image/webp" href="{LOGO_NHO}">'               # logo nhúng sẵn (so_cong_khai/logo.py)
 MIEN_TRU_GOC = 'Đây là số liệu tín hiệu, tài khoản demo và chạy bóng, không phải kết quả tiền thật, lời hứa lợi nhuận hay lời khuyên đầu tư.'
 # bản chia sẻ chưa khai sổ riêng (máy không có luật của chủ dự án): câu miễn trừ chung
 MIEN_TRU_CHIA_SE = ('Đây là số liệu thị trường và kết quả đo lại trên dữ liệu quá khứ, không phải lời hứa lợi nhuận hay lời khuyên đầu tư. '
@@ -910,6 +911,7 @@ _HINH = {
     'tim': 'M11 11m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M21 21l-5-5',
     'tin': 'M4 5h13v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3',
     'hs': 'M3 3v18h18M7 15l3-4 3 2 5-7M18 6h2v2', 'menu': 'M4 6h16M4 12h16M4 18h16', 'xuong': 'M6 9l6 6 6-6',
+    'cd': 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
 }
 
 
@@ -938,18 +940,21 @@ MENU = [
         ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
+        ('cac-tai-khoan', 'Các tài khoản đã nối', '/cac-tai-khoan', 'Mọi MT5 bạn đã thêm, demo và tiền thật: vốn, lãi lỗ, thắng thua, rủi ro', 'tk'),
         ('tong', 'Sổ công khai', '/', 'Kết quả bot, EA demo và chạy bóng', 'so')], 'nk'),
     ('hoc', 'Học', None, [
         ('hoc', 'Học giao dịch', '/hoc-giao-dich', 'CFD, Forex, loại lệnh, 16 phong cách', 'hoc'),
         ('kien-thuc', 'Kiến thức', '/kien-thuc', 'Giải thích từng chỉ báo và luật trong hệ thống', 'kt2')], 'hoc'),
+    ('cai-dat', 'Cài đặt', '/cai-dat', None, 'cd'),
 ]
 
 
 def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
     """Thanh đầu trang dùng chung cho mọi trang của webapp: logo, menu nhóm (thả xuống), ô tìm nhanh (Ctrl+K), nút phụ; trên điện thoại
     menu gập vào nút ☰. Mục đang xem được tô sáng. `muc`: thanh phụ (liên kết tới các phần trong trang)."""
+    ten = TEN                                                                # tên hiển thị cố định (thuong_hieu.py)
     ten_a, _, ten_b = (ten or '').partition('·')
-    logo = (f'<a class="nv-logo" href="/" aria-label="{escape(ten)} — Tổng quan"><span class="nv-mk">{hinh("gia")}</span>'
+    logo = (f'<a class="nv-logo" href="/" aria-label="{escape(ten)} — Tổng quan"><span class="nv-mk"><img src="{LOGO_NHO}" alt="" width="36" height="36" decoding="async"></span>'
             f'<span class="nv-tn"><b>{escape(ten_a.strip() or ten)}</b>' + (f'<small>{escape(ten_b.strip())}</small>' if ten_b.strip() else '') + '</span></a>')
     chinh, ngan, tim = [], [], []
     for k, n, h, con, ic in MENU:
@@ -1138,9 +1143,9 @@ CSS += r"""
 .nv-in{max-width:1520px;margin:0 auto;height:var(--nv-h);padding:0 20px;display:flex;align-items:center;gap:6px}
 .nv .ic{width:18px;height:18px;flex:none}
 .nv-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);margin-right:18px;flex:none}
-.nv-mk{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--btn-ink);background:linear-gradient(324deg,var(--accent2) 0%,var(--series) 70%);
+.nv-mk{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--btn-ink);overflow:hidden;background:#090a08;
 box-shadow:0 0 0 1px color-mix(in srgb,var(--series) 35%,transparent),0 6px 18px -8px var(--series)}
-.nv-mk .ic{width:18px;height:18px;stroke-width:2.4}
+.nv-mk .ic{width:18px;height:18px;stroke-width:2.4}.nv-mk img{width:100%;height:100%;display:block;object-fit:cover}.nv-logo:hover .nv-mk{box-shadow:0 0 0 1px color-mix(in srgb,var(--series) 60%,transparent),0 6px 22px -6px var(--series)}
 .nv-tn{display:flex;flex-direction:column;line-height:1.1}.nv-tn b{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
 .nv-tn small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .nv-chinh{display:flex;align-items:center;gap:2px;height:100%}

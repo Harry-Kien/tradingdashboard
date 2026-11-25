@@ -23,7 +23,7 @@ import pandas as pd
 from . import gia
 
 HUONG = {'BUY': 'MUA', 'SELL': 'BAN', 'MUA': 'MUA', 'BAN': 'BAN'}
-PHIEN_BAN = 1                                  # đổi cách tính thì tăng số này để bỏ kết quả đã lưu
+PHIEN_BAN = 2                                  # đổi cách tính thì tăng số này để bỏ kết quả đã lưu (2: sửa lệch giờ 25/11/2026)
 _tt: dict = {'key': None, 'kq': None, 'dang': False, 'loi': None, 'bat_dau': None}
 _khoa = threading.Lock()
 

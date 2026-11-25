@@ -232,7 +232,8 @@ def trang_tai_khoan(ten: str) -> str:
         trang.thanh_dau(ten, 'tai-khoan', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Tài khoản MT5</h1></div><div class="stamp">tài khoản demo đang mở trong MT5<br><span id="tk-luc">đang đọc…</span></div></div>',
         '<p class="note"><b>Chỉ đọc.</b> Trang lấy số liệu từ MT5 demo đang mở trên máy này. Trang không đặt, sửa hay đóng lệnh, không lưu mật khẩu, '
-        'và che số tài khoản. Đây là tiền demo, không phải tiền thật, và không phải lời khuyên đầu tư.</p>',
+        'và che số tài khoản. Đây là tiền demo, không phải tiền thật, và không phải lời khuyên đầu tư. '
+        'Muốn xem nhiều tài khoản cùng lúc, kể cả tài khoản tiền thật (chỉ đọc): <a href="/cac-tai-khoan">Các tài khoản đã nối</a>.</p>',
         '<div id="tk"><p class="small">Đang đọc tài khoản từ MT5…</p></div>',
         '<footer>Số liệu đọc trực tiếp từ MT5 qua các hàm chỉ đọc. Lãi lỗ ròng của lệnh đã đóng gồm lãi lỗ, hoa hồng và phí qua đêm của lần khớp đóng lệnh. '
         + escape(trang.MIEN_TRU) + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])

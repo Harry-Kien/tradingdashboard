@@ -9,7 +9,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import canh_bao, doc_so, gia, tai_khoan, tong_hop, trang
+from . import canh_bao, doc_so, gia, tai_khoan, tong_hop, trang, thuong_hieu
 
 HERE = Path(__file__).resolve().parent.parent
 
@@ -92,12 +92,12 @@ def xay(cfg: dict, ma_tuan: str | None = None, ra: str | None = None, live: bool
     tat_ca, tuan = gom(cfg), gom(cfg, start, end)
     if live:
         gan_doi_chieu(cfg, tat_ca, now)
-    bai = trang.bai_tuan(cfg.get('ten', ''), start, tuan)
+    bai = trang.bai_tuan(thuong_hieu.TEN, start, tuan)
     khoi_tuan = {'start': start, 'bai': bai, 'threads': ban_nhap_threads(out)}
     hien_tai = {'lenh': thu(gia.lenh_dang_mo, cfg), 'canh_bao': thu(canh_bao.doc, out, 5), 'tin': thu(gia.tin_sap_toi, cfg, now, 5)}
     hien_tai = {k: (v if isinstance(v, list) else []) for k, v in hien_tai.items()}
-    html = trang.trang_html(cfg.get('ten', ''), now, tat_ca, khoi_tuan, live, hien_tai)
-    (out / 'index.html').write_text(trang.trang_html(cfg.get('ten', ''), now, tat_ca, khoi_tuan, False, hien_tai), encoding='utf-8')
+    html = trang.trang_html(thuong_hieu.TEN, now, tat_ca, khoi_tuan, live, hien_tai)
+    (out / 'index.html').write_text(trang.trang_html(thuong_hieu.TEN, now, tat_ca, khoi_tuan, False, hien_tai), encoding='utf-8')
     (out / f'tong-ket-tuan-{ma}.txt').write_text(bai, encoding='utf-8')
     (out / 'so-cong-khai.json').write_text(json.dumps(_gon({'cap_nhat': now, 'tuan': ma, 'tat_ca': tat_ca, 'trong_tuan': tuan}),
                                                       ensure_ascii=False, indent=1), encoding='utf-8')

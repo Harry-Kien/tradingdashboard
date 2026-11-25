@@ -17,9 +17,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan
+from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
-from . import hieu_suat, hieu_suat_trang
+from . import cai_dat, hieu_suat, hieu_suat_trang, nhieu_tai_khoan, tin_phan_ung
 from .__main__ import HERE, xay
 
 LOAI = {'.png': 'image/png', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json; charset=utf-8'}
@@ -53,6 +53,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
             self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
+            self._tieu_de_bao_ve()
             self.end_headers()
 
             def gui(b: bytes) -> None:
@@ -76,6 +77,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', f'public, max-age={nho}, immutable' if nho else 'no-store')       # chỉ tệp tĩnh không đổi mới được trình duyệt nhớ
             self.send_header('X-Content-Type-Options', 'nosniff')
+            self._tieu_de_bao_ve()
             if 'lang=' in q:                                                 # ?lang=en / ?lang=vi: nhớ lựa chọn cho các lần sau
                 self.send_header('Set-Cookie', f'lang={lang}; Path=/; Max-Age=31536000; SameSite=Lax')
             self.end_headers()
@@ -88,6 +90,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
             self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
+            self._tieu_de_bao_ve()
             self.end_headers()
             try:
                 self.wfile.write(b'retry: 1000\n\n')
@@ -107,6 +110,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                 pass                                                      # tab đã đóng hoặc đổi khung: thôi đẩy
 
         def do_GET(self):  # noqa: N802 - tên do http.server quy định
+            if not self._host_ok():                                        # DNS rebinding: trang lạ không được đọc số liệu
+                return self._gui(403, 'text/plain; charset=utf-8', 'Chỉ mở được webapp bằng địa chỉ 127.0.0.1 hoặc localhost.'.encode('utf-8'))
             url = urlparse(self.path)
             path = unquote(url.path)
             try:                                                           # bản chia sẻ chưa khai sổ riêng: câu miễn trừ và trang Kiến thức chung
@@ -121,7 +126,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                 if path in ('/thi-truong', '/cong-cu', '/hoc-giao-dich'):
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     f = {'/thi-truong': thi_truong_trang.trang_thi_truong, '/cong-cu': cong_cu.trang_cong_cu, '/hoc-giao-dich': hoc_giao_dich.trang_hoc}[path]
-                    return self._gui(200, 'text/html; charset=utf-8', f(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', f(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/thi-truong':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     body = bang.anh_chup() if bang is not None else dict(TAT)
@@ -132,7 +137,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
                 if path == '/hieu-suat':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', hieu_suat_trang.trang_hieu_suat(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', hieu_suat_trang.trang_hieu_suat(thuong_hieu.TEN).encode('utf-8'))
                 if path in ('/api/hieu-suat', '/api/hieu-suat.csv'):                # phân tích hiệu suất từ lịch sử lệnh MT5 (chỉ đọc)
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
@@ -149,13 +154,15 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         self.send_header('Content-Disposition', 'attachment; filename="lich-su-lenh.csv"')
                         self.send_header('Content-Length', str(len(csv_b)))
                         self.send_header('Cache-Control', 'no-store')
+                        self.send_header('X-Content-Type-Options', 'nosniff')
+                        self._tieu_de_bao_ve()
                         self.end_headers()
                         self.wfile.write(csv_b)
                         return None
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/tin-tuc':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', tin_tuc_trang.trang_tin_tuc(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', tin_tuc_trang.trang_tin_tuc(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/tin-tuc':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
@@ -188,13 +195,27 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
                 if path == '/kien-thuc':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', kien_thuc.trang_kien_thuc(cfg.get('ten', ''), cs).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', kien_thuc.trang_kien_thuc(thuong_hieu.TEN, cs).encode('utf-8'))
                 if path == '/nhat-ky':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', nhat_ky_trang.trang_nhat_ky(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', nhat_ky_trang.trang_nhat_ky(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/cai-dat':                                     # chỉnh cấu hình ngay trên web
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', cai_dat.trang_cai_dat(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/api/cai-dat':
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(cai_dat.doc(cfg), ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/tin-toi':                                 # tin USD mạnh sắp ra kèm số đo phản ứng của giá vàng
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(tin_phan_ung.tin_toi(cfg), ensure_ascii=False).encode('utf-8'))
+                if path == '/cac-tai-khoan':                               # mọi tài khoản MT5 đã nối, demo và tiền thật (chỉ đọc)
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', nhieu_tai_khoan.trang_cac_tai_khoan(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/api/cac-tai-khoan':
+                    return self._gui(200, LOAI['.json'], json.dumps(nhieu_tai_khoan.xem(), ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/tai-khoan':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', tai_khoan.trang_tai_khoan(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', tai_khoan.trang_tai_khoan(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/tai-khoan':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(tai_khoan.doc(cfg), ensure_ascii=False).encode('utf-8'))
@@ -211,7 +232,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     return self._gui(404, 'text/plain; charset=utf-8', 'Chưa có tệp thư viện biểu đồ; trang dùng lớp vẽ dự phòng.'.encode('utf-8'))
                 if path == '/bieu-do':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, 'text/html; charset=utf-8', bieu_do.trang_bieu_do(cfg.get('ten', '')).encode('utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', bieu_do.trang_bieu_do(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/gia':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
@@ -293,6 +314,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         self.send_response(302)
                         self.send_header('Location', '/thi-truong')
                         self.send_header('Content-Length', '0')
+                        self.send_header('X-Content-Type-Options', 'nosniff')
+                        self._tieu_de_bao_ve()
                         self.end_headers()
                         return
                 if path in ('/', '/index.html', '/api/so.json'):
@@ -312,9 +335,68 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
             except Exception as e:                                  # noqa: BLE001 - báo lỗi ra trang thay vì làm chết máy chủ
                 self._gui(500, 'text/plain; charset=utf-8', f'Lỗi khi dựng trang: {type(e).__name__}: {e}'.encode('utf-8'))
 
+        def _tieu_de_bao_ve(self) -> None:
+            """Cấm trang khác nhúng webapp vào khung (chống lừa bấm), không gửi địa chỉ trang khi bấm link ra ngoài, không cho trang khác nạp tài nguyên."""
+            self.send_header('X-Frame-Options', 'DENY')
+            self.send_header('Content-Security-Policy', "frame-ancestors 'none'")
+            self.send_header('Referrer-Policy', 'no-referrer')
+            self.send_header('Cross-Origin-Resource-Policy', 'same-origin')
+
+        def _host_ok(self) -> bool:
+            """Tiêu đề Host là chính máy này. Chặn DNS rebinding: trang lạ đổi tên miền của nó trỏ về 127.0.0.1 rồi đọc số liệu tài khoản như cùng nguồn;
+            khi đó Host là tên miền lạ nên bị từ chối."""
+            h = (self.headers.get('Host') or '').strip().lower()
+            h = h[1:h.index(']')] if h.startswith('[') and ']' in h else h.rsplit(':', 1)[0] if h.count(':') == 1 else h
+            return h in ('127.0.0.1', 'localhost', '::1')
+
+        def _cung_may(self) -> bool:
+            """Yêu cầu ghi đến từ chính trang của webapp trên máy này: có tiêu đề riêng (trang lạ không gửi được nếu không qua CORS),
+            Host là máy này (chặn DNS rebinding), và Origin (nếu có) cũng là máy này."""
+            may = ('127.0.0.1', 'localhost', '::1')
+            goc = self.headers.get('Origin')
+            return (self.headers.get('X-So-Cong-Khai') == '1' and self._host_ok()
+                    and (not goc or (urlparse(goc).hostname or '').lower() in may))
+
         def do_POST(self):  # noqa: N802
-            # Chỉ một việc được phép qua POST: hỏi AI. Đòi tiêu đề riêng để trang web khác không tự gửi được.
+            # Ba việc được phép qua POST: hỏi AI, thêm/bỏ/đọc lại tài khoản đã nối, và lưu cài đặt. Mọi lệnh đều phải đến từ chính trang
+            # của webapp trên máy này (tiêu đề riêng, Host, Origin): trang web khác không gửi hộ được, kể cả qua DNS rebinding.
+            if not self._cung_may():
+                return self._gui(403, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': 'Chỉ trang của webapp trên chính máy này mới được gửi lệnh.'},
+                                                                ensure_ascii=False).encode('utf-8'))
             try:
+                if urlparse(self.path).path == '/api/cai-dat':
+                    if not self._cung_may():
+                        return self._gui(403, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': 'Chỉ trang Cài đặt trên chính máy này mới được lưu.'},
+                                                                        ensure_ascii=False).encode('utf-8'))
+                    n = min(int(self.headers.get('Content-Length') or 0), 8192)
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    try:
+                        if yc.get('viec') == 'noi_lai':
+                            cai_dat.noi_lai(json.loads(Path(cau_hinh).read_text(encoding='utf-8')).get('gia') or {})
+                            kq = {'ok': True, 'thong_bao': 'Đang nối lại MT5…'}
+                        elif yc.get('viec') == 'luu':
+                            kq = cai_dat.ghi(Path(cau_hinh), yc.get('gia_tri'))
+                        else:
+                            raise ValueError('yêu cầu không hợp lệ')
+                    except ValueError as e:
+                        return self._gui(400, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': f'Chưa lưu: {e}'}, ensure_ascii=False).encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(kq, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/cac-tai-khoan' and self.headers.get('X-So-Cong-Khai') == '1':
+                    n = min(int(self.headers.get('Content-Length') or 0), 4096)
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    viec = yc.get('viec')
+                    if viec == 'them':
+                        ok, nhan = nhieu_tai_khoan.them(str(yc.get('duong', '')), str(yc.get('ten', '')))
+                        if ok:
+                            nhieu_tai_khoan.doc_lai_ngay()
+                    elif viec == 'xoa':
+                        ok, nhan = nhieu_tai_khoan.xoa(int(yc.get('id', 0)))
+                    elif viec == 'doc_lai':
+                        nhieu_tai_khoan.doc_lai_ngay()
+                        ok, nhan = True, 'Đang đọc lại mọi tài khoản; trang tự cập nhật sau ít giây.'
+                    else:
+                        ok, nhan = False, 'Yêu cầu không hợp lệ.'
+                    return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan}, ensure_ascii=False).encode('utf-8'))
                 if urlparse(self.path).path != '/api/ai' or self.headers.get('X-So-Cong-Khai') != '1':
                     return self._gui(404, 'text/plain; charset=utf-8', 'Không có trang này.'.encode('utf-8'))
                 cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
@@ -342,6 +424,8 @@ def main(argv=None) -> int:
     srv = tao_may_chu(a.cau_hinh, port=a.port, vong=vong, bang=bang, ghi_thieu=True)
     if vong is not None:
         vong.start()
+    nhieu_tai_khoan.VONG = nhieu_tai_khoan.VongTaiKhoan()                # đọc các tài khoản đã nối (mỗi cái một tiến trình riêng, chỉ đọc)
+    nhieu_tai_khoan.VONG.start()
     if bang is not None:                                           # bảng giá trực tiếp cho trang Thị trường và Công cụ
         bang.start()
     nk = (json.loads(Path(a.cau_hinh).read_text(encoding='utf-8')).get('nhat_ky') or {})

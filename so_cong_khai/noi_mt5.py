@@ -99,14 +99,14 @@ def chon_terminal(chi_dinh: str | None, procs: list | None) -> tuple[str | None,
     if chi_dinh:
         mine = tuple(sorted(pid for pid, path in terms if cung_duong(path, chi_dinh)))
         if not mine:
-            return None, None, f'MT5 ở {chi_dinh} chưa mở. Hãy mở MT5 đó và đăng nhập, hoặc để trống gia.mt5.terminal để tự tìm.'
+            return None, None, 'MT5 đã chọn trong Cài đặt chưa mở. Hãy mở MT5 đó và đăng nhập, hoặc chọn MT5 khác ở trang Cài đặt (/cai-dat).'
         duong = chi_dinh
     else:
         cac = sorted({str(Path(path)).casefold(): path for _, path in terms}.values())
         if not cac:
             return None, None, CHUA_MO
         if len(cac) > 1:
-            return None, None, ('Máy đang mở nhiều MT5: ' + '; '.join(cac) + '. Ghi đường dẫn MT5 muốn dùng vào gia.mt5.terminal trong cau-hinh.json.')
+            return None, None, f'Máy đang mở {len(cac)} MT5. Chọn MT5 muốn dùng ở trang Cài đặt (/cai-dat).'
         duong = cac[0]
         mine = tuple(sorted(pid for pid, path in terms if cung_duong(path, duong)))
     if any(not path or cung_duong(str(Path(path).parent), str(Path(duong).parent)) for path in testers):
@@ -145,7 +145,7 @@ def noi(mt5, cfgm: dict, procs_fn=tien_trinh, window_fn=co_cua_so, sleep=time.sl
         why = 'MT5 chưa trả thông tin tài khoản; hãy đăng nhập trong MT5.'
     elif cfgm.get('chi_demo', True) and getattr(acc, 'trade_mode', None) != 0:
         why = ('Tài khoản đang đăng nhập trong MT5 không phải tài khoản DEMO; webapp mặc định chỉ đọc tài khoản demo. '
-               'Muốn đọc giá từ tài khoản khác thì đặt gia.mt5.chi_demo = false (webapp vẫn chỉ đọc, không đặt lệnh).')
+               'Muốn đọc giá từ tài khoản khác thì tắt "Chỉ đọc tài khoản demo" ở trang Cài đặt (/cai-dat); webapp vẫn chỉ đọc, không đặt lệnh.')
     elif not getattr(info, 'connected', False):
         why = 'MT5 chưa kết nối máy chủ của sàn.'
     if why:
