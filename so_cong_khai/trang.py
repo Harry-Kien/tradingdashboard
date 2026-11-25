@@ -908,7 +908,8 @@ _HINH = {
     'nk': 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11', 'tk': 'M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2',
     'hoc': 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5', 'kt2': 'M2 5c4-1 7 0 10 2 3-2 6-3 10-2v14c-4-1-7 0-10 2-3-2-6-3-10-2zM12 7v14',
     'tim': 'M11 11m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M21 21l-5-5',
-    'tin': 'M4 5h13v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3', 'menu': 'M4 6h16M4 12h16M4 18h16', 'xuong': 'M6 9l6 6 6-6',
+    'tin': 'M4 5h13v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3',
+    'hs': 'M3 3v18h18M7 15l3-4 3 2 5-7M18 6h2v2', 'menu': 'M4 6h16M4 12h16M4 18h16', 'xuong': 'M6 9l6 6 6-6',
 }
 
 
@@ -934,6 +935,7 @@ MENU = [
     ('bieu-do', 'Biểu đồ', '/bieu-do', None, 'nen'),
     ('cong-cu', 'Công cụ', '/cong-cu', None, 'tinh'),
     ('so', 'Sổ giao dịch', None, [
+        ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
         ('tong', 'Sổ công khai', '/', 'Kết quả bot, EA demo và chạy bóng', 'so')], 'nk'),

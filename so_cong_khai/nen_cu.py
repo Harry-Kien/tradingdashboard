@@ -71,6 +71,8 @@ def goi(cfg: dict, ma: str = '', tf: str = 'M15', now: datetime | None = None) -
     now = now or datetime.now(timezone.utc)
     tu = datetime(now.year, 1, 1, tzinfo=timezone.utc)
     vang = not ma or ma == da_ma.ma_vang(cfg)
+    if vang:
+        gia.can_gia(cfg['gia'])
     if vang and gia.chia_se_song(cfg['gia']):     # bản chia sẻ không có kho nến 1 phút nhiều năm: lấy thẳng từ MT5 như mọi mã
         ma, vang = da_ma.ma_vang(cfg), False
     if vang:

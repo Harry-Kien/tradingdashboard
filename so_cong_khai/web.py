@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
+from . import hieu_suat, hieu_suat_trang
 from .__main__ import HERE, xay
 
 LOAI = {'.png': 'image/png', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json; charset=utf-8'}
@@ -129,6 +130,29 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     except Exception as e:                                 # noqa: BLE001 - lịch hỏng không làm hỏng bảng giá
                         body['lich'] = {'co': False, 'ly_do': f'{type(e).__name__}: {e}', 'ds': []}
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
+                if path == '/hieu-suat':
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, 'text/html; charset=utf-8', hieu_suat_trang.trang_hieu_suat(cfg.get('ten', '')).encode('utf-8'))
+                if path in ('/api/hieu-suat', '/api/hieu-suat.csv'):                # phân tích hiệu suất từ lịch sử lệnh MT5 (chỉ đọc)
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    q = parse_qs(url.query)
+                    lay_q = lambda k, md='': (q.get(k, [md])[0] or md).strip()[:40]   # noqa: E731
+                    try:
+                        ngay = max(0, min(int(lay_q('ngay', '90')), 3650))
+                    except ValueError:
+                        return self._gui(400, 'text/plain; charset=utf-8', 'Yêu cầu không hợp lệ: ngay'.encode('utf-8'))
+                    body = hieu_suat.lay(cfg, ngay, lay_q('ma'), lay_q('chieu'), lay_q('nguon'), lay_q('mau') == '1')
+                    if path.endswith('.csv'):
+                        csv_b = hieu_suat.csv_lenh(body.get('lenh', [])[::-1]).encode('utf-8')
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'text/csv; charset=utf-8')
+                        self.send_header('Content-Disposition', 'attachment; filename="lich-su-lenh.csv"')
+                        self.send_header('Content-Length', str(len(csv_b)))
+                        self.send_header('Cache-Control', 'no-store')
+                        self.end_headers()
+                        self.wfile.write(csv_b)
+                        return None
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/tin-tuc':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     return self._gui(200, 'text/html; charset=utf-8', tin_tuc_trang.trang_tin_tuc(cfg.get('ten', '')).encode('utf-8'))
@@ -197,6 +221,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                             data = da_ma.goi(cfg, ma, q.get('tf', ['M15'])[0], int(q.get('n', ['600'])[0]))
                         else:
                             data = gia.goi(cfg, q.get('tf', ['M15'])[0], int(q.get('n', ['600'])[0]))
+                    except gia.ChuaCoGia as e:
+                        return self._gui(503, 'text/plain; charset=utf-8', f'Chưa có giá trực tiếp: {e}'.encode('utf-8'))
                     except (ValueError, KeyError) as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(data, ensure_ascii=False).encode('utf-8'))
@@ -225,6 +251,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                             nhat_ky.ghi(cfg, data)
                         except Exception:                                      # noqa: BLE001 - nhật ký hỏng không được làm hỏng phần phân tích
                             pass
+                    except gia.ChuaCoGia as e:
+                        return self._gui(503, 'text/plain; charset=utf-8', f'Chưa có giá trực tiếp: {e}'.encode('utf-8'))
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(data, ensure_ascii=False).encode('utf-8'))

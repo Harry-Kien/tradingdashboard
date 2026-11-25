@@ -65,6 +65,16 @@ def khung(g: dict) -> dict:
     return fr
 
 
+class ChuaCoGia(RuntimeError):
+    """Bản chia sẻ chưa nối được MT5 (và không có kho nến): không có giá để vẽ. Thông điệp là lý do đọc được cho người dùng."""
+
+
+def can_gia(g: dict) -> None:
+    """Bản chia sẻ không có kho nến: chưa nối được MT5 thì báo rõ lý do (máy mở nhiều MT5, MT5 chưa mở…) thay vì lỗi tìm tệp."""
+    if ban_chia_se(g) and not g.get('kho_m1') and song.khung_song(g) is None:
+        raise ChuaCoGia(song.ly_do() or 'chưa nối được MT5')
+
+
 def ban_chia_se(g: dict) -> bool:
     """Máy không có mã EA Promax và bot tín hiệu của chủ dự án (bản chia sẻ cho người khác): không thư mục nào trong gia.ma_nguon tồn tại."""
     return not any(os.path.isdir(_p(p)) for p in g.get('ma_nguon', []))
@@ -277,6 +287,7 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
     if tf not in KHUNG:
         raise ValueError(f'khung không hỗ trợ: {tf}')
     g = cfg['gia']
+    can_gia(g)
     if chia_se_song(g):                           # bản chia sẻ: vàng dùng chung đường với mọi mã (không có luật riêng của chủ dự án)
         from . import da_ma                       # noqa: PLC0415 - da_ma nạp gia, tránh vòng nạp
         return da_ma.goi(cfg, da_ma.ma_vang(cfg), tf, n, now)

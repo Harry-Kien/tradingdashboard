@@ -43,6 +43,7 @@ def _khong(ma: str, ten: str, kieu: str, vi_sao: str) -> dict:
 
 def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     g = cfg['gia']
+    gia.can_gia(g)
     if gia.chia_se_song(g):                       # bản chia sẻ: các phương pháp tùy chọn theo ATR, như mọi mã khác
         from . import da_ma                       # noqa: PLC0415
         return da_ma.phan_tich(cfg, da_ma.ma_vang(cfg), now)

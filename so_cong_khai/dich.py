@@ -313,8 +313,8 @@ _KHOA_GIU = {'link', 'url', 'id', 'ma', 'goc', 'sym', 'ma_nguon', 'k', 'h', 'h2'
 
 def dich_json(x, d: dict, thu: set | None = None, khoa_cha: str = ''):
     """Dịch giá trị chuỗi trong dữ liệu JSON (không dịch tên khóa, đường dẫn hay mã)."""
-    if isinstance(x, dict):
-        return {k: (v if k in _KHOA_GIU and isinstance(v, str) else dich_json(v, d, thu, k)) for k, v in x.items()}
+    if isinstance(x, dict):                                                  # 'vi'/'en': nội dung máy chủ đã viết sẵn theo từng ngôn ngữ, giữ nguyên
+        return {k: (v if (k in _KHOA_GIU and isinstance(v, str)) or k in ('vi', 'en') else dich_json(v, d, thu, k)) for k, v in x.items()}
     if isinstance(x, list):
         return [dich_json(v, d, thu, khoa_cha) for v in x]
     if isinstance(x, str) and la_tieng_viet(x):

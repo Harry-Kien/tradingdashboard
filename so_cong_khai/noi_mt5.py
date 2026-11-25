@@ -224,6 +224,28 @@ class _TickUTC:
         return getattr(self._t, k)
 
 
+_GIO = ('time', 'time_update', 'time_setup', 'time_done', 'time_expiration')
+
+
+class _BanUTC:
+    """Lệnh, lệnh chờ, giao dịch của MT5 với mọi trường giờ đã đổi về UTC (giây và mili giây); 0 nghĩa là "không có" nên giữ 0."""
+    __slots__ = ('_x', '_lech')
+
+    def __init__(self, x, lech: int):
+        self._x, self._lech = x, lech
+
+    def __getattr__(self, k):
+        v = getattr(self._x, k)
+        if k in _GIO and v:
+            return int(v) - self._lech
+        if k.endswith('_msc') and k[:-4] in _GIO and v:
+            return int(v) - self._lech * 1000
+        return v
+
+    def _asdict(self) -> dict:
+        return {k: getattr(self, k) for k in self._x._asdict()}
+
+
 def _cong(dt, lech: int):
     if isinstance(dt, datetime):
         return dt + timedelta(seconds=lech)
@@ -269,6 +291,26 @@ class LechGio:
     def symbol_info_tick(self, sym):
         t = self._m.symbol_info_tick(sym)
         return t if t is None or not self.lech else _TickUTC(t, self.lech)
+
+    def _ban(self, ds):
+        return ds if ds is None or not self.lech else tuple(_BanUTC(x, self.lech) for x in ds)
+
+    def _lich_su(self, ham, a, k):
+        a = tuple(_cong(x, self.lech) for x in a)                            # khoảng ngày truyền vào: UTC → giờ máy chủ của sàn
+        k = {n: (_cong(v, self.lech) if n in ('date_from', 'date_to') else v) for n, v in k.items()}
+        return self._ban(ham(*a, **k))
+
+    def history_deals_get(self, *a, **k):
+        return self._lich_su(self._m.history_deals_get, a, k)
+
+    def history_orders_get(self, *a, **k):
+        return self._lich_su(self._m.history_orders_get, a, k)
+
+    def positions_get(self, *a, **k):
+        return self._ban(self._m.positions_get(*a, **k))
+
+    def orders_get(self, *a, **k):
+        return self._ban(self._m.orders_get(*a, **k))
 
 
 # ---- hàm đọc cho song.khung_song (cùng dạng với deps của EA Promax)

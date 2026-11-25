@@ -169,12 +169,21 @@ function sucManh(k){const s={},n={};for(const c of CHINH){s[c]=0;n[c]=0}
 function capTien(a,b){for(const x of by.values()){if(!x.cap)continue;if(x.cap[0]===a&&x.cap[1]===b)return{x,dao:false};if(x.cap[0]===b&&x.cap[1]===a)return{x,dao:true}}return null}
 async function tai(){const r=await fetch('/api/thi-truong',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json(),cu=by;S=j;by=new Map();
  for(const x of j.ds){const o=cu.get(x.ma);if(o&&o.q&&(!x.q||o.q[2]>x.q[2]))x.q=o.q;by.set(x.ma,x)}tt={ok:j.san_sang,ly:j.ly_do};if(!lan&&j.san_sang)lan=Date.now();phat('anh');return j}
+// Luồng giá DÙNG CHUNG cho mọi tab của webapp. Trình duyệt chỉ cho mỗi máy chủ 6 kết nối cùng lúc; nếu mỗi tab Thị trường/Công cụ giữ
+// một luồng thì mở tới tab thứ 7 là cả webapp treo (đo ngày 25/11/2026: tab thứ 7 chờ hơn 5 phút không tải được trang). Nên chỉ một tab
+// "trưởng" (giữ khóa Web Locks) mở ĐÚNG MỘT kết nối và chuyển từng gói giá cho các tab khác qua BroadcastChannel, kể cả tab đang ẩn
+// (cảnh báo giá vẫn chạy). Tab trưởng đóng thì khóa nhả và một tab khác tự lên thay. Trình duyệt thiếu hai API này: mỗi tab tự mở luồng.
+function nhanGia(j){const ds=[];let la=0;for(const m in j.q){const x=by.get(m);if(!x){la++;continue}x.q0=x.q;x.q=j.q[m];ds.push(m)}
+ if(la&&Date.now()-lanTai>3000){lanTai=Date.now();tai().catch(()=>{})}                  // có mã bảng chưa biết (bộ máy vừa sẵn sàng, hoặc sàn thêm mã): nạp lại bảng
+ if(ds.length)lan=Date.now();tt={ok:j.s,ly:j.ly};phat('gia',ds)}
+function moLuong(bc){es=new EventSource('/api/thi-truong/luong');
+ es.addEventListener('gia',e=>{let j;try{j=JSON.parse(e.data)}catch(_){return}nhanGia(j);if(bc)bc.postMessage({t:'gia',j})});
+ es.onerror=()=>{tt={ok:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai');if(bc)bc.postMessage({t:'loi'})}}
 function noi(){if(es)return;if(!window.EventSource){setInterval(()=>tai().catch(()=>{}),3000);return}
- es=new EventSource('/api/thi-truong/luong');
- es.addEventListener('gia',e=>{let j;try{j=JSON.parse(e.data)}catch(_){return}const ds=[];let la=0;for(const m in j.q){const x=by.get(m);if(!x){la++;continue}x.q0=x.q;x.q=j.q[m];ds.push(m)}
-  if(la&&Date.now()-lanTai>3000){lanTai=Date.now();tai().catch(()=>{})}                 // có mã bảng chưa biết (bộ máy vừa sẵn sàng, hoặc sàn thêm mã): nạp lại bảng
-  if(ds.length)lan=Date.now();tt={ok:j.s,ly:j.ly};phat('gia',ds)});
- es.onerror=()=>{tt={ok:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai')}}
+ if(!window.BroadcastChannel||!(navigator.locks&&navigator.locks.request)){moLuong(null);return}
+ es=-1;const bc=new BroadcastChannel('so-cong-khai-gia');
+ bc.onmessage=e=>{const m=e.data||{};if(m.t==='gia')nhanGia(m.j);else if(m.t==='loi'){tt={ok:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai')}};
+ navigator.locks.request('so-cong-khai-luong-gia',()=>new Promise(()=>moLuong(bc)))}                    // giữ khóa tới khi tab đóng
 function batDau(moiGiay=30){const lam=()=>tai().catch(e=>{tt={ok:false,ly:'không đọc được bảng giá: '+e.message};phat('trang_thai')});
  const p=lam();noi();setInterval(()=>{if(document.visibilityState==='visible')lam()},moiGiay*1000);return p}
 function pill(el){const ve=()=>{if(!el)return;const n=[...by.values()].filter(x=>x.q).length,giay=lan?Math.round((Date.now()-lan)/1000):null;

@@ -303,6 +303,10 @@ def lay(cfg: dict, out: Path, cho: bool = False) -> dict:
         from . import da_ma, hoc_ma               # noqa: PLC0415
         return hoc_ma.lay(cfg, out, da_ma.ma_vang(cfg), cho)
     try:
+        gia.can_gia(cfg['gia'])
+    except gia.ChuaCoGia as e:                    # bản chia sẻ chưa nối MT5: báo lý do, không báo lỗi tìm tệp
+        return {'san_sang': False, 'dang_tinh': False, 'loi': [f'Chưa có giá trực tiếp: {e}']}
+    try:
         key = _key(cfg)
     except Exception as e:                                                 # noqa: BLE001
         return {'san_sang': False, 'dang_tinh': False, 'loi': [f'{type(e).__name__}: {e}']}

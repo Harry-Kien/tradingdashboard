@@ -15,6 +15,7 @@ Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, khôn
 | **Tin tức & tâm lý** | Tin nhanh từ InvestingLive (ForexLive), CNBC, Fed, ECB, BoE có gắn nhãn đồng tiền; vị thế quỹ đầu cơ theo báo cáo COT của CFTC (thứ hạng 3 năm); chỉ số Sợ hãi & Tham lam; khẩu vị rủi ro và đồng thuận kỹ thuật toàn thị trường. |
 | **Biểu đồ** | Nến M5–D1 theo từng tick (TradingView Lightweight Charts), EMA, Bollinger, RSI, hỗ trợ/kháng cự, FVG, khối lệnh, công cụ vẽ, phân tích điểm vào theo các phương pháp tùy chọn kèm số đo lại trên dữ liệu của chính mã. |
 | **Công cụ** | Khối lượng theo % rủi ro, giá trị pip, lãi/lỗ và ký quỹ (MT5 tính lại cho chính xác), mức gọi ký quỹ, pivot 4 kiểu, Fibonacci, R:R và kỳ vọng, xác suất chuỗi thua. |
+| **Phân tích hiệu suất** ✨ | Đọc lịch sử lệnh đã đóng trong MT5 và cho biết **bạn thắng, thua ở đâu**: lãi ròng, tỷ lệ thắng, hệ số lợi nhuận, kỳ vọng mỗi lệnh (cả theo R), sụt vốn lớn nhất, chuỗi thắng/thua; đường vốn kèm vùng sụt vốn; lịch lãi/lỗ theo ngày; **nhận xét tự động** (giữ lệnh thua quá lâu, tăng khối lượng sau lệnh thua, lệnh không có SL, mã/phiên/giờ/thứ đang kéo kết quả xuống…); phân tích theo mã, chiều, phiên, thứ, giờ, thời gian giữ, nguồn (tay hay EA); bảng lệnh sắp xếp được, xuất CSV. Có dữ liệu minh họa để xem thử. |
 | **Sổ giao dịch** | Nhật ký điểm vào chấm bằng giá thật; tài khoản MT5 (vốn, lệnh mở, lãi lỗ theo ngày, số tài khoản được che). |
 | **Học** | CFD/Forex cơ bản, các loại lệnh, 16 phong cách giao dịch, bài chọn phong cách, quản lý rủi ro; giải thích từng chỉ báo. |
 
@@ -23,6 +24,8 @@ Tìm nhanh mã hoặc trang bằng **Ctrl+K**. Nền sáng/tối, giao diện đ
 | Tín hiệu kỹ thuật | Tin tức & tâm lý |
 |---|---|
 | ![Tín hiệu kỹ thuật](docs/tin-hieu-ky-thuat.jpg) | ![Tin tức](docs/tin-tuc.jpg) |
+
+![Phân tích hiệu suất giao dịch (dữ liệu minh họa)](docs/hieu-suat.jpg)
 
 ## Cài và chạy (Windows)
 
@@ -36,7 +39,7 @@ Chi tiết cấu hình và cách xử lý sự cố: [HUONG_DAN.md](HUONG_DAN.md
 
 ## Dữ liệu và quyền riêng tư
 
-- Giá, nến, thông số hợp đồng: MT5 trên máy bạn (chỉ đọc; mặc định chỉ nhận tài khoản demo). Trang chỉ nghe ở 127.0.0.1, máy khác không vào được.
+- Giá, nến, thông số hợp đồng, lịch sử lệnh đã đóng: MT5 trên máy bạn (chỉ đọc; mặc định chỉ nhận tài khoản demo). Trang chỉ nghe ở 127.0.0.1, máy khác không vào được.
 - Chỉ tải về từ Internet (không gửi gì đi): lịch kinh tế tuần (ForexFactory), RSS tin tức, báo cáo COT (cftc.gov), Fear & Greed (alternative.me).
   Tắt từng phần trong `cau-hinh.json`.
 
@@ -58,6 +61,12 @@ A Forex & CFD trading dashboard that runs on your own computer, streaming **live
 currency strength, heatmap, correlation matrix, hourly volatility, trading sessions and a 9-currency economic calendar; contract specs (pip value,
 margin, leverage, swap); news with currency tags; COT speculative positioning; crypto Fear & Greed; risk appetite; a tick-by-tick chart with
 indicators and drawing tools; position-size, P/L, margin, pivot, Fibonacci and R:R calculators; an entry journal; trading lessons. Ctrl+K quick search.
+
+**New: Trading performance analytics** (`/hieu-suat`). Reads your closed-trade history from MT5 and shows where you win and lose: net profit,
+win rate, profit factor, expectancy (also in R), max drawdown and streaks. You also get an equity curve with drawdown, a daily P/L calendar
+and automatic insights (holding losers too long, sizing up after a loss, trades without a stop loss, symbols/sessions/hours dragging results down).
+Breakdowns cover symbol, direction, session, weekday, hour, holding time and source (manual vs EA). The trade table can be sorted and exported
+to CSV. A sample-data mode lets you preview the page.
 
 **Install (Windows):** Python 3.11+ and MetaTrader 5 logged in to a **demo** account. Run `CAI_DAT.bat` once, open MT5, then run
 `CHAY_WEBAPP.bat` and browse to http://127.0.0.1:8765. Configuration lives in `cau-hinh.json` (created from `cau-hinh.mau.json`);
