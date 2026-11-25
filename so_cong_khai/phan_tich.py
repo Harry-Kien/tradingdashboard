@@ -18,7 +18,7 @@ from pathlib import Path
 from . import gia, phieu, phuong_phap, song
 
 THONG_KE = {
-    'bot': 'Từ đêm 24/11/2026: MUA cần H1 và H4 cùng tăng, BÁN cần H1, H4 và D1 cùng giảm. Bot tự đo 2024–26: 867 lệnh, +3,97 giá mỗi lệnh, sụt giảm 422 giá; 2015–23 tổng +77, sụt giảm 1.039. Webapp đo độc lập với chi phí thật (2.809 lệnh): −0,012R mỗi lệnh ở 2015–2021, +0,162R ở 2022–2026. Vàng tăng gần suốt 2015–2026 nên phép đo ưu ái lệnh MUA, và cấu hình chọn khi đã nhìn dữ liệu nên con số lạc quan.',
+    'bot': 'MUA cần H1 và H4 cùng tăng, BÁN cần H1, H4 và D1 cùng giảm (từ đêm 24/11/2026); tối đa 6 lệnh mở cùng lúc (từ sáng 25/11/2026, trước là 3). Bot tự đo 2024–26: 1.249 lệnh, +4,38 giá mỗi lệnh, sụt giảm 621 giá; phần tăng chủ yếu do nhiều lệnh cùng chiều mở chồng lên nhau. Webapp đo độc lập với chi phí thật (3.518 lệnh): −0,002R mỗi lệnh ở 2015–2021, +0,177R ở 2022–2026. Vàng tăng gần suốt 2015–2026 nên phép đo ưu ái lệnh MUA, và cấu hình chọn khi đã nhìn dữ liệu nên con số lạc quan.',
     'ba_khung': 'Kiểm bản né tin 2023–10/2026: 2.610 lệnh, thắng 81,8%, hòa vốn cần 80,7%. 2016–2022 lỗ nhẹ. Đang đo, cần 300 lệnh mới kết luận.',
     'dinh_day': 'Khi kiểm lại có lãi mỏng năm 2026 nhưng lỗ cả 2023–2025. Sổ chạy bóng mới có vài lệnh.',
 }

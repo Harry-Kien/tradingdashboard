@@ -112,40 +112,63 @@ def so_do_bot(tep: Path | None = None) -> dict | None:
         return None
 
 
-def lap_bot(pa: dict, nen: datetime, nen_h: float, nen_l: float, khung: str, bid: float, ask: float, now: datetime, tp_r, so_le: int = 2) -> dict | None:
-    """Phiếu cho luật bot (chỉ phương án 'bot:nen', là kiểu lệnh đã được đo): lệnh chờ dừng ở đỉnh (MUA) hoặc đáy (BÁN) của nến tín hiệu, kiểu vào đã
-    qua cổng cả trước và sau khi bot đổi lọc xu hướng (24/11/2026). Dừng lỗ giữ ở mức bot đặt; thang chốt `tp_r` (bội số R) tính lại từ giá vào của
-    phiếu. `nen`: giờ nến tín hiệu đóng. Nhật ký chấm phiếu này theo TP1 như lệnh gốc của bot ('i_chinh' = 0). Hàm thuần: không đặt lệnh."""
+BOT_MAC_DINH = {'vao': 'V2', 'sl': 'S0', 'tp': 'TL'}       # công thức khi chưa có tệp số đo
+BOT_TEN_VAO = {'V0': 'vào ngay khi nến tín hiệu đóng (như bot)', 'V1': 'chờ hồi về giữa nến tín hiệu',
+               'V2': 'chờ giá phá đỉnh/đáy nến tín hiệu rồi mới vào (bỏ được các tín hiệu hỏng ngay)'}
+BOT_TEN_SL = {'S0': '', 'S2': 'dừng lỗ lùi thêm đúng spread', 'S3': 'dừng lỗ lùi thêm 3 giá'}
+BOT_TEN_TP = {'TL': 'thang sáu mức chốt như bot, tính lại từ giá vào của phiếu', 'TLB': 'thang sáu mức chốt, tính lại từ giá vào của phiếu',
+              'T0': 'chốt hết ở 2R', 'T1': 'chốt hết ở 1R'}
+
+
+def lap_bot(pa: dict, nen: datetime, nen_h: float, nen_l: float, khung: str, bid: float, ask: float, now: datetime, tp_r, so_le: int = 2,
+            ct: dict | None = None) -> dict | None:
+    """Phiếu cho luật bot (chỉ phương án 'bot:nen', là kiểu lệnh đã được đo). Công thức `ct` mặc định lấy từ lần đo gần nhất của cong-cu/diem_vao_bot.py
+    (mục 'ap_dung' của out/diem-vao-bot.json), nên khi bot đổi và được đo lại thì phiếu tự đổi theo. Kiểu vào: V0 vào ngay, V1 chờ hồi về giữa nến tín
+    hiệu, V2 chờ phá đỉnh/đáy nến tín hiệu (V3 xác nhận nến M5 chưa làm được lúc sống: không ra phiếu). Dừng lỗ: S0 mức bot, S2 lùi thêm spread, S3
+    lùi thêm 3 giá. Chốt: TL/TLB thang `tp_r`, T0 chốt hết ở 2R, T1 ở 1R; mọi mức tính lại từ giá vào của phiếu. Nhật ký chấm phiếu theo mức chốt
+    đầu ('i_chinh' = 0), như lệnh gốc của bot. `nen`: giờ nến tín hiệu đóng. Hàm thuần: không đặt lệnh."""
     if pa.get('ma') != 'bot:nen' or not pa.get('co') or pa.get('sl') is None:
+        return None
+    sd = so_do_bot()
+    ct = dict(ct or (sd or {}).get('ap_dung') or BOT_MAC_DINH)
+    if ct.get('vao') not in BOT_TEN_VAO:
         return None
     r = lambda x: round(float(x), so_le)                           # noqa: E731
     mua = pa['huong'] == 'MUA'
     dau = 1.0 if mua else -1.0
     sp = max(0.0, ask - bid)
-    muc, sl = (nen_h if mua else nen_l), float(pa['sl'])
+    sl = float(pa['sl']) - dau * {'S2': sp, 'S3': 3.0}.get(ct.get('sl'), 0.0)
+    loai = {'V0': 'tt', 'V1': 'gh', 'V2': 'dung'}[ct['vao']]
+    muc = (ask if mua else bid) if loai == 'tt' else (nen_h + nen_l) / 2 if loai == 'gh' else (nen_h if mua else nen_l)
     tuoi = max(0.0, (now - nen).total_seconds() / 60)
     con = int(PP.CHO_NEN * 15 - tuoi)
     tt = 'con_hieu_luc'
     if not pa.get('hieu_luc'):
         tt = 'qua_tre'
-    elif (ask >= muc) if mua else (bid <= muc):
+    elif loai == 'dung' and ((ask >= muc) if mua else (bid <= muc)):
         tt = 'da_khop'
-    elif (bid <= sl) if mua else (ask >= sl):
+    elif loai == 'gh' and ((ask <= muc) if mua else (bid >= muc)):
+        tt = 'da_khop'
+    elif loai != 'tt' and ((bid <= sl) if mua else (ask >= sl)):
         tt = 'da_huy'
-    elif con <= 0:
+    elif loai != 'tt' and con <= 0:
         tt = 'het_han'
     rui = (muc - sl) * dau
     if tt == 'con_hieu_luc' and not (BOT_KHOANG[0] <= rui <= BOT_KHOANG[1]):
         tt = 'rui_ro'
     if rui <= 0:
         return None
-    tp_r = list(tp_r)
-    return {'ma': 'bot', 'ten': 'Luật bot tín hiệu', 'huong': pa['huong'], 'loai': 'dung', 'ten_loai': TEN_LOAI['dung'], 'trang_thai': tt, 'vao': r(muc), 'sl': r(sl),
-            'tp': [r(muc + dau * x * rui) for x in tp_r], 'rr': tp_r, 'rui_ro_gia': r(rui), 'vung': None, 'con_phut': con if tt == 'con_hieu_luc' else None,
-            'tuoi_phut': int(tuoi), 'vao_luc': 'hien_tai', 'ket_cuc': None, 'khung': khung, 'i_chinh': 0, 'nen': nen.isoformat(),
-            'huy': 'Hủy nếu giá chạm dừng lỗ trước khi lệnh được kích hoạt, hoặc sau 4 giờ chưa kích hoạt.', 'ly_do': pa.get('ly_do', ''),
-            'khac_luat_goc': ['chờ giá phá đỉnh/đáy nến tín hiệu rồi mới vào (bỏ được các tín hiệu hỏng ngay)', 'thang chốt tính lại từ giá vào của phiếu'],
-            'dieu_kien': [], 'loc_hong': [], 'cong_thuc': {'vao': 'V2', 'sl': 'S0', 'tp': 'TL', 'loc': []}, 'so_do': so_do_bot(), 'ngay_do': NGAY_DO}
+    muc_tp = list(tp_r) if ct.get('tp') in ('TL', 'TLB') else [2.0] if ct.get('tp') == 'T0' else [1.0]
+    khac = [BOT_TEN_VAO[ct['vao']]] + ([BOT_TEN_SL[ct['sl']]] if BOT_TEN_SL.get(ct.get('sl')) else []) + [BOT_TEN_TP.get(ct.get('tp'), '')]
+    huy = {'tt': 'Vào ngay khi nến tín hiệu vừa đóng, như bot; quá hạn của bot thì bỏ.',
+           'gh': 'Hủy nếu giá chạm dừng lỗ trước khi khớp, hoặc sau 4 giờ chưa khớp.',
+           'dung': 'Hủy nếu giá chạm dừng lỗ trước khi lệnh được kích hoạt, hoặc sau 4 giờ chưa kích hoạt.'}[loai]
+    return {'ma': 'bot', 'ten': 'Luật bot tín hiệu', 'huong': pa['huong'], 'loai': loai, 'ten_loai': TEN_LOAI[loai], 'trang_thai': tt, 'vao': r(muc), 'sl': r(sl),
+            'tp': [r(muc + dau * x * rui) for x in muc_tp], 'rr': muc_tp, 'rui_ro_gia': r(rui), 'vung': None,
+            'con_phut': con if (tt == 'con_hieu_luc' and loai != 'tt') else None, 'tuoi_phut': int(tuoi), 'vao_luc': 'hien_tai', 'ket_cuc': None, 'khung': khung,
+            'i_chinh': 0, 'nen': nen.isoformat(), 'huy': huy, 'ly_do': pa.get('ly_do', ''), 'khac_luat_goc': [x for x in khac if x],
+            'dieu_kien': [], 'loc_hong': [], 'cong_thuc': {'vao': ct['vao'], 'sl': ct.get('sl', 'S0'), 'tp': ct.get('tp', 'TL'), 'loc': list(ct.get('loc') or [])},
+            'so_do': sd, 'ngay_do': NGAY_DO}
 
 
 def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: float, spread_thuong: float) -> dict:

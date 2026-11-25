@@ -19,7 +19,7 @@ CSS = """
 .chartp.max.gon .tools .sel,.chartp.max.gon .tools .seg.zo,.chartp.max.gon .tools #pt-btn{display:none}
 .chartp.max.gon .tools .seg.tf{order:0;flex:1 1 0;min-width:0}.chartp.max.gon #gon-btn,.chartp.max.gon #fs-btn{order:1}}
 .chartp{position:relative}.chartp.max{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;padding:10px 12px;border-radius:0;border:0;background:var(--card);overflow:auto}
-html.khoa{overflow:hidden}.chartp.max .stage{flex:1 0 auto;min-height:60vh}.chartp.max .hint{display:none}
+html.khoa{overflow:hidden}.chartp.max .stage{flex:1 1 0;min-height:320px}.chartp.max #dv{flex:none;max-height:min(30vh,280px);overflow:auto}.chartp.max .hint{display:none}
 main{max-width:1520px}.bar>div{max-width:1520px}
 aside.pt{font-size:13px;border-left:3px solid var(--series)}aside.pt[hidden]{display:none!important}
 .stage aside.pt{flex:none;width:372px;contain:size;overflow:auto;border:0;border-left:1px solid var(--line);border-radius:0;box-shadow:none}
