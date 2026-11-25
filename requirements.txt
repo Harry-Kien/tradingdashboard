@@ -1,0 +1,6 @@
+# Thư viện cần cho webapp (Windows, Python 3.11 trở lên). Cài bằng CAI_DAT.bat hoặc: python -m pip install -r requirements.txt
+pandas>=2.2
+numpy>=1.26
+MetaTrader5>=5.0.45
+defusedxml>=0.7
+# Không bắt buộc: Pillow (ảnh bài đăng tuần), scikit-learn (mô hình xác suất của nhật ký, mặc định tắt)

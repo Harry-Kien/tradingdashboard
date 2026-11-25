@@ -1,0 +1,17 @@
+# Cấu hình và dữ liệu riêng trên từng máy (tạo ra khi chạy)
+cau-hinh.json
+du-lieu/
+out/
+dist/
+so_cong_khai/dich/thieu_*.json
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+# Hệ điều hành, trình soạn thảo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

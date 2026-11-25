@@ -1,0 +1,64 @@
+{
+  "ten": "Harry · Gold Research",
+  "bot_db": "",
+  "tai_khoan": [],
+  "bong_xu_huong": "",
+  "bong_dinh_day": "",
+  "thu_muc_ra": "out",
+  "gia": {
+    "kho_m1": "",
+    "d1_goc": "",
+    "lich_tin": "",
+    "ma_nguon": [],
+    "ma_vang": "",
+    "so_thang": 4,
+    "spread": 0.17,
+    "mt5": {
+      "bat": true,
+      "terminal": "",
+      "chi_demo": true,
+      "lech_gio_san": null,
+      "nho_giay": 4,
+      "thu_lai_giay": 60
+    }
+  },
+  "canh_bao": {
+    "bat": false,
+    "giay": 15
+  },
+  "ai": {
+    "bat": false,
+    "moi_ngay": 5,
+    "ngan_sach_usd": 5.0
+  },
+  "mt5_xem": {
+    "magic": {}
+  },
+  "nhat_ky": {
+    "bat": true,
+    "ma": [],
+    "giay": 60
+  },
+  "cot": {
+    "bat": true
+  },
+  "mo_hinh": {
+    "bat": false
+  },
+  "thi_truong": {
+    "bat": true,
+    "them_vao_market_watch": true,
+    "chu_ky_giay": 0.05
+  },
+  "lich_mang": {
+    "bat": true,
+    "gio": 1
+  },
+  "tin_tuc": {
+    "bat": true,
+    "phut": 5
+  },
+  "tam_ly": {
+    "bat": true
+  }
+}
