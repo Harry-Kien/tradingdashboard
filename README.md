@@ -22,6 +22,7 @@ Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, khôn
 | **Biểu đồ** | Nến M5–D1 theo từng tick (TradingView Lightweight Charts), EMA, Bollinger, RSI, hỗ trợ/kháng cự, FVG, khối lệnh, công cụ vẽ, phân tích điểm vào theo các phương pháp tùy chọn kèm số đo lại trên dữ liệu của chính mã. |
 | **Công cụ** | Khối lượng theo % rủi ro, giá trị pip, lãi/lỗ và ký quỹ (MT5 tính lại cho chính xác), mức gọi ký quỹ, pivot 4 kiểu, Fibonacci, R:R và kỳ vọng, xác suất chuỗi thua. |
 | **Phân tích hiệu suất** ✨ | Đọc lịch sử lệnh đã đóng trong MT5 và cho biết **bạn thắng, thua ở đâu**: lãi ròng, tỷ lệ thắng, hệ số lợi nhuận, kỳ vọng mỗi lệnh (cả theo R), sụt vốn lớn nhất, chuỗi thắng/thua; đường vốn kèm vùng sụt vốn; lịch lãi/lỗ theo ngày; **nhận xét tự động** (giữ lệnh thua quá lâu, tăng khối lượng sau lệnh thua, lệnh không có SL, mã/phiên/giờ/thứ đang kéo kết quả xuống…); phân tích theo mã, chiều, phiên, thứ, giờ, thời gian giữ, nguồn (tay hay EA); bảng lệnh sắp xếp được, xuất CSV. **Ảnh chia sẻ** kết quả 1200×630 (mặc định chỉ hiện %, không lộ quy mô tài khoản), tải PNG hoặc sao chép thẳng vào bài đăng. Có dữ liệu minh họa để xem thử. |
+| **Kiểm tra trước khi vào lệnh** 🛡️ | Nhập lệnh dự định: tính **khối lượng đúng theo % rủi ro** và chấm từng quy tắc quản lý rủi ro bằng dữ liệu thật từ MT5 (dừng lỗ, lời/lỗ, dừng lỗ so với ATR, spread, **tin mạnh sắp ra**, **giới hạn lỗ ngày**, tổng rủi ro đang mở, vào gấp sau lệnh thua, các mã tương quan cùng chiều, ngược xu hướng khung lớn) → **Đạt / Cân nhắc / Không nên**. Chặn những lỗi làm mất tiền hay gặp nhất; không đoán giá, không đặt lệnh. |
 | **Sổ giao dịch** | Nhật ký điểm vào chấm bằng giá thật; tài khoản MT5 (vốn, lệnh mở, lãi lỗ theo ngày, số tài khoản được che). |
 | **Học** | CFD/Forex cơ bản, các loại lệnh, 16 phong cách giao dịch, bài chọn phong cách, quản lý rủi ro; giải thích từng chỉ báo. |
 
@@ -75,6 +76,8 @@ and automatic insights (holding losers too long, sizing up after a loss, trades 
 Breakdowns cover symbol, direction, session, weekday, hour, holding time and source (manual vs EA). The trade table can be sorted and exported
 to CSV. A **share image** (1200×630, percentages only by default so your account size stays private) can be downloaded or copied
 straight into a post. A sample-data mode lets you preview the page.
+
+**New: Pre-trade check** (`/kiem-lenh`). Enter a planned trade: it sizes the position by % risk and checks each risk rule with your real MT5 data (stop loss, reward/risk, stop vs ATR, spread, upcoming high-impact news, daily loss limit, total open risk, revenge trading after a loss, correlated same-direction positions, trading against strong higher-timeframe signals) → Pass / Caution / Avoid. It does not predict prices and never places orders.
 
 **▶ Live demo (no install):** [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
 

@@ -938,6 +938,7 @@ MENU = [
     ('cong-cu', 'Công cụ', '/cong-cu', None, 'tinh'),
     ('so', 'Sổ giao dịch', None, [
         ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
+        ('kiem-lenh', 'Kiểm tra trước khi vào lệnh', '/kiem-lenh', 'Khối lượng theo % rủi ro, tin sắp ra, lỗ ngày, tổng rủi ro', 'tinh'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
         ('cac-tai-khoan', 'Các tài khoản đã nối', '/cac-tai-khoan', 'Mọi MT5 bạn đã thêm, demo và tiền thật: vốn, lãi lỗ, thắng thua, rủi ro', 'tk'),

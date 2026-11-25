@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
-from . import cai_dat, hieu_suat, hieu_suat_trang, nhieu_tai_khoan, tin_phan_ung
+from . import cai_dat, hieu_suat, hieu_suat_trang, kiem_lenh, kiem_lenh_trang, nhieu_tai_khoan, tin_phan_ung
 from .__main__ import HERE, xay
 
 LOAI = {'.png': 'image/png', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json; charset=utf-8'}
@@ -183,6 +183,28 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
+                if path == '/kiem-lenh':
+                    return self._gui(200, 'text/html; charset=utf-8', kiem_lenh_trang.trang_kiem_lenh(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/api/kiem-lenh':                                # kiểm tra trước khi vào lệnh: chỉ đọc MT5, không đặt lệnh
+                    q = parse_qs(url.query)
+                    lay = lambda k: (q.get(k, [''])[0] or '').strip().replace(',', '.')   # noqa: E731
+                    try:
+                        chieu = lay('chieu').upper()
+                        if chieu not in ('MUA', 'BAN') or not lay('ma'):
+                            raise ValueError('cần ma và chieu=MUA|BAN')
+                        so = lambda k: float(lay(k)) if lay(k) else None    # noqa: E731
+                        lenh = {'ma': lay('ma'), 'chieu': chieu, 'vao': float(lay('vao')), 'sl': so('sl'), 'tp': so('tp'), 'rui_ro_pct': so('rui_ro')}
+                        if lenh['rui_ro_pct'] is not None and not 0 < lenh['rui_ro_pct'] <= 100:
+                            raise ValueError('rui_ro phải trong (0, 100]')
+                        cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                        qt = {k[2:]: v for k in ('q_rui_ro_lenh_toi_da_pct', 'q_lo_ngay_toi_da_pct', 'q_tong_rui_ro_toi_da_pct')
+                              if (v := so(k)) is not None and 0 < v <= 100}
+                        if qt:
+                            cfg['kiem_lenh'] = {**(cfg.get('kiem_lenh') or {}), **qt}
+                        body = kiem_lenh.kiem(cfg, bang, lenh)
+                    except ValueError as e:
+                        return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/api/tinh':
                     q = parse_qs(url.query)
                     try:
