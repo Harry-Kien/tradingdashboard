@@ -2,12 +2,14 @@
 
 # Harry · Gold Research — Trading Dashboard · Forex & CFD
 
+[![Kiểm tra](https://github.com/Harry-Kien/tradingdashboard/actions/workflows/kiem-tra.yml/badge.svg)](https://github.com/Harry-Kien/tradingdashboard/actions/workflows/kiem-tra.yml)
+
 **Tiếng Việt** · [English](#english)
 
 Bảng điều khiển giao dịch Forex và CFD chạy ngay trên máy tính của bạn, lấy **giá trực tiếp từ MetaTrader 5** của chính bạn, song ngữ Việt / Anh.
 Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, không gửi dữ liệu của bạn đi đâu.
 
-**▶ Xem demo trực tuyến (không cần cài):** https://harry-kien.github.io/tradingdashboard/ · [English](https://harry-kien.github.io/tradingdashboard/en/)
+**▶ Xem demo trực tuyến (không cần cài):** [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/)
 
 ![Bảng giá trực tiếp](docs/bang-gia.jpg)
 
@@ -33,11 +35,12 @@ Tìm nhanh mã hoặc trang bằng **Ctrl+K**. Nền sáng/tối, giao diện đ
 
 ## Cài và chạy (Windows)
 
-Cần **Python 3.11+** (tick "Add python.exe to PATH" khi cài) và **MetaTrader 5** đã đăng nhập tài khoản **demo** (sàn bất kỳ).
+Chỉ cần **MetaTrader 5** đã đăng nhập tài khoản **demo** (sàn bất kỳ). Python không cần tự cài.
 
 1. Tải mã về (nút **Code → Download ZIP**) và giải nén, hoặc `git clone`.
-2. Bấm đúp **`CAI_DAT.bat`**: cài thư viện và tạo `cau-hinh.json` từ `cau-hinh.mau.json`.
-3. Mở MT5, rồi bấm đúp **`CHAY_WEBAPP.bat`**. Trang mở ở http://127.0.0.1:8765.
+2. Mở MT5, rồi bấm đúp **`BAT_DAU.bat`**. Lần đầu nó tự cài Python (nếu máy chưa có, có hỏi trước, dùng winget có sẵn của Windows)
+   và thư viện, tạo biểu tượng **Harry Gold Research** ngoài màn hình, rồi mở trang http://127.0.0.1:8765.
+   Những lần sau chỉ cần bấm biểu tượng đó.
 
 Chi tiết cấu hình và cách xử lý sự cố: [HUONG_DAN.md](HUONG_DAN.md).
 
@@ -73,10 +76,11 @@ Breakdowns cover symbol, direction, session, weekday, hour, holding time and sou
 to CSV. A **share image** (1200×630, percentages only by default so your account size stays private) can be downloaded or copied
 straight into a post. A sample-data mode lets you preview the page.
 
-**▶ Live demo (no install):** https://harry-kien.github.io/tradingdashboard/en/
+**▶ Live demo (no install):** [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
 
-**Install (Windows):** Python 3.11+ and MetaTrader 5 logged in to a **demo** account. Run `CAI_DAT.bat` once, open MT5, then run
-`CHAY_WEBAPP.bat` and browse to http://127.0.0.1:8765. Configuration lives in `cau-hinh.json` (created from `cau-hinh.mau.json`);
+**Install (Windows):** only MetaTrader 5 logged in to a **demo** account is needed. Open MT5 and double-click `BAT_DAU.bat`: on first run it
+installs Python if missing (asks first, via the built-in winget) and the libraries, creates a **Harry Gold Research** desktop shortcut and opens
+http://127.0.0.1:8765. Configuration lives in `cau-hinh.json` (created from `cau-hinh.mau.json`);
 see [HUONG_DAN.md](HUONG_DAN.md) (Vietnamese) for details.
 
 **Data:** prices from your local MT5 (read-only, demo accounts only by default; the server listens on 127.0.0.1 only). Download-only internet

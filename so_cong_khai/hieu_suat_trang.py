@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import trang
+from . import thuong_hieu, trang
 
 CSS = r"""
 main.rong{max-width:1320px}
@@ -214,8 +214,8 @@ async function veThe(cv,coTien){
   ['Sụt vốn lớn nhất',coTien?(T.dd_max?'−'+fmt(T.dd_max)+' '+t:'—'):(T.dd_pct!=null?'−'+fmt(T.dd_pct,1)+'%':'—'),T.dd_max>0?CC.loss:null],['Số lệnh',fmt(T.n||0,0),null]];
  const bw=(W-112-3*16)/4;o.forEach(([n,g,mau],i)=>{const x=56+i*(bw+16);hop(c,x,428,bw,118,16);c.fillStyle=CC.card;c.fill();c.strokeStyle=CC.line;c.lineWidth=1.5;c.stroke();
   c.fillStyle=CC.ink2;c.font='600 17px '+F;c.fillText(coDan(c,n,bw-40),x+20,462);c.fillStyle=mau||CC.ink;vua(c,g,800,38,bw-40);c.fillText(coDan(c,g,bw-40),x+20,520)});
- c.fillStyle='rgba(164,170,154,.85)';c.font='500 15px '+F;c.fillText(coDan(c,'Kết quả quá khứ không bảo đảm kết quả tương lai · không phải lời khuyên đầu tư',820),56,596);
- c.textAlign='right';c.fillText(ngayNgan(Date.now()),W-56,596);c.textAlign='left'}
+ c.fillStyle='rgba(164,170,154,.85)';c.font='500 14px '+F;c.fillText(coDan(c,'Kết quả quá khứ không bảo đảm kết quả tương lai · không phải lời khuyên đầu tư',620),56,596);
+ c.textAlign='right';const web=$('#hs-the').dataset.web||'';c.fillText(ngayNgan(Date.now()),W-56,web?574:596);if(web){c.fillStyle=CC.series;c.font='700 16px '+F;c.fillText(web,W-56,598)}c.textAlign='left'}
 const theDlg=$('#hs-the'),theCv=$('#the-cv'),theTt=$('#the-tt');
 const veLai=()=>veThe(theCv,$('#the-tien').checked).catch(e=>{theTt.textContent=e.message});
 const blob=()=>new Promise((ok,loi)=>theCv.toBlob(b=>b?ok(b):loi(new Error('Không tạo được ảnh')),'image/png'));
@@ -247,7 +247,7 @@ def trang_hieu_suat(ten: str) -> str:
         '<a class="ghost" id="hs-csv" href="/api/hieu-suat.csv" download>Xuất CSV</a>'
         '<button type="button" class="ghost" id="hs-chia">Ảnh chia sẻ</button></div>',
         '<div id="hs-noi"><p class="small">Đang đọc lịch sử lệnh từ MT5…</p></div>',
-        '<dialog class="hs-the" id="hs-the" aria-labelledby="the-tieu" data-ten="' + escape(ten) + '"><div class="the-dau"><b id="the-tieu">Ảnh chia sẻ kết quả</b>'
+        '<dialog class="hs-the" id="hs-the" aria-labelledby="the-tieu" data-ten="' + escape(ten) + '" data-web="' + escape(thuong_hieu.WEB) + '"><div class="the-dau"><b id="the-tieu">Ảnh chia sẻ kết quả</b>'
         '<button type="button" class="ghost nho" id="the-dong" aria-label="Đóng">✕</button></div><canvas id="the-cv" width="1200" height="630" role="img" aria-label="Ảnh tóm tắt hiệu suất"></canvas>'
         '<label class="the-chon"><input type="checkbox" id="the-tien"><span>Hiện số tiền. Mặc định ảnh chỉ hiện %, không lộ quy mô tài khoản.</span></label>'
         '<div class="the-nut"><button type="button" class="chinh" id="the-tai">Tải ảnh PNG</button><button type="button" class="ghost" id="the-chep">Sao chép ảnh</button>'

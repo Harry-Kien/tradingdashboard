@@ -1,0 +1,912 @@
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/webp" href="data:image/webp;base64,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"><title>Markets · Harry · Gold Research</title><meta name="description" content="Price board, technical ratings (19 indicators × 4 timeframes), currency strength, correlation and calendar — from your MT5."><meta property="og:type" content="website"><meta property="og:title" content="Forex &amp; CFD market board · demo"><meta property="og:description" content="Price board, technical ratings (19 indicators × 4 timeframes), currency strength, correlation and calendar — from your MT5."><meta property="og:image" content="https://harry-kien.github.io/tradingdashboard/bang-gia.jpg"><meta name="twitter:card" content="summary_large_image"><style>
+:root{color-scheme:light;--bg:#f5f6f8;--card:#ffffff;--ink:#1b1f24;--ink2:#5d6673;--mute:#6f7887;--line:#e6e9ee;--gridc:#eef0f3;
+--gold:#2e7d0e;--series:#2e7d0e;--gain:#17935b;--loss:#e5532d;--warn:#7a5a00;--warnbg:#fff8e1;--warnline:#f3e3a6;--track:#eef0f3;--meter:#1b1f24;--accent2:#0e9f6e;--btn-ink:#ffffff;--head:#12161b;--card2:#f5f6f8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#090a08;--card:#111310;--ink:#e3e6dd;--ink2:#cdd1c6;--mute:#8d9286;--line:#23261f;--gridc:#1a1d17;
+--gold:#8dff08;--series:#8dff08;--gain:#5fe36a;--loss:#ff6b63;--warn:#f2d94e;--warnbg:#1f1b08;--warnline:#4a3204;--track:#1d1f1b;--meter:#cdd1c6;--accent2:#08ffb5;--btn-ink:#0a0c06;--head:#f4f6f0;--card2:#181a16}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#090a08;--card:#111310;--ink:#e3e6dd;--ink2:#cdd1c6;--mute:#8d9286;--line:#23261f;--gridc:#1a1d17;
+--gold:#8dff08;--series:#8dff08;--gain:#5fe36a;--loss:#ff6b63;--warn:#f2d94e;--warnbg:#1f1b08;--warnline:#4a3204;--track:#1d1f1b;--meter:#cdd1c6;--accent2:#08ffb5;--btn-ink:#0a0c06;--head:#f4f6f0;--card2:#181a16}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:1080px;margin:0 auto;padding:28px 16px 64px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:12px}
+h1{font:600 34px/1.1 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;letter-spacing:-.01em}
+.brand{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:0 0 6px}
+.stamp{color:var(--ink2);font-size:13px;text-align:right}
+h2{font:600 22px/1.25 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0 0 4px}
+h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:26px 0 8px;font-weight:700}
+.sub{color:var(--ink2);margin:0 0 14px;font-size:14px}.small{color:var(--mute);font-size:13px;margin:8px 0}
+.note{background:var(--warnbg);color:var(--warn);border:1px solid var(--warnline);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:14px}
+.tag{display:inline-block;font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:4px 9px;vertical-align:middle;margin-left:6px}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:18px 0 6px}
+.hero a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:inherit;text-decoration:none}
+.hero a:hover,.hero a:focus-visible{border-color:var(--gold);outline:none}
+.hero .tag{margin:0}.hero h4{margin:10px 0 2px;font-size:14px;font-weight:600;color:var(--ink2)}
+.hero b{display:block;font:600 30px/1.15 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.hero small{display:block;color:var(--ink2);font-size:13px}.hero em{display:block;font-style:normal;color:var(--mute);font-size:12.5px;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 22px 18px;margin-top:22px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tile{background:var(--card);padding:12px 14px}.tile>span{display:block;color:var(--ink2);font-size:12.5px}
+.tile b{display:block;font:600 24px/1.25 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}.tile small{display:block;color:var(--mute);font-size:12.5px}
+.gain{color:var(--gain)}.loss{color:var(--loss)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:8px 32px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font:11.5px system-ui,"Segoe UI",Arial,sans-serif;fill:var(--mute)}
+.grid{stroke:var(--gridc);stroke-width:1}.zero{stroke:var(--mute);stroke-width:1}.tick{stroke:var(--mute)}
+.ln{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.area{fill:var(--series);opacity:.08}
+.end,.hov{fill:var(--series);stroke:var(--card);stroke-width:2}.cross{stroke:var(--mute);stroke-width:1;stroke-dasharray:3 3}
+svg text.endlab,svg text.val{fill:var(--ink);font-weight:600;font-size:12px}
+.bar.gain,.sw.gain{fill:var(--gain);background:var(--gain)}.bar.loss,.sw.loss{fill:var(--loss);background:var(--loss)}.bar:hover,.dn:hover{opacity:.82}
+.donut{display:flex;align-items:center;gap:22px;flex-wrap:wrap}.donut svg{width:176px;height:176px;flex:none}
+.dn{fill:none}.dn.track{stroke:var(--track);stroke-width:15}.dn.gain{stroke:var(--gain)}.dn.loss{stroke:var(--loss)}
+svg text.dnv{font:600 17px "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;fill:var(--ink)}svg text.dnl{font-size:10.5px}
+.legend{list-style:none;margin:0;padding:0;font-size:14px;color:var(--ink2)}.legend li{display:flex;align-items:center;gap:8px;margin:6px 0}
+.legend b{margin-left:14px;color:var(--ink);font-variant-numeric:tabular-nums}.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+.meter{padding:7px 0;border-bottom:1px solid var(--line)}.meter:last-child{border-bottom:0}
+.mrow{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--ink2)}.mrow b{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{height:6px;background:var(--track);border-radius:3px;margin-top:6px;overflow:hidden}.fill{height:100%;background:var(--meter);border-radius:3px}
+.mnote{font-size:12.5px;color:var(--mute);margin-top:3px}
+.funnel{display:grid;gap:7px;max-width:640px}.frow{display:grid;grid-template-columns:38px 1fr 58px;align-items:center;gap:10px;font-size:14px;color:var(--ink2)}
+.frow .track{margin:0;height:14px;border-radius:4px}.frow .fill{background:var(--series);border-radius:0 4px 4px 0}.frow b{color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+details{margin-top:18px}summary{cursor:pointer;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);font-weight:700;padding:6px 0}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--ink2);font-weight:600;background:var(--bg)}tr:last-child td{border-bottom:0}td.r,th.r{text-align:right}
+.tip{position:fixed;display:none;pointer-events:none;z-index:9;background:var(--ink);color:var(--card);font-size:12.5px;line-height:1.4;padding:7px 10px;border-radius:7px;max-width:280px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+footer{margin-top:36px;color:var(--mute);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+@media print{.tip{display:none!important}.card{break-inside:avoid}}
+
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar>div{max-width:1080px;margin:0 auto;padding:9px 16px;display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap}
+.bar strong{font:700 12px/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-right:auto}
+.bar a{color:var(--ink2);text-decoration:none;font-size:13.5px;padding:4px 0}.bar a:hover,.bar a:focus-visible{color:var(--ink);outline:none;text-decoration:underline}
+.bar button,.copy{font:600 12.5px system-ui,sans-serif;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.bar button:hover,.copy:hover,.bar button:focus-visible,.copy:focus-visible{border-color:var(--gold);outline:none}
+section[id],nav[id]{scroll-margin-top:64px}
+.fresh{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0 0}
+.fresh div{background:var(--card);padding:9px 14px;font-size:12.5px;color:var(--mute)}.fresh b{display:block;color:var(--ink2);font-weight:600;font-size:13px}
+pre.bai{white-space:pre-wrap;word-break:break-word;font:14px/1.55 system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:8px 0;color:var(--ink)}
+.drafts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:8px}
+.draft img{width:100%;border:1px solid var(--line);border-radius:10px;display:block}.draft pre.bai{font-size:13px}
+.state{display:inline-block;font:700 11px/1 system-ui,sans-serif;letter-spacing:.06em;color:var(--warn);background:var(--warnbg);border:1px solid var(--warnline);border-radius:999px;padding:4px 9px;margin:8px 0 0}
+@media(max-width:640px){.bar>div{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none}.bar strong{display:none}
+.bar button{flex:none}.stamp{text-align:left}h1{font-size:28px}.card{padding:18px 14px 14px}}
+
+/* Kiểu dáng 24/11/2026: nền tối, điểm nhấn xanh chanh chuyển xanh ngọc, bo góc lớn. Màu lấy từ các biến ở đầu tệp nên nền sáng vẫn dùng được. */
+h1,h2,h3{color:var(--head);font-weight:600;letter-spacing:-.01em}
+.top{border-bottom:1px solid var(--line)}
+.panel,.card{border-radius:14px}
+.tile,.note,.deals,.hero a{border-radius:12px}
+.act,.btnl{background:linear-gradient(324deg,var(--accent2) 0%,var(--series) 42%)!important;color:var(--btn-ink)!important;border-color:transparent!important;font-weight:600;border-radius:10px}
+.act:hover,.btnl:hover{filter:brightness(1.07)}
+.ghost,select,#theme,.copy,.bar button{border-radius:10px}
+a{text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--series);outline-offset:2px}
+::selection{background:color-mix(in srgb,var(--series) 32%,transparent)}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .card{background-image:linear-gradient(rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line)}
+:root[data-theme="dark"] .bar{background:rgba(9,10,8,.84);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+:root[data-theme="dark"] .subnav{background:rgba(17,19,16,.9)}
+:root[data-theme="dark"] .bar strong{background:linear-gradient(324deg,var(--accent2) 0%,var(--series) 60%);-webkit-background-clip:text;background-clip:text;color:transparent}
+:root[data-theme="dark"] .seg button[aria-pressed=true],:root[data-theme="dark"] .seg button[aria-selected=true]{background:color-mix(in srgb,var(--series) 15%,transparent);color:var(--series);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--series) 45%,transparent)}
+:root[data-theme="dark"] body{background-image:radial-gradient(900px 300px at 50% -140px,rgba(141,255,8,.075),transparent 70%);background-repeat:no-repeat}
+:root[data-theme="dark"] .act,:root[data-theme="dark"] .btnl{box-shadow:0 0 0 1px rgba(141,255,8,.25),0 6px 22px -8px rgba(141,255,8,.45)}
+:root[data-theme="dark"] .hl,:root[data-theme="dark"] .chip{border-radius:999px}
+:root[data-theme="dark"] .hl.ok{background:color-mix(in srgb,var(--series) 14%,transparent);color:var(--series);border-color:color-mix(in srgb,var(--series) 40%,transparent)}
+:root[data-theme="dark"] .note{background:var(--card2);border:1px solid var(--line)}
+:root[data-theme="dark"] .tile,:root[data-theme="dark"] .pa,:root[data-theme="dark"] .pl{background:var(--card2);border-color:var(--line)}
+:root[data-theme="dark"] .gain{color:var(--gain)}:root[data-theme="dark"] .loss{color:var(--loss)}
+:root[data-theme="dark"] select,:root[data-theme="dark"] input,:root[data-theme="dark"] textarea{background:var(--card2);color:var(--ink);border-color:var(--line)}
+
+/* Tinh chỉnh 24/11/2026 (lượt hai). Mỗi luật có tiền tố :root để thắng các luật riêng của từng trang nạp sau tệp này.
+   Hệ chữ: 13,5 px cho thân bài, 12 px cho chú thích, 16 px cho tiêu đề mục, 26 px cho tên trang; mọi con số dùng chữ số cùng bề ngang để thẳng cột.
+   Mật độ: lưới 4 px; nút, ô chọn và ô nhập cùng cao 34 px, bo 10 px; thẻ bo 14 px, đệm 16 px. */
+:root body{font-size:13.5px;line-height:1.5;font-variant-numeric:tabular-nums;text-rendering:optimizeLegibility}
+:root h1{font-size:26px;line-height:1.15;letter-spacing:-.02em}
+:root h2{font-size:16px;line-height:1.3;letter-spacing:-.01em}
+:root h3{font-size:13.5px;line-height:1.35}
+:root b,:root strong{font-weight:600}
+:root .top{align-items:center;padding-bottom:10px}
+:root .top .stamp{font-size:12px;line-height:1.5;color:var(--mute)}
+:root .note{font-size:12.5px;line-height:1.5;color:var(--ink2);padding:9px 12px 9px 13px;border-left:3px solid var(--warn);border-radius:10px}
+:root .panel{padding:14px 16px}
+:root .tools{gap:8px;margin-bottom:12px}
+:root .seg{border-radius:10px;box-shadow:none}
+:root .seg button{min-height:34px;font-size:12.5px;padding:0 12px}
+:root .seg.zo button{width:36px;padding:0}
+:root .act,:root .ghost{min-height:36px;font-size:12.5px}
+:root select{min-height:36px;font-size:12.5px}
+:root .chip{min-height:30px}
+:root .pa,:root .pl{border-radius:12px}
+:root .pa .hd b{font-size:14px}
+:root .why{line-height:1.55}
+:root th{font-weight:500;color:var(--mute);font-size:12px}
+:root tbody tr{transition:background-color .12s}
+:root tbody tr:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+:root button,:root select,:root summary,:root a{transition:background-color .12s,border-color .12s,color .12s,filter .12s,box-shadow .12s}
+:root .ghost:hover,:root select:hover,:root #theme:hover{border-color:color-mix(in srgb,var(--ink) 30%,var(--line))}
+:root .bar a.pri{font-weight:500}
+:root .bar a.pri[aria-current=page]{font-weight:600}
+@media(prefers-reduced-motion:reduce){:root *{transition:none!important;scroll-behavior:auto!important}}
+@media(max-width:640px){
+:root main{padding:14px 12px 56px}
+:root h1{font-size:22px}
+:root .note{font-size:12px;padding:8px 10px 8px 11px}
+:root .panel{padding:12px}
+:root .bar>div{-webkit-mask-image:linear-gradient(90deg,#000 84%,transparent);mask-image:linear-gradient(90deg,#000 84%,transparent);scrollbar-width:none}
+:root .tools .sel{flex:1 1 0;min-width:0}
+:root .tools .sel select{width:100%}
+:root .tools .grow{display:none}
+:root .tools .seg.zo,:root .tools #fs-btn{order:1}
+:root .tools #fs-btn{font-size:0;gap:0;width:40px;padding:0;justify-content:center}
+:root .tools .seg.tf{order:2;flex:1 1 100%}
+:root .tools .seg.tf button{flex:1;padding:0}
+:root .tools #pt-btn{order:3;flex:1 1 100%;justify-content:center;min-height:44px;font-size:14px}
+:root .tools .seg.kieu{flex:1 1 100%}
+:root .tools .seg.kieu button{flex:1;padding:0 6px}
+:root .seg button,:root .ghost,:root select{min-height:38px}
+}
+@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:400;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-400-vietnamese.woff2) format("woff2");unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:400;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-400-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:400;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-400-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:500;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-500-vietnamese.woff2) format("woff2");unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:500;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-500-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:500;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-500-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:600;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-600-vietnamese.woff2) format("woff2");unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:600;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-600-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:600;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-600-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:700;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-700-vietnamese.woff2) format("woff2");unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:700;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-700-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}@font-face{font-family:"Be Vietnam Pro";font-style:normal;font-weight:700;font-display:swap;src:url(../tinh/phong/be-vietnam-pro-700-latin.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+h1{font:700 27px/1.15 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;letter-spacing:-.01em}h2{font:700 18px/1.3 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+h3{font-size:12px;letter-spacing:.04em;text-transform:none;color:var(--mute);font-weight:600;margin:22px 0 8px}
+.top{border-bottom:1px solid var(--line)}.brand{color:var(--mute)}.bar strong{color:var(--ink);letter-spacing:.06em}
+.tag{border-color:var(--line);color:var(--ink2);background:var(--bg);font-weight:600;letter-spacing:.04em}
+.hero a{border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}.hero b{font:700 26px/1.2 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.card{border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.tile b{font:700 20px/1.3 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}.tiles{border-radius:12px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:4px 0 16px;overflow-x:auto;scrollbar-width:none}
+.tabs button{font:500 14px "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--mute);background:none;border:0;border-bottom:2px solid transparent;padding:9px 0;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);font-weight:700;border-bottom-color:var(--series)}
+.tabs button:focus-visible{outline:2px solid var(--series);outline-offset:2px}
+.bar button,.copy{border-radius:999px}.bar button:hover,.copy:hover{border-color:var(--series)}
+.donut{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;max-width:520px;margin:0 auto}
+.donut svg{width:180px;height:180px}.dn.track{stroke-width:9}
+.dleg{font-size:13px;color:var(--ink2);padding-top:6px}.dleg.r{text-align:right}.dleg b{display:block;color:var(--ink);font-size:15px;font-variant-numeric:tabular-nums}
+.dleg .sw{border-radius:50%;width:8px;height:8px;margin-right:6px}
+svg text.dnv{font:700 17px "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;fill:var(--gain)}svg text.dnl{font-size:11px}
+.gauge{padding:10px 0 8px;border-bottom:1px solid var(--line)}.gauge:last-child{border-bottom:0}
+.grow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--ink2)}.grow b{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gtrack{position:relative;height:12px;border-radius:3px;margin:14px 0 4px;background:linear-gradient(90deg,#e6f4ec,#fbf3d6 55%,#fde3d8)}
+:root[data-theme="dark"] .gtrack{background:linear-gradient(90deg,#1d3a2d,#3a3420 55%,#43271f)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gtrack{background:linear-gradient(90deg,#1d3a2d,#3a3420 55%,#43271f)}}
+.gtrack i{position:absolute;top:-5px;transform:translateX(-50%);font:700 11px/1 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-style:normal;color:var(--card);background:var(--ink);border-radius:4px;padding:5px 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.gends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute)}
+.kvs{max-width:520px;margin:14px auto 0}.kvr{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:14px;color:var(--ink2)}
+.kvr b{color:var(--ink);font-variant-numeric:tabular-nums}.kvr:last-child{border-top:1px solid var(--line);margin-top:4px;padding-top:9px}.kvr:last-child b{font-size:15px}
+.deals{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.deal{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}.deal:last-child{border-bottom:0}
+.deal b{font-weight:700}.deal small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}.deal .r{text-align:right;white-space:nowrap}
+.deal .buy{color:var(--series);font-weight:600}.deal .sell{color:var(--loss);font-weight:600}
+.frow .fill{background:var(--series)}.note{border-radius:12px}th{background:var(--bg)}
+.bar strong{margin-right:10px}.bar .sec{margin-left:auto;display:flex;align-items:center;gap:6px 16px;flex-wrap:wrap}
+.bar a.pri{font-weight:600;font-size:14px;padding:6px 0}.bar a[aria-current=page]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--series);text-decoration:none}
+@media(max-width:640px){.bar .sec{flex-wrap:nowrap;margin-left:8px}}
+.subnav{border-top:1px solid var(--line);background:var(--card)}.subnav>div{max-width:1080px;margin:0 auto;padding:4px 16px;display:flex;gap:4px 22px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}.subnav a{font-size:12.5px;padding:4px 0}:target{scroll-margin-top:104px}
+:root *{font-family:"Be Vietnam Pro","Segoe UI",Tahoma,Verdana,Arial,sans-serif!important}
+body{font-size:13px}h1{font-size:24px}h2{font-size:17px}.hero b{font-size:24px}.tile b{font-size:19px}
+.card{border-radius:10px;padding:18px 18px 14px}.hero a,.tiles,.deals,.note{border-radius:8px}.bar button,.copy{border-radius:6px}
+.cbr{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)}.cbr:last-child{border-bottom:0}
+.cbr b{display:block;color:var(--ink)}.cbr span{display:block;margin:2px 0}.cbr small{color:var(--mute);font-size:12px}
+@media print{.pane[hidden]{display:block!important}.tabs{display:none}}
+main{max-width:1240px}.bar>div,.subnav>div{max-width:1240px}
+.hero{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.hero a{display:flex;flex-direction:column;padding:14px 16px 12px}
+.hero .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.hero .hd h4{margin:0;font-size:13px}
+.hero b i{font-style:normal;font-size:14px;font-weight:600;color:var(--mute)}.hero small{font-size:12.5px;font-variant-numeric:tabular-nums}
+.hero em{margin-top:auto;padding-top:9px}.hero .tia,.hero .hbar{margin-bottom:12px}
+.tia{display:block;width:100%;height:40px;margin-top:10px}.tia polyline{fill:none;stroke-width:1.8;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.tia.gain polyline{stroke:var(--gain)}.tia.loss polyline{stroke:var(--loss)}
+.hbar{position:relative;height:6px;border-radius:3px;background:var(--track);margin-top:27px}.hbar>span{display:block;height:100%;border-radius:3px;background:var(--series)}
+.hbar>u{position:absolute;top:-4px;width:2px;height:14px;background:var(--ink);text-decoration:none}
+.now{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:4px 30px}.now.ba{grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr) minmax(0,.95fr)}
+.now h3{margin-top:14px}@media(max-width:980px){.now,.now.ba{grid-template-columns:1fr}}
+.rows .kvr{border-bottom:1px solid var(--line);padding:7px 0;font-size:13px;margin:0}.rows .kvr:last-child{border-top:0;border-bottom:0;margin-top:0;padding-top:7px}
+.rows .kvr:last-child b{font-size:inherit}
+.btnl{display:inline-block;margin-top:12px;font-weight:600;font-size:12.5px;color:var(--btn-ink);background:var(--series);border-radius:6px;padding:7px 12px;text-decoration:none}
+.btnl:hover,.btnl:focus-visible{filter:brightness(1.08);outline:none}
+.acc{display:grid;grid-template-columns:minmax(0,2fr) minmax(250px,1fr);gap:6px 30px;align-items:start}.acc h3{margin-top:4px}
+@media(max-width:860px){.acc{grid-template-columns:1fr}}
+.accs .big{padding:2px 0 12px;border-bottom:1px solid var(--line)}.accs .big>span{display:block;color:var(--ink2);font-size:12.5px}.hero .tag{white-space:nowrap;flex:none}
+.accs .big b{display:block;font-size:26px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}.accs .big small{font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+@media(max-width:980px){.now,.now.ba{grid-template-columns:minmax(0,1fr)}}@media(max-width:860px){.acc{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.hero,.fresh{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{gap:10px}.hero a{padding:12px 12px 10px}
+.hero .hd{flex-direction:column-reverse;align-items:flex-start;gap:6px}.hero b{font-size:20px}.hero b i{font-size:12px}.hero small,.hero em{font-size:12px}
+.fresh div{padding:8px 10px}main{padding:18px 12px 48px}}
+.gauges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 34px}@media(max-width:760px){.gauges{grid-template-columns:minmax(0,1fr)}}
+.gtrack.tot{background:linear-gradient(90deg,#fde3d8,#fbf3d6 45%,#e6f4ec)}:root[data-theme="dark"] .gtrack.tot{background:linear-gradient(90deg,#43271f,#3a3420 45%,#1d3a2d)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gtrack.tot{background:linear-gradient(90deg,#43271f,#3a3420 45%,#1d3a2d)}}
+details .wrap{max-height:452px;overflow:auto}
+summary{text-transform:none;letter-spacing:.02em;color:var(--mute);font-weight:600}
+.note{background:var(--card);color:var(--ink2);border:1px solid var(--line);border-left:3px solid #d9a300;border-radius:6px;font-size:13px;padding:9px 14px}.note b{color:var(--ink)}
+.board{display:grid;grid-template-columns:304px minmax(0,1fr);background:var(--card);border:1px solid var(--line);border-radius:10px;margin:16px 0 0;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.board.mot{grid-template-columns:minmax(0,1fr)}
+.gia{padding:16px 18px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--mute)}.gh b{font-size:13px;color:var(--ink2);letter-spacing:.03em}
+.gp{font-size:38px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:-.015em;margin-top:2px}
+.ga{font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.gv{display:block;width:100%;height:64px;margin:12px 0 10px}.gv polyline{fill:none;stroke:var(--series);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.gv polygon{fill:var(--series);opacity:.07}
+.gxh{display:flex;gap:6px;flex-wrap:wrap}.xh{font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--ink2)}.xh.gain{color:var(--gain)}.xh.loss{color:var(--loss)}
+.gia .rows{margin:8px 0 14px}.gia .rows .small{margin:6px 0 0;font-size:12px}.gia .btnl{margin-top:auto;align-self:flex-start}
+.so{min-width:0}
+.sr{display:grid;grid-template-columns:minmax(200px,1.9fr) minmax(104px,.9fr) minmax(104px,.9fr) minmax(104px,1fr) 62px minmax(104px,.85fr);align-items:center;gap:0 16px;
+padding:11px 18px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none;font-variant-numeric:tabular-nums;font-size:13px}
+.sr:last-child{border-bottom:0}a.sr:hover,a.sr:focus-visible{background:var(--bg);outline:none}
+.sr.hd{font-size:12px;color:var(--mute);padding:8px 18px;background:var(--bg)}
+.sr>span{min-width:0}.sr .r{text-align:right}.sr .m{text-align:center}
+.sr .ten b{font-size:13.5px;font-weight:700;margin-right:7px}.sr .ten .tag{margin:0;font-size:10px;padding:3px 7px;font-style:normal}
+.sr small{display:block;font-size:12px;color:var(--mute);font-weight:400;margin-top:1px}
+.sr .v{font-size:17px;font-weight:700}.sr .v i{font-style:normal;font-size:12px;font-weight:600;color:var(--mute)}.sr .c{font-weight:700}
+.sr .z .tia{height:30px;margin:0}.sr .z .hbar{margin:0}.sr .f{color:var(--ink2)}
+.tag.th{border-color:var(--series);color:var(--series);background:none}.tag.cb{border-style:dashed}
+.now{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.45fr);gap:6px 32px;align-items:start;margin-top:8px}.duo.ng{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.duo details{margin-top:14px}.duo .funnel{max-width:none}
+@media(max-width:1000px){.board{grid-template-columns:minmax(0,1fr)}.gia{border-right:0;border-bottom:1px solid var(--line)}.gia .btnl{margin-top:4px}}
+@media(max-width:860px){.duo,.duo.ng{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.sr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ten v" "f c";gap:4px 12px;padding:10px 14px}.sr.hd,.sr .z,.sr .m{display:none}
+.sr .ten{grid-area:ten}.sr .v{grid-area:v;font-size:16px}.sr .c{grid-area:c}.sr .f{grid-area:f;font-size:12px;color:var(--mute)}.sr .f small,.sr .c small{display:inline;margin-left:5px}
+.sr .ten b{display:block;margin:0 0 3px}.gp{font-size:32px}}details thead th{position:sticky;top:0;z-index:1}
+:root{--i-lam-moi:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-3-6.7M21 4v5h-5'/%3E%3C/svg%3E");--i-trang:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z'/%3E%3C/svg%3E");--i-mat-troi:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M5.6 18.4l-1.4 1.4M19.8 4.2l-1.4 1.4'/%3E%3C/svg%3E");--i-mo-rong:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5'/%3E%3C/svg%3E");--i-thu-lai:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5'/%3E%3C/svg%3E");--i-ngam:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='7'/%3E%3Cpath d='M12 2v5M12 17v5M2 12h5M17 12h5'/%3E%3C/svg%3E");--i-cong:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");--i-tru:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");--i-hien-tai:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 5l9 7-9 7zM19 5v14'/%3E%3C/svg%3E");--i-chep:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E");--i-bieu-do:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18M7 15l4-5 4 3 5-7'/%3E%3C/svg%3E");--i-dong:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");--i-quay:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-6.2-8.6'/%3E%3C/svg%3E");}
+.bar button,.copy,.btnl,.act,.ghost,.go{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:32px;padding:0 13px;border-radius:6px;
+font-size:12.5px;font-weight:600;line-height:1;cursor:pointer;white-space:nowrap;user-select:none;text-decoration:none;
+transition:background-color .12s,border-color .12s,color .12s,filter .12s}
+.bar button,.copy,.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 0 rgba(16,24,40,.04)}
+.bar button:hover,.copy:hover,.ghost:hover{border-color:var(--mute);background:var(--bg)}
+.btnl,.act,.go{background:var(--series);color:var(--btn-ink);border:1px solid var(--series);font-weight:700;box-shadow:0 1px 0 rgba(16,24,40,.1)}
+.btnl:hover,.act:hover:not(:disabled),.go:hover:not(:disabled){filter:brightness(1.08)}
+.ghost.nho{min-height:28px;padding:0 10px;font-size:12px}
+:is(.bar button,.copy,.btnl,.act,.ghost,.go):active:not(:disabled){transform:translateY(1px)}
+:is(.bar button,.copy,.btnl,.act,.ghost,.go):focus-visible{outline:2px solid var(--series);outline-offset:2px;border-color:var(--series)}
+:is(.bar button,.copy,.ghost):disabled{opacity:.55;cursor:not-allowed}
+#refresh::before,#theme::before,#pt-btn::before,#fs-btn::before,.copy::before,.btnl::before,.pt .x::before,.zo button::before{content:"";width:14px;height:14px;flex:none;
+background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}
+#refresh{--i:var(--i-lam-moi)}#theme{--i:var(--i-trang)}:root[data-theme="dark"] #theme{--i:var(--i-mat-troi)}
+#pt-btn{--i:var(--i-ngam)}#fs-btn{--i:var(--i-mo-rong)}#fs-btn[aria-pressed=true]{--i:var(--i-thu-lai)}
+.copy{--i:var(--i-chep)}.btnl{--i:var(--i-bieu-do)}.pt .x{--i:var(--i-dong)}
+[aria-busy=true]::before{-webkit-mask-image:var(--i-quay)!important;mask-image:var(--i-quay)!important;animation:quay .8s linear infinite}
+@keyframes quay{to{transform:rotate(360deg)}}
+.tabs button:hover{color:var(--ink)}
+@media(pointer:coarse){.bar button,.copy,.btnl,.act,.ghost,.go{min-height:38px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01s!important;scroll-behavior:auto!important}}
+
+#ds-ma td,#ds-ma th{padding:7px 12px}#ds-ma td a{font-weight:700;color:var(--ink);text-decoration:none}#ds-ma td a:hover{color:var(--series);text-decoration:underline}
+#ds-ma td small{display:block;color:var(--mute);font-size:12px;font-weight:400}#ds-ma .tia{width:110px;height:26px;margin:0}#ds-ma .xh{margin-right:4px}
+#ds-ma tr.vang td:first-child{box-shadow:inset 3px 0 0 var(--series)}
+
+.ttl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:10px 0 0;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:12.5px;
+color:var(--ink2);text-decoration:none}.ttl[hidden]{display:none}.ttl:hover,.ttl:focus-visible{border-color:var(--mute);outline:none}.ttl b{color:var(--ink)}
+.cham{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0;background:var(--gain)}.cham.chu_y{background:#d9a300}.cham.loi{background:var(--loss)}
+.ttm{display:grid;grid-template-columns:minmax(190px,280px) 1fr;gap:2px 22px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.ttm:last-child{border-bottom:0}
+.ttm b{font-weight:700}.ttm span{color:var(--ink2)}.ttm small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
+@media(max-width:760px){.ttm{grid-template-columns:minmax(0,1fr)}}
+
+:root{--nv-h:56px}
+.nv{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--line)}
+.nv-in{max-width:1520px;margin:0 auto;height:var(--nv-h);padding:0 20px;display:flex;align-items:center;gap:6px}
+.nv .ic{width:18px;height:18px;flex:none}
+.nv-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);margin-right:18px;flex:none}
+.nv-mk{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--btn-ink);overflow:hidden;background:#090a08;
+box-shadow:0 0 0 1px color-mix(in srgb,var(--series) 35%,transparent),0 6px 18px -8px var(--series)}
+.nv-mk .ic{width:18px;height:18px;stroke-width:2.4}.nv-mk img{width:100%;height:100%;display:block;object-fit:cover}.nv-logo:hover .nv-mk{box-shadow:0 0 0 1px color-mix(in srgb,var(--series) 60%,transparent),0 6px 22px -6px var(--series)}
+.nv-tn{display:flex;flex-direction:column;line-height:1.1}.nv-tn b{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.nv-tn small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.nv-chinh{display:flex;align-items:center;gap:2px;height:100%}
+.nv-a{position:relative;display:inline-flex;align-items:center;gap:4px;height:36px;padding:0 12px;border-radius:9px;border:0;background:none;color:var(--ink2);
+font:500 13.5px/1 inherit;font-family:inherit;text-decoration:none;cursor:pointer;white-space:nowrap}
+.nv-a:hover,.nv-g.mo>.nv-a{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.nv-a[aria-current=page],.nv-a.on{color:var(--ink);font-weight:600}
+.nv-a[aria-current=page]::after,.nv-a.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-10px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--series),var(--accent2))}
+.nv-x{width:14px!important;height:14px!important;opacity:.6;transition:transform .15s}.nv-g.mo .nv-x{transform:rotate(180deg)}
+.nv-g{position:relative}
+.nv-m{position:absolute;top:calc(100% + 10px);left:-8px;min-width:300px;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+box-shadow:0 18px 50px -12px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.12);display:grid;gap:2px;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .14s,transform .14s,visibility .14s}
+.nv-g.rong .nv-m{grid-template-columns:1fr 1fr;min-width:560px}
+.nv-g.mo .nv-m{opacity:1;visibility:visible;transform:none}
+.nv-m::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
+.nv-i{display:flex;gap:11px;align-items:flex-start;padding:9px 10px;border-radius:10px;color:var(--ink);text-decoration:none}
+.nv-i:hover,.nv-i:focus-visible{background:color-mix(in srgb,var(--series) 10%,transparent);outline:none}
+.nv-i .ic{margin-top:1px;padding:7px;width:32px!important;height:32px!important;border-radius:9px;background:var(--card2);border:1px solid var(--line);color:var(--series)}
+.nv-i b{display:block;font-size:13.5px;font-weight:600}.nv-i small{display:block;font-size:12px;color:var(--mute);margin-top:2px;line-height:1.35}
+.nv-phai{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nv-tim-b{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 8px 0 11px;min-width:210px;border-radius:10px;border:1px solid var(--line);background:var(--card2);
+color:var(--mute);font:500 13px inherit;font-family:inherit;cursor:pointer}
+.nv-tim-b span{flex:1;text-align:left}.nv-tim-b:hover{border-color:color-mix(in srgb,var(--ink) 25%,var(--line));color:var(--ink2)}
+.nv kbd,.nv-tim kbd{font:600 10.5px/1 inherit;font-family:inherit;color:var(--mute);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--card)}
+.nv-phai #theme,.nv-phai #refresh{height:36px;min-height:36px;width:36px;padding:0;font-size:0;gap:0;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--ink2);cursor:pointer;
+display:inline-flex;align-items:center;justify-content:center;box-shadow:none}
+.nv-phai #theme::before,.nv-phai #refresh::before{width:16px;height:16px}
+.nv-phai #theme:hover,.nv-phai #refresh:hover{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 25%,var(--line))}
+.nv-lang{height:36px;min-width:40px;padding:0 9px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font:700 12px/1 inherit;font-family:inherit;
+letter-spacing:.06em;cursor:pointer}.nv-lang:hover{border-color:var(--series);color:var(--series)}
+.nv-mb{display:none;height:36px;width:36px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);cursor:pointer;align-items:center;justify-content:center}
+.nv-ngan{border-top:1px solid var(--line);padding:8px 12px 14px;max-height:calc(100vh - var(--nv-h));overflow:auto;background:var(--bg)}
+.nv-ngan[hidden]{display:none}
+.nv-dh{margin:12px 8px 4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.nv-d{display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:12px;padding:11px 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14.5px}
+.nv-d .ic{color:var(--series)}.nv-d[aria-current=page],.nv-d:hover{background:color-mix(in srgb,var(--series) 10%,transparent)}.nv-d[aria-current=page]{font-weight:600}
+.nv-i[aria-current=page]{background:color-mix(in srgb,var(--series) 8%,transparent)}
+html.nv-khoa{overflow:hidden}
+.nv .subnav{border-top:1px solid var(--line);background:transparent}.nv .subnav>div{max-width:1520px;padding:0 20px}.nv .subnav a{display:inline-block;padding:8px 0;color:var(--mute);text-decoration:none}
+.nv .subnav a:hover{color:var(--ink)}
+.tt-tabs{top:var(--nv-h)}
+@media(max-width:1180px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd{display:none}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}
+@media(max-width:960px){.nv-chinh{display:none}.nv-mb{display:inline-flex}.nv-in{padding:0 12px}.nv .subnav>div{padding:0 12px}}
+@media(max-width:420px){.nv-tn b{font-size:13px}}
+/* điện thoại: vùng bấm tối thiểu 24 px cho liên kết trong bảng và ô đánh dấu (WCAG 2.5.8) */
+@media(max-width:640px){:root td a{display:inline-block;padding:4px 0;min-height:24px}
+:root input[type=checkbox]{width:18px;height:18px;margin:3px}}
+/* ô tìm nhanh */
+.nv-tim{position:fixed;inset:0;z-index:60;background:rgba(5,6,4,.55);backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start;padding:10vh 16px 16px}
+.nv-tim[hidden]{display:none}
+.nv-hop{width:min(640px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column;max-height:76vh}
+.nv-o{display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--line)}
+.nv-o .ic{width:20px;height:20px;color:var(--mute)}
+.nv-o input{flex:1;height:54px;border:0;background:none;color:var(--ink);font:500 16px inherit;font-family:inherit;outline:none}
+.nv-kq{overflow:auto;padding:6px}
+.nv-kq h6{margin:10px 10px 4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.nv-r{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;color:var(--ink);text-decoration:none;cursor:pointer}
+.nv-r[aria-selected=true]{background:color-mix(in srgb,var(--series) 12%,transparent)}
+.nv-r .ic{width:18px;height:18px;color:var(--series);flex:none}
+.nv-r .nv-l{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ink2);background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;white-space:nowrap;min-width:92px;text-align:center}
+.nv-r span{flex:1;min-width:0}.nv-r b{font-size:14px}.nv-r small{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nv-r em{font-style:normal;font-size:11.5px;color:var(--mute);white-space:nowrap}
+.nv-goi{display:flex;gap:14px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--mute)}
+.nv-rong{padding:22px;text-align:center;color:var(--mute);font-size:13px}
+@media(prefers-reduced-motion:reduce){.nv-m{transition:none}}
+
+main.rong{max-width:1320px}
+.tt-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.tt-top h1{margin:0}.tt-top p{margin:6px 0 0;color:var(--ink2);max-width:760px}
+.song-pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.song-pill i{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
+.song-pill.ok i{background:var(--gain);box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent);animation:nhip 1.8s infinite}
+.song-pill.loi i{background:var(--loss)}.song-pill b{color:var(--ink);font-weight:600}
+@keyframes nhip{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.tt-hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0 4px}
+.tt-hero>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.tt-hero>div>span{display:block;font-size:12px;color:var(--mute)}.tt-hero b{display:block;font-size:20px;line-height:1.3;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-hero small{display:block;font-size:12px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-hero .breadth{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:7px;background:var(--track)}.tt-hero .breadth u{background:var(--gain)}.tt-hero .breadth s{background:var(--loss)}
+.sg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
+.sg button{min-height:32px;padding:0 13px;border:0;border-radius:8px;background:none;color:var(--ink2);font:600 12.5px/1 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.sg button:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.sg button[aria-pressed=true],.sg button[aria-selected=true]{background:color-mix(in srgb,var(--series) 16%,transparent);color:var(--series);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--series) 45%,transparent)}
+.sg button small{font-weight:500;opacity:.7;margin-left:4px}
+.tt-tabs{position:sticky;top:var(--nv-h,56px);z-index:4;margin:18px 0 0;padding:8px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tt-tabs .sg{display:flex;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.tt-tool{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:12px 0}
+.tt-tool .grow{flex:1}
+.tt-tool input[type=search],.cc input,.cc select,.tt-tool select{min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--ink);padding:0 12px;font:inherit;font-size:13px}
+.tt-tool input[type=search]{min-width:220px}
+.tt-p[hidden]{display:none}
+.tt-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.tt-card h2{margin:0 0 4px}.tt-card>.sub{margin:0 0 12px;font-size:12.5px;color:var(--ink2)}
+.tt-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:calc(100vh - 210px)}
+.tt-wrap table{font-size:13px}
+.tt-wrap thead th{position:sticky;top:0;z-index:2;background:var(--card2);cursor:default}
+.tt-wrap th[data-k]{cursor:pointer;user-select:none}.tt-wrap th[data-k]:hover{color:var(--ink)}
+.tt-wrap th[aria-sort=ascending]::after{content:" ▲";font-size:9px}.tt-wrap th[aria-sort=descending]::after{content:" ▼";font-size:9px}
+.tt-wrap td,.tt-wrap th{padding:7px 10px}
+.bg td.ma a{color:var(--ink);text-decoration:none;font-weight:700;letter-spacing:.01em}.bg td.ma a:hover{color:var(--series)}
+.bg td.ma small{display:block;font-size:11.5px;color:var(--mute);max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.bg tr.nhom th{position:static;background:var(--bg);color:var(--series);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:10px 10px 6px;text-align:left}
+.bg td.gia{font-weight:600;font-size:13.5px;border-radius:6px;transition:background-color .6s,color .6s}
+.bg td.gia.up{background:color-mix(in srgb,var(--gain) 13%,transparent);color:var(--gain);transition:none}
+.bg td.gia.dn{background:color-mix(in srgb,var(--loss) 13%,transparent);color:var(--loss);transition:none}
+.bg td.ask{color:var(--ink2)}
+.bg .sao{border:0;background:none;color:var(--mute);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1;opacity:.5}
+.bg .sao[aria-pressed=true]{color:#f5c518;opacity:1}.bg .sao:hover{opacity:1}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gain);margin-right:6px;vertical-align:1px}.dot.nghi{background:var(--mute)}
+.rg{min-width:130px}.rgb{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,color-mix(in srgb,var(--loss) 55%,var(--track)),var(--track) 50%,color-mix(in srgb,var(--gain) 55%,var(--track)))}
+.rgb i{position:absolute;top:-3px;width:3px;height:12px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.rg small{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:3px}
+.tia{width:110px;height:28px;display:block}.tia polyline{fill:none;stroke-width:1.5;stroke-linejoin:round}.tia.gain polyline{stroke:var(--gain)}.tia.loss polyline{stroke:var(--loss)}
+.bg .hd a{font-size:12px;color:var(--ink2);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:4px 8px;margin-left:4px;white-space:nowrap}.bg .hd a:hover{color:var(--series);border-color:var(--series)}
+.sm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px}@media(max-width:900px){.sm-grid{grid-template-columns:1fr}}
+.sm-r{display:grid;grid-template-columns:46px minmax(0,1fr) 74px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}.sm-r:last-child{border:0}
+.sm-r b{font-size:14px}.sm-r em{font-style:normal;text-align:right;font-weight:600}.sm-r small{grid-column:2/4;font-size:11.5px;color:var(--mute);margin-top:-4px}
+.sm-t{position:relative;height:14px;background:var(--track);border-radius:4px}.sm-t i{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mute)}
+.sm-t span{position:absolute;top:0;bottom:0;border-radius:4px;transition:all .4s}
+.sm-t span.gain{background:var(--gain)}.sm-t span.loss{background:var(--loss)}
+.mx{border-collapse:separate;border-spacing:3px;width:100%;font-size:12px}.mx th{background:none!important;color:var(--ink2);font-weight:600;text-align:center;padding:4px}
+.mx td{text-align:center;border-radius:6px;padding:8px 2px;font-weight:600;border:0;color:var(--ink)}.mx td.cheo{background:var(--track)}
+.goi-y{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:13px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;margin-top:12px;color:var(--ink2)}
+.goi-y b{color:var(--ink)}
+.hm-nhom{margin-top:14px}.hm-nhom h3{margin:0 0 8px}
+.hm-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.hm{display:block;border-radius:10px;padding:9px 10px;text-decoration:none;color:var(--ink);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);min-height:66px;transition:transform .12s}
+.hm:hover{transform:translateY(-1px);border-color:var(--ink2)}.hm b{display:block;font-size:13px}.hm em{display:block;font-style:normal;font-weight:700;font-size:15px}.hm small{display:block;font-size:11px;color:var(--ink2)}
+.tq td,.tq th{text-align:center;padding:6px 4px!important;font-size:12px}.tq td{font-weight:600;min-width:46px}.tq th.hang{text-align:right!important;position:sticky;left:0;background:var(--card2);z-index:1}
+.legend-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);margin-top:10px}.legend-bar span{flex:0 0 220px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--loss),var(--track),var(--gain))}
+.ss{position:relative;margin-top:8px}
+.ss-r{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center;padding:6px 0}
+.ss-r>div:first-child b{display:block;font-size:13.5px}.ss-r>div:first-child small{font-size:11.5px;color:var(--mute)}
+.ss-t{position:relative;height:26px;background:var(--track);border-radius:6px;overflow:hidden}
+.ss-t span{position:absolute;top:0;bottom:0;border-radius:6px;background:color-mix(in srgb,var(--series) 30%,transparent);border:1px solid color-mix(in srgb,var(--series) 55%,transparent)}
+.ss-t span.mo{background:color-mix(in srgb,var(--series) 55%,transparent)}
+.ss-gio{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;font-size:11px;color:var(--mute)}.ss-gio div:last-child{position:relative;height:16px}.ss-gio u{position:absolute;text-decoration:none;transform:translateX(-50%)}
+.ss-now{position:absolute;top:0;bottom:16px;width:2px;background:var(--loss);z-index:2;pointer-events:none}.ss-now::after{content:attr(data-t);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--loss);white-space:nowrap}
+.ss-st{font-size:12px;font-weight:600}.ss-st.mo{color:var(--gain)}.ss-st.dong{color:var(--mute)}
+.cal-ngay{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--series);font-weight:700;margin:14px 0 4px}
+.cal-r{display:grid;grid-template-columns:62px 104px 60px 44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.cal-r .so{font-size:12px;color:var(--ink2);white-space:nowrap;display:flex;gap:12px}.cal-r .so em{font-style:normal;color:var(--mute);margin-right:3px}
+.badge.le{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);border-color:transparent}
+#cal-tien button{min-height:28px;padding:0 10px;font-size:12px}
+.cal-r.qua{opacity:.5}.cal-r.sap{background:color-mix(in srgb,var(--warn) 10%,transparent);border-radius:8px}
+.cal-r .dg{font-size:11.5px;color:var(--mute)}
+.imp{display:inline-flex;gap:2px}.imp i{width:7px;height:7px;border-radius:50%;background:var(--track)}.imp.m3 i{background:var(--loss)}.imp.m2 i:nth-child(-n+2){background:#e0a100}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--card2);border:1px solid var(--line);color:var(--ink)}
+.spec td small{display:block;color:var(--mute);font-size:11px}
+.off{color:var(--mute);text-decoration:line-through}
+.sm-grid>*,.kt-g>*{min-width:0}
+@media(max-width:760px){.tt-hero b a{display:inline-block;padding:3px 0}.bg .sao{padding:6px 7px;font-size:16px}}
+@media(max-width:760px){.tt-tool input[type=search]{min-width:0;flex:1 1 100%}.tt-hero b{font-size:16px}.tt-hero b span{font-size:12px!important}.bg .rg,.bg .tia-c,.bg .c1,.bg .cw,.bg .ask{display:none}
+.cal-r{grid-template-columns:52px 1fr 60px 40px;row-gap:2px}.cal-r .dg{grid-column:2}.cal-r .ten,.cal-r .so{grid-column:1/5}
+.ss-r,.ss-gio{grid-template-columns:96px minmax(0,1fr)}}
+/* tín hiệu kỹ thuật */
+.kb{display:inline-block;min-width:76px;text-align:center;font-size:11.5px;font-weight:700;padding:4px 8px;border-radius:7px;white-space:nowrap;border:1px solid transparent}
+.kb-mm{background:color-mix(in srgb,var(--gain) 26%,transparent);color:var(--gain);border-color:color-mix(in srgb,var(--gain) 45%,transparent)}
+.kb-m{background:color-mix(in srgb,var(--gain) 11%,transparent);color:var(--gain)}
+.kb-t{background:var(--card2);color:var(--mute);border-color:var(--line)}
+.kb-b{background:color-mix(in srgb,var(--loss) 11%,transparent);color:var(--loss)}
+.kb-bm{background:color-mix(in srgb,var(--loss) 26%,transparent);color:var(--loss);border-color:color-mix(in srgb,var(--loss) 45%,transparent)}
+.kt-g{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr);gap:14px;align-items:start}@media(max-width:1060px){.kt-g{grid-template-columns:1fr}}
+.kt-g .tt-wrap{max-height:calc(100vh - 220px)}
+.kt tr[data-ma]{cursor:pointer}.kt tr.chon td{background:color-mix(in srgb,var(--series) 9%,transparent)}
+.kt td.ma b{display:block}.kt td.ma small{color:var(--mute);font-size:11.5px}
+.dt{display:inline-flex;gap:2px}.dt i{width:8px;height:14px;border-radius:2px;background:var(--track)}.dt i.m{background:var(--gain)}.dt i.b{background:var(--loss)}
+.kt-ct{position:sticky;top:calc(var(--nv-h,56px) + 64px)}
+.kt-hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.kt-hd h2{font-size:18px}.kt-hd .lk a{font-size:12px;margin-left:6px}
+.gauge3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;margin:10px 0 6px;text-align:center}
+.gauge3 svg{width:100%;height:auto;display:block}.gauge3 b{display:block;font-size:14px;margin-top:-4px}.gauge3 small{display:block;font-size:11px;color:var(--mute)}
+.gauge3 .lon b{font-size:17px}
+.kt-bang{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}@media(max-width:520px){.kt-bang{grid-template-columns:1fr}}
+.kt-bang table{font-size:12px}.kt-bang td,.kt-bang th{padding:5px 8px!important}
+.kt-bang h4{margin:0 0 6px;font-size:12px;color:var(--ink2);font-weight:600}
+.p1{color:var(--gain);font-weight:600}.p-1{color:var(--loss);font-weight:600}.p0{color:var(--mute)}
+/* biến động theo giờ */
+.bd-cot{display:flex;align-items:flex-end;gap:3px;height:190px;padding:8px 0 0;border-bottom:1px solid var(--line)}
+.bd-cot div{flex:1;position:relative;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--series) 38%,var(--card2));min-height:2px;transition:height .3s}
+.bd-cot div.nay{background:var(--series)}.bd-cot div:hover{filter:brightness(1.25)}
+.bd-cot div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:10px;color:var(--mute);white-space:nowrap;margin-bottom:2px}
+.bd-gio{display:flex;gap:3px;font-size:10.5px;color:var(--mute);margin-top:4px}.bd-gio span{flex:1;text-align:center}
+.bd-thu{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}
+.bd-thu div{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}.bd-thu b{display:block;font-size:16px}.bd-thu small{font-size:11.5px;color:var(--mute)}
+.bd-thu div.max{border-color:var(--series)}
+@media(max-width:760px){.bd-thu{gap:4px}.bd-thu div{padding:8px 3px;min-width:0}.bd-thu b{font-size:13px}.bd-thu small{font-size:10px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+/* cảnh báo giá */
+.bg .hd button.chuong{border:1px solid var(--line);background:none;border-radius:8px;padding:3px 7px;cursor:pointer;color:var(--ink2);font-size:12px}
+.bg .hd button.chuong.co{color:#f5c518;border-color:color-mix(in srgb,#f5c518 50%,var(--line))}
+.cb-pop{position:fixed;z-index:40;width:290px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 20px 50px -12px rgba(0,0,0,.5)}
+.cb-pop[hidden]{display:none}.cb-pop h4{margin:0 0 8px;font-size:14px}
+.cb-pop label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute);margin-bottom:8px}
+.cb-pop input{min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--ink);padding:0 10px;font:inherit}
+.cb-pop .hang{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.cb-ds{margin-top:10px}.cb-r{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.cb-r:last-child{border:0}.cb-r small{display:block;color:var(--mute);font-size:11.5px}.cb-r.da{opacity:.55}
+.cb-r button{border:1px solid var(--line);background:none;color:var(--ink2);border-radius:8px;padding:3px 8px;cursor:pointer;font-size:12px}
+.toasts{position:fixed;right:16px;bottom:16px;z-index:70;display:flex;flex-direction:column;gap:8px;max-width:340px}
+.toast{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--series);border-radius:12px;padding:11px 14px;box-shadow:0 14px 40px -10px rgba(0,0,0,.5);font-size:13px;animation:vao .2s}
+.toast b{display:block;margin-bottom:2px}@keyframes vao{from{opacity:0;transform:translateY(8px)}}
+.rr-bar{position:relative;height:8px;border-radius:4px;margin-top:8px;background:linear-gradient(90deg,var(--loss),var(--track) 50%,var(--gain))}
+.rr-bar i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%);transition:left .4s}
+</style><style>#hs-mau,#hs-csv,#hs-ma,#hs-nguon{display:none!important}
+.demo-bang{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin:0 0 16px;padding:12px 16px;border-radius:14px;
+border:1px solid color-mix(in srgb,var(--series) 40%,var(--line));background:color-mix(in srgb,var(--series) 8%,var(--card))}
+.demo-bang p{margin:0;font-size:13.5px;color:var(--ink2);flex:1 1 320px}.demo-bang b{color:var(--ink)}
+.demo-bang a{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:10px;background:var(--series);color:#0b0d09;font-weight:700;font-size:13px;text-decoration:none}
+</style></head><body>
+<header class="nv" data-tim="[{&quot;t&quot;: &quot;Overview&quot;, &quot;h&quot;: &quot;/&quot;, &quot;m&quot;: &quot;&quot;, &quot;i&quot;: &quot;so&quot;}, {&quot;t&quot;: &quot;Live price board&quot;, &quot;h&quot;: &quot;/thi-truong#bang-gia&quot;, &quot;m&quot;: &quot;Forex, metals, energy, indices, crypto&quot;, &quot;i&quot;: &quot;gia&quot;}, {&quot;t&quot;: &quot;Technical signals&quot;, &quot;h&quot;: &quot;/thi-truong#ky-thuat&quot;, &quot;m&quot;: &quot;19 indicators on 4 timeframes, symbol filter&quot;, &quot;i&quot;: &quot;kt&quot;}, {&quot;t&quot;: &quot;Currency strength&quot;, &quot;h&quot;: &quot;/thi-truong#suc-manh&quot;, &quot;m&quot;: &quot;8 major currencies, 28-pair matrix&quot;, &quot;i&quot;: &quot;sm&quot;}, {&quot;t&quot;: &quot;Heatmap&quot;, &quot;h&quot;: &quot;/thi-truong#ban-do-nhiet&quot;, &quot;m&quot;: &quot;Which symbols are rising or falling sharply&quot;, &quot;i&quot;: &quot;nhiet&quot;}, {&quot;t&quot;: &quot;Correlation&quot;, &quot;h&quot;: &quot;/thi-truong#tuong-quan&quot;, &quot;m&quot;: &quot;Which symbols move together or opposite&quot;, &quot;i&quot;: &quot;tq&quot;}, {&quot;t&quot;: &quot;Hourly volatility&quot;, &quot;h&quot;: &quot;/thi-truong#bien-dong&quot;, &quot;m&quot;: &quot;Which hours and days price moves most&quot;, &quot;i&quot;: &quot;song&quot;}, {&quot;t&quot;: &quot;Sessions &amp; news calendar&quot;, &quot;h&quot;: &quot;/thi-truong#phien&quot;, &quot;m&quot;: &quot;Four major sessions, upcoming economic news&quot;, &quot;i&quot;: &quot;lich&quot;}, {&quot;t&quot;: &quot;Contract specs&quot;, &quot;h&quot;: &quot;/thi-truong#thong-so&quot;, &quot;m&quot;: &quot;Pip, margin, leverage and swap per symbol&quot;, &quot;i&quot;: &quot;ts&quot;}, {&quot;t&quot;: &quot;News&quot;, &quot;h&quot;: &quot;/tin-tuc&quot;, &quot;m&quot;: &quot;&quot;, &quot;i&quot;: &quot;tin&quot;}, {&quot;t&quot;: &quot;Chart&quot;, &quot;h&quot;: &quot;/bieu-do&quot;, &quot;m&quot;: &quot;&quot;, &quot;i&quot;: &quot;nen&quot;}, {&quot;t&quot;: &quot;Tools&quot;, &quot;h&quot;: &quot;/cong-cu&quot;, &quot;m&quot;: &quot;&quot;, &quot;i&quot;: &quot;tinh&quot;}, {&quot;t&quot;: &quot;Performance analytics&quot;, &quot;h&quot;: &quot;/hieu-suat&quot;, &quot;m&quot;: &quot;Where you win and lose: stats, equity curve, insights&quot;, &quot;i&quot;: &quot;hs&quot;}, {&quot;t&quot;: &quot;Entry journal&quot;, &quot;h&quot;: &quot;/nhat-ky&quot;, &quot;m&quot;: &quot;Every entry from each method, scored against real prices&quot;, &quot;i&quot;: &quot;nk&quot;}, {&quot;t&quot;: &quot;MT5 account&quot;, &quot;h&quot;: &quot;/tai-khoan&quot;, &quot;m&quot;: &quot;Equity, open positions, daily P/L&quot;, &quot;i&quot;: &quot;tk&quot;}, {&quot;t&quot;: &quot;Connected accounts&quot;, &quot;h&quot;: &quot;/cac-tai-khoan&quot;, &quot;m&quot;: &quot;Every MT5 you have added, demo and real money: equity, P/L, wins and losses, risk&quot;, &quot;i&quot;: &quot;tk&quot;}, {&quot;t&quot;: &quot;Public ledger&quot;, &quot;h&quot;: &quot;/&quot;, &quot;m&quot;: &quot;Bot, demo EA and shadow-run results&quot;, &quot;i&quot;: &quot;so&quot;}, {&quot;t&quot;: &quot;Learn trading&quot;, &quot;h&quot;: &quot;/hoc-giao-dich&quot;, &quot;m&quot;: &quot;CFDs, Forex, order types, 16 trading styles&quot;, &quot;i&quot;: &quot;hoc&quot;}, {&quot;t&quot;: &quot;Knowledge base&quot;, &quot;h&quot;: &quot;/kien-thuc&quot;, &quot;m&quot;: &quot;Explanations of every indicator and rule in the system&quot;, &quot;i&quot;: &quot;kt2&quot;}, {&quot;t&quot;: &quot;Settings&quot;, &quot;h&quot;: &quot;/cai-dat&quot;, &quot;m&quot;: &quot;&quot;, &quot;i&quot;: &quot;cd&quot;}]"><div class="nv-in"><a class="nv-logo" href="/" aria-label="Harry · Gold Research — Overview"><span class="nv-mk"><img src="data:image/webp;base64,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" alt="" width="36" height="36" decoding="async"></span><span class="nv-tn"><b>Harry</b><small>Gold Research</small></span></a><nav class="nv-chinh" aria-label="Main navigation"><a class="nv-a" href="/">Overview</a><div class="nv-g rong"><button type="button" class="nv-a on" aria-expanded="false" aria-haspopup="true">Markets<svg class="ic nv-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="nv-m"><a class="nv-i" href="/thi-truong#bang-gia"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span><b>Live price board</b><small>Forex, metals, energy, indices, crypto</small></span></a><a class="nv-i" href="/thi-truong#ky-thuat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4M3.5 17a9 9 0 1 1 17 0"/></svg><span><b>Technical signals</b><small>19 indicators on 4 timeframes, symbol filter</small></span></a><a class="nv-i" href="/thi-truong#suc-manh"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-8M20 20v-5"/></svg><span><b>Currency strength</b><small>8 major currencies, 28-pair matrix</small></span></a><a class="nv-i" href="/thi-truong#ban-do-nhiet"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg><span><b>Heatmap</b><small>Which symbols are rising or falling sharply</small></span></a><a class="nv-i" href="/thi-truong#tuong-quan"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L19 5M5 5h4v4H5zM15 15h4v4h-4z"/></svg><span><b>Correlation</b><small>Which symbols move together or opposite</small></span></a><a class="nv-i" href="/thi-truong#bien-dong"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/></svg><span><b>Hourly volatility</b><small>Which hours and days price moves most</small></span></a><a class="nv-i" href="/thi-truong#phien"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M9 3v4M15 3v4"/></svg><span><b>Sessions &amp; news calendar</b><small>Four major sessions, upcoming economic news</small></span></a><a class="nv-i" href="/thi-truong#thong-so"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg><span><b>Contract specs</b><small>Pip, margin, leverage and swap per symbol</small></span></a></div></div><a class="nv-a" href="/tin-tuc">News</a><a class="nv-a" href="/bieu-do">Chart</a><a class="nv-a" href="/cong-cu">Tools</a><div class="nv-g rong"><button type="button" class="nv-a" aria-expanded="false" aria-haspopup="true">Trading records<svg class="ic nv-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="nv-m"><a class="nv-i" href="/hieu-suat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 15l3-4 3 2 5-7M18 6h2v2"/></svg><span><b>Performance analytics</b><small>Where you win and lose: stats, equity curve, insights</small></span></a><a class="nv-i" href="/nhat-ky"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg><span><b>Entry journal</b><small>Every entry from each method, scored against real prices</small></span></a><a class="nv-i" href="/tai-khoan"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2"/></svg><span><b>MT5 account</b><small>Equity, open positions, daily P/L</small></span></a><a class="nv-i" href="/cac-tai-khoan"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2"/></svg><span><b>Connected accounts</b><small>Every MT5 you have added, demo and real money: equity, P/L, wins and losses, risk</small></span></a><a class="nv-i" href="/"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg><span><b>Public ledger</b><small>Bot, demo EA and shadow-run results</small></span></a></div></div><div class="nv-g"><button type="button" class="nv-a" aria-expanded="false" aria-haspopup="true">Learn<svg class="ic nv-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="nv-m"><a class="nv-i" href="/hoc-giao-dich"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/></svg><span><b>Learn trading</b><small>CFDs, Forex, order types, 16 trading styles</small></span></a><a class="nv-i" href="/kien-thuc"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5c4-1 7 0 10 2 3-2 6-3 10-2v14c-4-1-7 0-10 2-3-2-6-3-10-2zM12 7v14"/></svg><span><b>Knowledge base</b><small>Explanations of every indicator and rule in the system</small></span></a></div></div><a class="nv-a" href="/cai-dat">Settings</a></nav><div class="nv-phai"><button type="button" class="nv-tim-b" aria-label="Search symbols or pages (Ctrl+K)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 11m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M21 21l-5-5"/></svg><span>Search symbols, pages…</span><kbd>Ctrl K</kbd></button><button type="button" class="nv-lang" id="nv-lang" title="Change language">EN</button><button id="theme" type="button">Dark theme</button><button type="button" class="nv-mb" aria-label="Open menu" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></div><nav class="nv-ngan" hidden aria-label="Menu"><a class="nv-d" href="/">Overview<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></a><p class="nv-dh">Markets</p><a class="nv-d" href="/thi-truong#bang-gia">Live price board<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></a><a class="nv-d" href="/thi-truong#ky-thuat">Technical signals<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4M3.5 17a9 9 0 1 1 17 0"/></svg></a><a class="nv-d" href="/thi-truong#suc-manh">Currency strength<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-8M20 20v-5"/></svg></a><a class="nv-d" href="/thi-truong#ban-do-nhiet">Heatmap<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg></a><a class="nv-d" href="/thi-truong#tuong-quan">Correlation<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19L19 5M5 5h4v4H5zM15 15h4v4h-4z"/></svg></a><a class="nv-d" href="/thi-truong#bien-dong">Hourly volatility<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/></svg></a><a class="nv-d" href="/thi-truong#phien">Sessions &amp; news calendar<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M9 3v4M15 3v4"/></svg></a><a class="nv-d" href="/thi-truong#thong-so">Contract specs<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></a><a class="nv-d" href="/tin-tuc">News<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM17 9h3v10a2 2 0 0 1-2 2M8 9h5M8 13h5M8 17h3"/></svg></a><a class="nv-d" href="/bieu-do">Chart<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M5 8h4v8H5zM15 6h4v6h-4z"/></svg></a><a class="nv-d" href="/cong-cu">Tools<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01"/></svg></a><p class="nv-dh">Trading records</p><a class="nv-d" href="/hieu-suat">Performance analytics<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18M7 15l3-4 3 2 5-7M18 6h2v2"/></svg></a><a class="nv-d" href="/nhat-ky">Entry journal<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></svg></a><a class="nv-d" href="/tai-khoan">MT5 account<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2"/></svg></a><a class="nv-d" href="/cac-tai-khoan">Connected accounts<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2"/></svg></a><a class="nv-d" href="/">Public ledger<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg></a><p class="nv-dh">Learn</p><a class="nv-d" href="/hoc-giao-dich">Learn trading<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5"/></svg></a><a class="nv-d" href="/kien-thuc">Knowledge base<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5c4-1 7 0 10 2 3-2 6-3 10-2v14c-4-1-7 0-10 2-3-2-6-3-10-2zM12 7v14"/></svg></a><a class="nv-d" href="/cai-dat">Settings<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a></nav></header><main class="rong"><div class="demo-bang"><p><b>Live demo</b>. Prices captured at 14:04 on 25/11/2026 (Vietnam time), not updated live. The installed version streams tick-by-tick prices from your MT5 and adds charts, news, calculators and analysis of your real trades.</p><a href="https://github.com/Harry-Kien/tradingdashboard#readme" target="_blank" rel="noopener">Install free from GitHub</a></div>
+<div class="tt-top"><div><h1>Forex &amp; CFD markets</h1><p>Live prices for every currency pair, metal, energy product, index and cryptocurrency the broker offers, pushed to the browser as soon as a new tick arrives.</p></div><span id="song" class="song-pill"><i></i>Connecting…</span></div>
+<div class="tt-hero" id="tt-hero"></div>
+<nav class="tt-tabs" aria-label="Sections"><div class="sg" id="tt-tabs" role="tablist"><button type="button" role="tab" data-t="bang-gia">Price board</button><button type="button" role="tab" data-t="ky-thuat">Technical signals</button><button type="button" role="tab" data-t="suc-manh">Currency strength</button><button type="button" role="tab" data-t="ban-do-nhiet">Heatmap</button><button type="button" role="tab" data-t="tuong-quan">Correlation</button><button type="button" role="tab" data-t="bien-dong">Hourly volatility</button><button type="button" role="tab" data-t="phien">Sessions &amp; news calendar</button><button type="button" role="tab" data-t="thong-so">Contract specs</button></div></nav>
+<section class="tt-p" data-p="bang-gia"><div class="tt-tool"><div class="sg" id="bg-loc"></div><span class="grow"></span><button type="button" class="ghost" id="cb-mo" aria-expanded="false">🔔 Price alert <b id="cb-n">0</b></button><input type="search" id="bg-tim" placeholder="Search symbols: EURUSD, gold, Nasdaq…" aria-label="Search symbol"></div><div class="tt-card" id="cb-panel" hidden style="margin:0 0 12px"><h2>Price alerts</h2><p class="sub">The page alerts you with a pop-up, a beep and a system notification (if you allow it) when the Bid price reaches the set level. Alerts are stored in this browser and only run while the Markets or Tools page is open.</p><div class="cb-ds" id="cb-ds"></div></div><div class="cb-pop" id="cb-pop" hidden role="dialog" aria-label="Set price alert"><h4 id="cb-ten">Price alerts</h4><p class="small" id="cb-hien" style="margin:0 0 8px"></p><label>Price level<input id="cb-muc" type="number" inputmode="decimal" step="any"></label><label>Note (optional)<input id="cb-ghi" type="text" maxlength="80" placeholder="E.g. weekly resistance touched"></label><div class="hang"><button type="button" class="ghost" id="cb-huy">Cancel</button><button type="button" class="act" id="cb-luu">Set alert</button></div></div><div class="tt-wrap"><table class="bg" id="bg"><thead><tr><th></th><th data-k="ten">Symbol</th><th class="r">Bid</th><th class="r ask">Ask</th><th class="r" data-k="spread">Spread</th><th class="r c1" data-k="1h">1h</th><th class="r" data-k="ngay">Today</th><th class="r cw" data-k="tuan">Week</th><th class="rg" data-k="adr">Today’s range</th><th class="tia-c">last 4 hours</th><th></th></tr></thead><tbody id="bg-body"><tr><td colspan="11" class="small" style="padding:18px">Loading price board…</td></tr></tbody></table></div><p class="small">"Today" is vs. the previous trading day’s close, "Week" vs. the week’s opening price, "1h" vs. the price about 60 minutes ago. Today’s range: the marker is the current price between the day’s low and high; "% ADR" is today’s range relative to the 14-day average range (above 100% is a high-volatility day). Forex spread is in pips; CFD spread is in minimum price increments. Click a symbol name to open its chart, ★ to watch it, "Calc" to open the position size calculator.</p></section>
+<section class="tt-p" data-p="ky-thuat" hidden><div class="tt-tool"><div class="sg" id="kt-loc"></div><span class="grow"></span><select id="kt-dk" aria-label="Filter"><option value="tat">All symbols</option><option value="mua">Buy consensus (≥ 3/4 timeframes)</option><option value="ban">Sell consensus (≥ 3/4 timeframes)</option><option value="qmua">RSI H1 overbought (≥ 70)</option><option value="qban">RSI H1 oversold (≤ 30)</option><option value="xh">Trending (ADX H1 ≥ 25)</option><option value="ngang">Ranging (ADX H1 &lt; 18)</option></select><input type="search" id="kt-tim" placeholder="Search symbol…" aria-label="Search symbol"><span class="small" id="kt-n" style="margin:0"></span></div><div class="kt-g"><div class="tt-wrap"><table class="kt"><thead><tr><th>Symbol</th><th>M15</th><th>H1</th><th>H4</th><th>D1</th><th>Consensus</th><th class="r">RSI H1</th><th class="r">ADX H1</th></tr></thead><tbody id="kt-body"></tbody></table></div><div class="tt-card kt-ct" id="kt-ct" style="margin:0"><p class="small">Select a symbol to see details.</p></div></div><p class="small">Each cell combines 12 moving averages and 7 oscillators on that timeframe (like TradingView’s Technical Ratings table), recalculated every minute. "Consensus" counts the timeframes leaning buy (green) or sell (red). Click a row to see each indicator.</p></section>
+<section class="tt-p" data-p="suc-manh" hidden><div class="tt-tool"><div class="sg" id="sm-ky"><button type="button" data-k="1h">1h</button><button type="button" data-k="4h">4h</button><button type="button" data-k="ngay">Today</button><button type="button" data-k="tuan">Week</button><button type="button" data-k="thang">Month</button></div></div><div class="sm-grid"><div class="tt-card"><h2>Strength of 8 major currencies</h2><p class="sub">Average change of each currency against the other 7, recalculated on every tick across 28 pairs.</p><div id="sm-bar"></div></div><div class="tt-card"><h2>Pair change matrix</h2><p class="sub">Rows are base currencies, columns are quote currencies: a green cell means the row currency strengthened against the column currency.</p><div id="sm-mx" style="overflow-x:auto"></div></div></div><div class="goi-y" id="sm-goi"></div></section>
+<section class="tt-p" data-p="ban-do-nhiet" hidden><div class="tt-tool"><div class="sg" id="hm-ky"><button type="button" data-k="1h">1h</button><button type="button" data-k="4h">4h</button><button type="button" data-k="ngay">Today</button><button type="button" data-k="tuan">Week</button><button type="button" data-k="thang">Month</button></div><span class="small" style="margin:0">Darker colours mean larger moves relative to the other symbols; click a cell to open the chart.</span></div><div id="hm"></div></section>
+<section class="tt-p" data-p="tuong-quan" hidden><div class="tt-card"><h2>Correlation between symbols</h2><p class="sub">+1: always move together; −1: always move opposite; around 0: unrelated.</p><div id="tq"></div></div></section>
+<section class="tt-p" data-p="bien-dong" hidden><div class="tt-card"><div class="tt-tool" style="margin:0 0 4px"><h2 style="margin:0">Volatility by hour of day</h2><span class="grow"></span><select id="bd-ma" aria-label="Select symbol"></select></div><div id="bd"></div></div></section>
+<section class="tt-p" data-p="phien" hidden><div class="tt-card"><h2>Today’s trading sessions</h2><p class="sub" id="ss-ghi"></p><div id="ss"></div></div><div class="tt-card"><div class="tt-tool" style="margin:0 0 6px"><h2 style="margin:0">Economic calendar</h2><span class="grow"></span><div class="sg" id="cal-loc"><button type="button" data-m="1">All levels</button><button type="button" data-m="2">Medium and high</button><button type="button" data-m="3">High-impact only</button></div></div><div class="sg" id="cal-tien" style="margin:0 0 8px"></div><div id="cal"><p class="small">Loading calendar…</p></div></div></section>
+<section class="tt-p" data-p="thong-so" hidden><div class="tt-tool"><div class="sg" id="sp-loc"></div><span class="grow"></span><input type="search" id="sp-tim" placeholder="Search symbol…" aria-label="Search symbol"></div><div class="tt-wrap"><table class="spec"><thead><tr><th>Symbol</th><th>Type</th><th class="r">Contract size</th><th class="r">Digits</th><th class="r">Pip / point value</th><th class="r">Value of a 1,0 price move</th><th class="r">Notional value</th><th class="r">Margin for 1 lot</th><th class="r">Min lot / step</th><th class="r">Swap buy / sell</th><th class="r">Minimum stop level</th></tr></thead><tbody id="sp-body"></tbody></table></div><p class="small" id="sp-ghi"></p></section>
+<p class="note" style="margin-top:22px"><b>Reads prices only.</b> The page takes prices from the MT5 demo open on this computer and does not place orders. CFDs and Forex are leveraged, high-risk products: most retail CFD accounts lose money. Not investment advice.</p>
+<footer>Prices: MT5 ticks, read continuously (by default 20 times per second) and pushed to the browser over Server-Sent Events as soon as a new price arrives. Contract specs, margin and price levels are re-read every 30 seconds; correlation every 10 minutes. These are signal data, demo accounts and shadow runs, not real-money results, a promise of profit or investment advice.</footer></main><script>(()=>{try{localStorage.setItem("hs-loc",JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("hs-loc")||"{}"),{ma:"",nguon:"",mau:true})))}catch(e){}const KHO="https://github.com/Harry-Kien/tradingdashboard",TRANG={"/hieu-suat": "index.html", "/thi-truong": "thi-truong.html"},_f=window.fetch.bind(window);const tep=u=>{const[p,q0]=u.split("?"),q=new URLSearchParams(q0||"");if(p==="/api/hieu-suat")return"du-lieu/hs-"+(q.get("ngay")||"90")+"-"+(q.get("chieu")||"all")+".json";if(p==="/api/thi-truong")return"du-lieu/tt.json";if(p==="/api/thi-truong/ky-thuat")return"du-lieu/kt/"+encodeURIComponent(q.get("ma")||"")+".json";if(p==="/api/thi-truong/bien-dong")return"du-lieu/bd/"+encodeURIComponent(q.get("ma")||"")+".json";return null};window.fetch=(u,o)=>{if(typeof u==="string"&&u.startsWith("/api/")){const t=tep(u);return t?_f(t):Promise.resolve(new Response(JSON.stringify({loi:"Bản demo không có mục này"}),{status:404,headers:{"Content-Type":"application/json"}}))}return _f(u,o)};window.EventSource=class{constructor(u){this.url=u;this.readyState=1}close(){this.readyState=2}addEventListener(){}removeEventListener(){}};document.addEventListener("click",e=>{if(e.target.closest("#nv-lang")){e.preventDefault();e.stopImmediatePropagation();location.href="../thi-truong.html";return}const a=e.target.closest("a[href^='/']");if(!a||a.hasAttribute("download"))return;e.preventDefault();e.stopImmediatePropagation();const h=a.getAttribute("href"),p=h.split(/[?#]/)[0],m=h.match(/#.*/);if(TRANG[p])location.href=TRANG[p]+(m?m[0]:"");else window.open(KHO+"#readme","_blank","noopener")},true)})();</script><script>(()=>{const NC="<i></i><b>Snapshot</b> · prices at 14:04 25/11/2026 (Vietnam time)",gan=el=>{if(el.__nc!==undefined&&el.innerHTML===el.__nc)return;el.className="song-pill";el.innerHTML=NC;el.__nc=el.innerHTML};new MutationObserver(()=>document.querySelectorAll(".song-pill").forEach(gan)).observe(document.documentElement,{childList:true,subtree:true,characterData:true})})();</script><script>
+(()=>{const tip=document.createElement('div');tip.className='tip';document.body.appendChild(tip);
+const show=(e,h)=>{tip.innerHTML=h;tip.style.display='block';const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;
+if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;tip.style.left=x+'px';tip.style.top=y+'px'};
+const hide=()=>{tip.style.display='none'};
+document.querySelectorAll('[data-tip]').forEach(el=>{el.addEventListener('mousemove',e=>show(e,el.dataset.tip));el.addEventListener('mouseleave',hide)});
+document.querySelectorAll('svg.line').forEach(svg=>{const pts=JSON.parse(svg.dataset.pts),cross=svg.querySelector('.cross'),dot=svg.querySelector('.hov');
+svg.addEventListener('mousemove',e=>{const b=svg.getBoundingClientRect(),x=(e.clientX-b.left)/b.width*svg.viewBox.baseVal.width;let best=pts[0];
+for(const p of pts)if(Math.abs(p[0]-x)<Math.abs(best[0]-x))best=p;cross.setAttribute('x1',best[0]);cross.setAttribute('x2',best[0]);cross.style.display='';
+dot.setAttribute('cx',best[0]);dot.setAttribute('cy',best[1]);dot.style.display='';show(e,'<b>'+best[3]+'</b><br>'+best[2])});
+svg.addEventListener('mouseleave',()=>{cross.style.display='none';dot.style.display='none';hide()})})})();
+
+(()=>{const r=document.documentElement,b=document.getElementById('theme');let s=null;try{s=localStorage.getItem('so-theme')}catch(e){}
+if(s)r.dataset.theme=s;const cur=()=>r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+const lab=()=>{b.textContent=cur()==='dark'?'Light theme':'Dark theme'};lab();
+b.addEventListener('click',()=>{const n=cur()==='dark'?'light':'dark';r.dataset.theme=n;try{localStorage.setItem('so-theme',n)}catch(e){}lab()});
+document.querySelectorAll('.copy').forEach(c=>c.addEventListener('click',()=>{const el=document.getElementById(c.dataset.for),t=el.textContent;
+const sel=()=>{const g=document.createRange();g.selectNodeContents(el);const x=getSelection();x.removeAllRanges();x.addRange(g);c.textContent='Selected, press Ctrl+C'};
+if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(()=>{c.textContent='Copied'},sel);else sel()}));
+const f=document.getElementById('refresh');if(f){f.addEventListener('click',()=>{f.setAttribute('aria-busy','true');f.disabled=true;f.textContent='Loading…';location.reload()});
+setInterval(()=>{if(document.visibilityState==='visible'&&!getSelection().toString())location.reload()},120000)}})();
+
+document.querySelectorAll('.tabs').forEach(t=>{const bs=[...t.querySelectorAll('button')],ps=[...t.parentElement.querySelectorAll(':scope>.pane')];
+bs.forEach((b,i)=>b.addEventListener('click',()=>{bs.forEach((x,j)=>{x.setAttribute('aria-selected',j===i);ps[j].hidden=j!==i})}))});
+
+(()=>{const P=document.getElementById('gia-vang');if(!P)return;const $=i=>document.getElementById(i),
+f2=v=>v==null?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),kv=(k,v)=>`<div class="kvr"><span>${k}</span><b>${v}</b></div>`;
+const gia=()=>fetch('/api/gia?tf=M15&n=96',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{const cs=(j.candles||[]).slice(-96);if(cs.length<2)throw 0;
+const bid=j.bid||cs[cs.length-1][4],v=cs.map(c=>c[4]).concat([bid]),d=(bid/v[0]-1)*100,lo=Math.min(...v),hi=Math.max(...v),sp=(hi-lo)||1;
+$('gv-gia').textContent=f2(bid);
+$('gv-ask').innerHTML=(j.ask?'Ask '+f2(j.ask)+', ':'')+`<span class="${d>0?'gain':d<0?'loss':''}">${(d>0?'+':d<0?'−':'')+f2(Math.abs(d))}%</span> over the last 24 trading hours`;
+const pts=v.map((x,i)=>(i/(v.length-1)*300).toFixed(1)+','+(60-(x-lo)/sp*56).toFixed(1)).join(' ');
+$('gv-hinh').innerHTML=`<polygon points="0,64 ${pts} 300,64"/><polyline points="${pts}"/>`;
+$('gv-nguon').textContent=j.nguon==='mt5'?'prices from MT5 demo':'prices from candle store'}).catch(()=>{$('gv-nguon').textContent='can’t read price'});
+gia();setInterval(()=>{if(document.visibilityState==='visible')gia()},20000);
+fetch('/api/phan-tich',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{const b=j.boi_canh||{},x=b.xu_huong||{},pa=j.phuong_an||[],co=pa.filter(p=>p.co);
+$('gv-xh').innerHTML=['D1','H4','H1'].map(k=>`<span class="xh ${x[k]>0?'gain':x[k]<0?'loss':''}">${k} ${x[k]>0?'▲ up':x[k]<0?'▼ down':'ngang'}</span>`).join('');
+let h=kv('ATR14 (M15)',f2(b.atr_m15))+kv('Rules active right now',(j.con_hieu_luc||0)+' / '+pa.length+(j.con_hieu_luc?' ('+[...new Set(pa.filter(p=>p.hieu_luc).map(p=>p.huong==='MUA'?'MUA':'SELL'))].join(', ')+')':''));
+const ghi=co.length>(j.con_hieu_luc||0)?`<p class="small">${co.length-(j.con_hieu_luc||0)} rules whose conditions are met but are reference only (stale price, outside trading hours or signal candle expired).</p>`:'';
+if(b.tin&&b.tin.sap_toi)h+=kv('Next high-impact USD news',new Date(b.tin.sap_toi).toLocaleString('en-US',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}));
+if(j.tuoi_phut>20)h+=`<p class="small">Stale price ${j.tuoi_phut>=120?Math.round(j.tuoi_phut/60)+' hours':j.tuoi_phut+' minutes'}: market closed or MT5 has no new prices.</p>`;
+$('gv-them').innerHTML=h+ghi}).catch(()=>{})})();
+
+(()=>{const el=document.getElementById('ds-ma');if(!el)return;const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),
+so=(v,d)=>v==null?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}),
+xh=(k,v)=>`<span class="xh ${v>0?'gain':v<0?'loss':''}">${k} ${v>0?'▲':v<0?'▼':'–'}</span>`,
+tia=a=>{const v=(a||[]).filter(x=>x!=null);if(v.length<2)return'';const lo=Math.min(...v),hi=Math.max(...v),sp=(hi-lo)||1;
+ return `<svg class="tia ${v[v.length-1]>=v[0]?'gain':'loss'}" viewBox="0 0 110 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="${v.map((x,i)=>(i/(v.length-1)*110).toFixed(1)+','+(23-(x-lo)/sp*20).toFixed(1)).join(' ')}"/></svg>`};
+fetch('/api/ma',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{
+ if(!j.san_sang){el.innerHTML=`<p class="small">Couldn’t read symbols from MT5 yet: ${esc(j.ly_do||'not connected')}. Open MT5 demo, then click Refresh.</p>`;return}
+ let h='<div class="wrap"><table><thead><tr><th>Symbol</th><th>Group</th><th class="r">Price</th><th class="r">Vs. prior day</th><th>Trend</th><th class="r">ATR14 H1</th><th class="r">RSI14 H1</th><th>Last 48 hours</th></tr></thead><tbody>';
+ for(const s of j.ds){if(s.loi){h+=`<tr><td><b>${esc(s.ma)}</b><small>${esc(s.ten)}</small></td><td>${esc(s.nhom)}</td><td colspan="6" class="small">Couldn’t read: ${esc(s.loi)}</td></tr>`;continue}
+  const x=s.xu_huong||{},d=s.doi_ngay;h+=`<tr class="${s.la_vang?'vang':''}"><td><a href="/bieu-do${s.la_vang?'':'?ma='+encodeURIComponent(s.ma)}">${esc(s.ma)}</a><small>${esc(s.ten)}${s.tuoi_phut>60?' · stale price '+(s.tuoi_phut>=120?Math.round(s.tuoi_phut/60)+' hours':s.tuoi_phut+' minutes'):''}</small></td>
+   <td>${esc(s.nhom)}</td><td class="r"><b>${so(s.bid,s.so_le)}</b></td><td class="r"><span class="${d>0?'gain':d<0?'loss':''}">${d==null?'—':(d>0?'+':d<0?'−':'')+so(Math.abs(d),2)+'%'}</span></td>
+   <td>${xh('D1',x.D1)}${xh('H4',x.H4)}${xh('H1',x.H1)}</td><td class="r">${so(s.atr_h1,s.so_le)}<small>${so(s.atr_pct,2)}% of price</small></td><td class="r">${so(s.rsi_h1,1)}</td><td>${tia(s.tia)}</td></tr>`}
+ el.innerHTML=h+'</tbody></table></div><p class="small">"Vs. prior day" is the current price compared with the close of the latest daily candle. Trend is EMA20 vs. EMA50 on each timeframe. To add a symbol, add it to Market Watch in MT5.</p>'})
+.catch(()=>{el.innerHTML='<p class="small">Couldn’t load the symbol list right now.</p>'})})();
+
+(()=>{const el=document.getElementById('tt-he-thong');if(!el)return;const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),
+ten={tot:'good',chu_y:'needs attention',loi:'failing'};
+fetch('/api/tinh-trang',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{const d=j.dem||{},dong=document.getElementById('tt-dong');
+ el.innerHTML=(j.muc||[]).map(m=>`<div class="ttm"><b><i class="cham ${m.muc}"></i>${esc(m.ten)}</b><span>${esc(m.chi_tiet)}${m.lam?`<small>${esc(m.lam)}</small>`:''}</span></div>`).join('')||'<p class="small">No items yet.</p>';
+ if(dong){const xau=(j.muc||[]).filter(m=>m.muc!=='tot');
+  dong.innerHTML=`<b>System status</b><span><i class="cham"></i>${d.tot||0} ${ten.tot}</span>`+(d.chu_y?`<span><i class="cham chu_y"></i>${d.chu_y} ${ten.chu_y}</span>`:'')+(d.loi?`<span><i class="cham loi"></i>${d.loi} ${ten.loi}</span>`:'')
+   +(xau.length?`<span>${esc(xau.map(m=>m.ten).slice(0,3).join(', '))}${xau.length>3?'…':''}</span>`:'<span>All data sources are working correctly.</span>');dong.hidden=false}})
+.catch(()=>{el.innerHTML='<p class="small">Couldn’t check status right now.</p>'})})();
+
+(()=>{const H=document.querySelector('header.nv');if(!H)return;
+const gs=[...H.querySelectorAll('.nv-g')],dat=(g,m)=>{g.classList.toggle('mo',m);g.querySelector('button').setAttribute('aria-expanded',m)},dong=()=>gs.forEach(g=>dat(g,false));
+const hover=matchMedia('(hover:hover) and (pointer:fine)').matches;
+gs.forEach(g=>{const b=g.querySelector('button');let t;b.addEventListener('click',e=>{e.stopPropagation();const m=!g.classList.contains('mo');dong();dat(g,m)});
+ if(hover){g.addEventListener('mouseenter',()=>{clearTimeout(t);gs.forEach(x=>x!==g&&dat(x,false));dat(g,true)});g.addEventListener('mouseleave',()=>{t=setTimeout(()=>dat(g,false),200)})}
+ g.addEventListener('keydown',e=>{if(e.key==='Escape'){dat(g,false);b.focus()}});g.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>dat(g,false)))});
+document.addEventListener('click',e=>{if(!e.target.closest('.nv-g'))dong()});
+const mb=H.querySelector('.nv-mb'),ng=H.querySelector('.nv-ngan'),moNgan=m=>{ng.hidden=!m;mb.setAttribute('aria-expanded',m);document.documentElement.classList.toggle('nv-khoa',m)};
+mb.addEventListener('click',()=>moNgan(ng.hidden));ng.addEventListener('click',e=>{if(e.target.closest('a'))moNgan(false)});
+addEventListener('resize',()=>{if(innerWidth>960&&!ng.hidden)moNgan(false)});
+// ---- ô tìm nhanh: Ctrl+K hoặc phím /
+const TRANG=JSON.parse(H.dataset.tim||'[]'),IC={};H.querySelectorAll('.nv-i,.nv-d').forEach(a=>{const s=a.querySelector('svg');if(s)IC[a.getAttribute('href')]=s.outerHTML});
+const bo=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let MA=null,LOP={},hop=null,ds=[],chon=0;
+const napMa=()=>MA?Promise.resolve():fetch('/api/thi-truong/ma',{cache:'no-store'}).then(r=>r.json()).then(j=>{MA=j.ds||[];LOP=j.lop||{}}).catch(()=>{MA=[]});
+function tao(){hop=document.createElement('div');hop.className='nv-tim';hop.hidden=true;hop.setAttribute('role','dialog');hop.setAttribute('aria-modal','true');hop.setAttribute('aria-label','Quick search');
+ hop.innerHTML=`<div class="nv-hop"><div class="nv-o">${H.querySelector('.nv-tim-b svg').outerHTML}<input type="text" placeholder="Search symbols (EURUSD, gold, nasdaq…) or pages (pivot, margin…)" aria-label="Search" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div><div class="nv-kq" role="listbox"></div><div class="nv-goi"><span>↑ ↓ select</span><span>Enter opens chart</span><span>Shift + Enter opens calculator</span></div></div>`;
+ document.body.appendChild(hop);const ip=hop.querySelector('input');hop.addEventListener('click',e=>{if(e.target===hop)dongTim()});
+ ip.addEventListener('input',()=>{chon=0;ve(ip.value)});
+ ip.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();chon=(chon+(e.key==='ArrowDown'?1:-1)+ds.length)%Math.max(1,ds.length);danh()}
+  else if(e.key==='Enter'){e.preventDefault();const x=ds[chon];if(x){dongTim();location.href=e.shiftKey&&x.h2?x.h2:x.h}}else if(e.key==='Escape'){e.preventDefault();dongTim()}})}
+function danh(){hop.querySelectorAll('.nv-r').forEach((r,i)=>{r.setAttribute('aria-selected',i===chon);if(i===chon)r.scrollIntoView({block:'nearest'})})}
+function ve(q){const k=bo(q).trim(),el=hop.querySelector('.nv-kq');ds=[];
+ const tr=TRANG.filter(p=>!k||bo(p.t+' '+p.m).includes(k)).slice(0,k?6:9).map(p=>({h:p.h,html:`${IC[p.h]||''}<span><b>${esc(p.t)}</b>${p.m?`<small>${esc(p.m)}</small>`:''}</span><em>Trang</em>`}));
+ let ma=[];if(MA&&k){ma=MA.map(x=>{const g=bo(x.goc),t=bo((x.biet_danh||'')+' '+x.ten+' '+x.ma);const d=g===k?0:g.startsWith(k)?1:g.includes(k)?2:t.includes(k)?3:9;return{x,d}}).filter(a=>a.d<9).sort((a,b)=>a.d-b.d||a.x.goc.localeCompare(b.x.goc)).slice(0,8)}
+ const mm=ma.map(({x})=>({h:'/bieu-do?ma='+encodeURIComponent(x.ma),h2:'/cong-cu?ma='+encodeURIComponent(x.ma),html:`<i class="nv-l">${esc(LOP[x.lop]||x.lop)}</i><span><b>${esc(x.goc)}</b><small>${esc(x.biet_danh?x.biet_danh+' · '+x.ten:x.ten)}</small></span><em>Chart ↵</em>`}));
+ ds=mm.concat(tr);let h='';if(mm.length)h+='<h6>Symbols</h6>'+mm.map((x,i)=>`<a class="nv-r" role="option" href="${x.h}" data-i="${i}">${x.html}</a>`).join('');
+ if(tr.length)h+='<h6>Pages and tools</h6>'+tr.map((x,i)=>`<a class="nv-r" role="option" href="${x.h}" data-i="${i+mm.length}">${x.html}</a>`).join('');
+ el.innerHTML=h||`<div class="nv-rong">${MA===null?'Loading symbol list…':'No symbols or pages match “'+esc(q)+'”.'}</div>`;
+ el.querySelectorAll('.nv-r').forEach(r=>{r.addEventListener('mousemove',()=>{const i=+r.dataset.i;if(i!==chon){chon=i;danh()}});r.addEventListener('click',()=>dongTim())});danh()}
+function moTim(){if(!hop)tao();dong();if(!ng.hidden)moNgan(false);hop.hidden=false;document.documentElement.classList.add('nv-khoa');const ip=hop.querySelector('input');ip.value='';chon=0;ve('');ip.focus();napMa().then(()=>{if(!hop.hidden)ve(ip.value)})}
+function dongTim(){if(hop){hop.hidden=true;document.documentElement.classList.remove('nv-khoa')}}
+H.querySelector('.nv-tim-b').addEventListener('click',moTim);
+// ---- chuyển ngôn ngữ: nhớ trong cookie `lang`, máy chủ dịch trang theo cookie
+const LG=document.getElementById('nv-lang'),lgNay=document.documentElement.lang==='en'?'en':'vi';
+if(LG){LG.textContent=lgNay==='en'?'VI':'EN';LG.setAttribute('aria-label',lgNay==='en'?'Switch to Vietnamese':'Switch to English');
+ LG.addEventListener('click',()=>{const m=lgNay==='en'?'vi':'en';document.cookie='lang='+m+';path=/;max-age=31536000;samesite=lax';
+  const u=new URL(location.href);u.searchParams.delete('lang');location.replace(u.pathname+u.search+u.hash)})}
+addEventListener('keydown',e=>{const go=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')||(e.target&&e.target.isContentEditable);
+ if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();hop&&!hop.hidden?dongTim():moTim()}else if(e.key==='/'&&!go&&!e.ctrlKey&&!e.metaKey){e.preventDefault();moTim()}})})();
+</script><script>
+window.TT=(()=>{const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NF={},fmt=(v,d)=>{if(v==null||!isFinite(v))return'—';d=Math.max(0,Math.min(8,d??2));return(NF[d]||(NF[d]=new Intl.NumberFormat('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}))).format(v)};
+const pct=(v,d=2)=>v==null||!isFinite(v)?'—':(v>0?'+':v<0?'−':'')+fmt(Math.abs(v),d)+'%',cls=v=>v>0?'gain':v<0?'loss':'';
+const CHINH=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD'],LOPS=['fx_chinh','fx_cheo','fx_ngoai_lai','kim_loai','nang_luong','chi_so','crypto','khac'];
+const KY={'1h':'1h','4h':'4h','ngay':'Today','tuan':'This week','thang':'This month'};
+let S=null,by=new Map(),subs=[],lan=0,lanTai=0,es=null,tt={ok:false,ly:'connecting to the webapp…'};
+const phat=(l,d)=>{for(const f of subs)try{f(l,d)}catch(e){console.error(e)}};
+const doi=(x,k)=>{const q=x&&x.q,r=x&&x.ref&&x.ref[k];return q&&r?(q[0]/r-1)*100:null};
+const maxT=()=>{let m=0;for(const x of by.values())if(x.q&&x.q[2]>m)m=x.q[2];return m};
+const nghi=x=>!x.q||maxT()-x.q[2]>5*60000;
+const spread=x=>{if(!x.q)return null;const s=x.q[1]-x.q[0];return x.pip?{v:s/x.pip,dv:'pip',d:1}:{v:s/x.diem,dv:'points',d:0}};
+const spTxt=x=>{const s=spread(x);return s?fmt(s.v,s.d)+' '+s.dv:'—'};
+const bien=x=>{const h=x.hom_nay;if(!h||!x.q)return null;const b=x.q[0],lo=Math.min(h.thap,b),hi=Math.max(h.cao,b),r=hi-lo;return{lo,hi,vt:r>0?(b-lo)/r:.5,adr:x.adr?r/x.adr*100:null}};
+function sucManh(k){const s={},n={};for(const c of CHINH){s[c]=0;n[c]=0}
+ for(const x of by.values()){if(!x.cap)continue;const[a,b]=x.cap;if(!(a in s&&b in s))continue;const v=doi(x,k);if(v==null)continue;s[a]+=v;n[a]++;s[b]-=v;n[b]++}
+ return CHINH.map(c=>({c,v:n[c]?s[c]/n[c]:null,n:n[c]})).sort((p,q)=>(q.v??-1e9)-(p.v??-1e9))}
+function capTien(a,b){for(const x of by.values()){if(!x.cap)continue;if(x.cap[0]===a&&x.cap[1]===b)return{x,dao:false};if(x.cap[0]===b&&x.cap[1]===a)return{x,dao:true}}return null}
+async function tai(){const r=await fetch('/api/thi-truong',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json(),cu=by;S=j;by=new Map();
+ for(const x of j.ds){const o=cu.get(x.ma);if(o&&o.q&&(!x.q||o.q[2]>x.q[2]))x.q=o.q;by.set(x.ma,x)}tt={ok:j.san_sang,ly:j.ly_do};if(!lan&&j.san_sang)lan=Date.now();phat('anh');return j}
+// Luồng giá DÙNG CHUNG cho mọi tab của webapp. Trình duyệt chỉ cho mỗi máy chủ 6 kết nối cùng lúc; nếu mỗi tab Thị trường/Công cụ giữ
+// một luồng thì mở tới tab thứ 7 là cả webapp treo (đo ngày 25/11/2026: tab thứ 7 chờ hơn 5 phút không tải được trang). Nên chỉ một tab
+// "trưởng" (giữ khóa Web Locks) mở ĐÚNG MỘT kết nối và chuyển từng gói giá cho các tab khác qua BroadcastChannel, kể cả tab đang ẩn
+// (cảnh báo giá vẫn chạy). Tab trưởng đóng thì khóa nhả và một tab khác tự lên thay. Trình duyệt thiếu hai API này: mỗi tab tự mở luồng.
+function nhanGia(j){const ds=[];let la=0;for(const m in j.q){const x=by.get(m);if(!x){la++;continue}x.q0=x.q;x.q=j.q[m];ds.push(m)}
+ if(la&&Date.now()-lanTai>3000){lanTai=Date.now();tai().catch(()=>{})}                  // có mã bảng chưa biết (bộ máy vừa sẵn sàng, hoặc sàn thêm mã): nạp lại bảng
+ if(ds.length)lan=Date.now();tt={ok:j.s,ly:j.ly};phat('gia',ds)}
+function moLuong(bc){es=new EventSource('/api/thi-truong/luong');
+ es.addEventListener('gia',e=>{let j;try{j=JSON.parse(e.data)}catch(_){return}nhanGia(j);if(bc)bc.postMessage({t:'gia',j})});
+ es.onerror=()=>{tt={ok:false,ly:'lost connection to the webapp, reconnecting…'};phat('trang_thai');if(bc)bc.postMessage({t:'loi'})}}
+function noi(){if(es)return;if(!window.EventSource){setInterval(()=>tai().catch(()=>{}),3000);return}
+ if(!window.BroadcastChannel||!(navigator.locks&&navigator.locks.request)){moLuong(null);return}
+ es=-1;const bc=new BroadcastChannel('so-cong-khai-gia');
+ bc.onmessage=e=>{const m=e.data||{};if(m.t==='gia')nhanGia(m.j);else if(m.t==='loi'){tt={ok:false,ly:'lost connection to the webapp, reconnecting…'};phat('trang_thai')}};
+ navigator.locks.request('so-cong-khai-luong-gia',()=>new Promise(()=>moLuong(bc)))}                    // giữ khóa tới khi tab đóng
+function batDau(moiGiay=30){const lam=()=>tai().catch(e=>{tt={ok:false,ly:'couldn’t read the price board: '+e.message};phat('trang_thai')});
+ const p=lam();noi();setInterval(()=>{if(document.visibilityState==='visible')lam()},moiGiay*1000);return p}
+function pill(el){const ve=()=>{if(!el)return;const n=[...by.values()].filter(x=>x.q).length,giay=lan?Math.round((Date.now()-lan)/1000):null;
+ el.className='song-pill '+(tt.ok?'ok':'loi');
+ el.innerHTML=tt.ok?`<i></i><b>Live</b> · ${n} symbols · ${giay==null?'waiting for prices':giay<3?'just updated':giay<90?'updated '+giay+' seconds ago':'market is quiet'}`:`<i></i><b>No live prices yet</b> · ${esc(tt.ly||'')}`};
+ subs.push(ve);setInterval(ve,1000);ve()}
+const gioVN=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',second:'2-digit',day:'2-digit',month:'2-digit'});
+const tia=(a,b,w=110,h=28)=>{const v=(a||[]).concat(b!=null?[b]:[]).filter(x=>x!=null);if(v.length<2)return'';const lo=Math.min(...v),hi=Math.max(...v),sp=(hi-lo)||1;
+ return `<svg class="tia ${v[v.length-1]>=v[0]?'gain':'loss'}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${v.map((x,i)=>(i/(v.length-1)*w).toFixed(1)+','+(h-3-(x-lo)/sp*(h-6)).toFixed(1)).join(' ')}"/></svg>`};
+const tenMa=x=>x.biet_danh?x.biet_danh+' · '+x.ten:x.ten;
+const nhomOpt=(chon)=>{const g={};for(const x of by.values())(g[x.lop]=g[x.lop]||[]).push(x);
+ return LOPS.filter(l=>g[l]).map(l=>`<optgroup label="${esc(S.lop[l])}">`+g[l].sort((a,b)=>a.goc.localeCompare(b.goc)).map(x=>`<option value="${esc(x.ma)}"${x.ma===chon?' selected':''}>${esc(x.goc)}${x.biet_danh?' · '+esc(x.biet_danh):''}</option>`).join('')+'</optgroup>').join('')};
+// ---- nhãn tổng hợp kỹ thuật (cùng ngưỡng với thi_truong.nhan_kt)
+const nhan=x=>x==null?'—':x>.5?'Strong buy':x>.1?'Buy':x>=-.1?'Neutral':x>=-.5?'Sell':'Strong sell';
+const kbc=x=>x==null?'kb-t':x>.5?'kb-mm':x>.1?'kb-m':x>=-.1?'kb-t':x>=-.5?'kb-b':'kb-bm';
+const kb=x=>`<span class="kb ${kbc(x)}">${nhan(x)}</span>`;
+// ---- khẩu vị rủi ro: thay đổi hôm nay của rổ tài sản rủi ro (chỉ số, AUDJPY, NZDJPY, BTC) trừ rổ trú ẩn (vàng, CHF, JPY),
+//      mỗi mã chia cho biên độ trung bình ngày của chính nó để so được với nhau. Điểm −1..1. Chỉ mô tả, không dự báo.
+const RR={len:['US500','USTEC','US30','GER30','JAPAN','AUS200','AUDJPY','NZDJPY','BTCUSDT']};
+function khauVi(){const theo={};for(const x of by.values())theo[x.goc]=x;const v=[];
+ const lay=(g,dau)=>{const x=theo[g];if(!x||!x.q||!x.ref||!x.ref.ngay||!x.adr)return;const ch=(x.q[0]-x.ref.ngay)/x.adr;if(isFinite(ch))v.push(Math.max(-2,Math.min(2,ch))*dau)};
+ RR.len.forEach(g=>lay(g,1));lay('XAUUSD',-1);lay('USDJPY',1);lay('USDCHF',1);
+ if(v.length<4)return null;const d=v.reduce((a,b)=>a+b,0)/v.length/1.2;return{d:Math.max(-1,Math.min(1,d)),n:v.length}}
+// ---- thông báo nổi và âm thanh
+let khay=null;function toast(t,nd){if(!khay){khay=document.createElement('div');khay.className='toasts';khay.setAttribute('aria-live','polite');document.body.appendChild(khay)}
+ const e=document.createElement('div');e.className='toast';e.innerHTML=`<b>${esc(t)}</b>${esc(nd||'')}`;khay.appendChild(e);setTimeout(()=>e.remove(),9000)}
+function bip(){try{const A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.value=.08;o.connect(g);g.connect(a.destination);o.start();
+ g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.stop(a.currentTime+.36)}catch(e){}}
+// ---- cảnh báo giá: lưu trong trình duyệt; kiểm ở mỗi tick khi có trang Thị trường hoặc Công cụ đang mở
+const CB={ds(){try{return JSON.parse(localStorage.getItem('tt-canh')||'[]')}catch(e){return[]}},luu(a){try{localStorage.setItem('tt-canh',JSON.stringify(a))}catch(e){}phat('canh')},
+ them(ma,muc,ghi){const x=by.get(ma);if(!x||!x.q||!(muc>0))return null;const a=CB.ds(),c={id:Date.now().toString(36),ma,goc:x.goc,muc,huong:muc>=x.q[0]?'tren':'duoi',ghi:ghi||'',luc:Date.now(),da:null};
+  a.push(c);CB.luu(a);if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}return c},
+ xoa(id){CB.luu(CB.ds().filter(c=>c.id!==id))},xoaDa(){CB.luu(CB.ds().filter(c=>!c.da))}};
+subs.push((l,ds)=>{if(l!=='gia'||!ds||!ds.length)return;const a=CB.ds();let doi=0;
+ for(const c of a){if(c.da||!ds.includes(c.ma))continue;const x=by.get(c.ma);if(!x||!x.q)continue;const b=x.q[0];
+  if((c.huong==='tren'&&b>=c.muc)||(c.huong==='duoi'&&b<=c.muc)){c.da=Date.now();doi=1;const t=`${c.goc} ${c.huong==='tren'?'rises to':'falls to'} ${fmt(c.muc,x.so_le)}`,nd=`Price now ${fmt(b,x.so_le)}.${c.ghi?' '+c.ghi:''}`;
+   toast(t,nd);bip();if(window.Notification&&Notification.permission==='granted')try{new Notification(t,{body:nd,tag:'tt-'+c.id})}catch(e){}}}
+ if(doi)CB.luu(a)});
+return{esc,fmt,pct,cls,CHINH,LOPS,KY,doi,maxT,nghi,spread,spTxt,bien,sucManh,capTien,tai,noi,batDau,pill,gioVN,tia,tenMa,nhomOpt,nhan,kbc,kb,khauVi,toast,CB,
+ on:f=>subs.push(f),by:()=>by,get S(){return S},get tt(){return tt}}})();
+</script><script>
+(()=>{const T=TT,$=s=>document.querySelector(s),esc=T.esc,fmt=T.fmt,pct=T.pct,cls=T.cls;
+let tab=(location.hash||'').slice(1),loc='tat',tim='',sx={k:'',d:-1},ky='ngay',kyHm='ngay',calCao=false,spLoc='tat',spTim='';
+let sao=new Set();try{sao=new Set(JSON.parse(localStorage.getItem('tt-sao')||'[]'))}catch(e){}
+try{const k=localStorage.getItem('tt-ky');if(k)ky=kyHm=k}catch(e){}
+const TABS=['bang-gia','ky-thuat','suc-manh','ban-do-nhiet','tuong-quan','bien-dong','phien','thong-so'];if(!TABS.includes(tab))tab='bang-gia';
+const luuSao=()=>{try{localStorage.setItem('tt-sao',JSON.stringify([...sao]))}catch(e){}};
+T.pill($('#song'));
+// ---- thẻ
+function moTab(t){tab=t;document.querySelectorAll('#tt-tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+ document.querySelectorAll('.tt-p').forEach(p=>p.hidden=p.dataset.p!==t);try{history.replaceState(null,'','#'+t)}catch(e){}ve(1)}
+$('#tt-tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-t]');if(b)moTab(b.dataset.t)});
+addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(TABS.includes(t)&&t!==tab)moTab(t)});
+// ---- tổng quan nhanh
+function hero(){const ds=[...T.by().values()].filter(x=>x.q&&x.ref),ch=ds.map(x=>({x,v:T.doi(x,'ngay')})).filter(a=>a.v!=null);
+ const len=ch.filter(a=>a.v>0).length,xuong=ch.filter(a=>a.v<0).length,sm=T.sucManh('ngay').filter(a=>a.v!=null);
+ const top=ch.slice().sort((a,b)=>b.v-a.v),vol=ds.map(x=>({x,b:T.bien(x)})).filter(a=>a.b&&a.b.adr!=null).sort((a,b)=>b.b.adr-a.b.adr);
+ const o=(t,b,s)=>`<div><span>${t}</span><b>${b}</b><small>${s}</small></div>`;const ma=a=>a?`<a href="/bieu-do?ma=${encodeURIComponent(a.x.ma)}" style="color:inherit;text-decoration:none">${esc(a.x.goc)}</a>`:'—';
+ $('#tt-hero').innerHTML=o('Today’s market breadth',`<span class="gain">${len}</span> up · <span class="loss">${xuong}</span> down`,`<div class="breadth"><u style="width:${ch.length?len/ch.length*100:0}%"></u><span style="flex:1"></span><s style="width:${ch.length?xuong/ch.length*100:0}%"></s></div>`)
+ +o('Strongest currency',sm.length?`${sm[0].c} <span class="gain" style="font-size:14px">${pct(sm[0].v)}</span>`:'—',sm.length?'weakest: '+sm[sm.length-1].c+' '+pct(sm[sm.length-1].v):'')
+ +o('Top gainer',top.length?`${ma(top[0])} <span class="gain" style="font-size:14px">${pct(top[0].v)}</span>`:'—',top.length?esc(T.tenMa(top[0].x)):'')
+ +o('Top loser',top.length?`${ma(top[top.length-1])} <span class="loss" style="font-size:14px">${pct(top[top.length-1].v)}</span>`:'—',top.length?esc(T.tenMa(top[top.length-1].x)):'')
+ +(()=>{const k=T.khauVi();if(!k)return o('Risk appetite','—','not enough data');const n=k.d>.25?['Risk-on','gain']:k.d<-.25?['Risk-off','loss']:['Neutral',''];
+   return `<div title="Chỉ số, AUDJPY, NZDJPY, BTC so với vàng, JPY, CHF hôm nay (${k.n} mã, quy theo biên độ ngày của từng mã). Chỉ mô tả, không dự báo."><span>Today’s risk appetite</span><b class="${n[1]}">${n[0]}</b><div class="rr-bar"><i style="left:${(50+k.d*50).toFixed(1)}%"></i></div></div>`})()
+ +o('Open sessions',PH.dangMo().join(' + ')||'No major session',PH.ghiChu())}
+// ---- bảng giá
+const O=new Map();
+function locDs(){const q=tim.trim().toLowerCase();return[...T.by().values()].filter(x=>(loc==='tat'||(loc==='sao'?sao.has(x.ma):x.lop===loc))&&(!q||(x.ma+' '+x.goc+' '+x.ten+' '+(x.biet_danh||'')).toLowerCase().includes(q)))}
+function khoa(x,k){switch(k){case'ten':return x.goc;case'1h':return T.doi(x,'1h');case'ngay':return T.doi(x,'ngay');case'tuan':return T.doi(x,'tuan');
+ case'spread':return x.q?(x.q[1]-x.q[0])/x.q[0]:null;case'adr':{const b=T.bien(x);return b&&b.adr}}return null}
+function chips(){const dem={tat:T.by().size,sao:[...T.by().keys()].filter(m=>sao.has(m)).length};for(const x of T.by().values())dem[x.lop]=(dem[x.lop]||0)+1;
+ const ds=[['tat','All'],['sao','★ Watch']].concat(T.LOPS.filter(l=>dem[l]).map(l=>[l,T.S.lop[l]]));
+ $('#bg-loc').innerHTML=ds.map(([k,n])=>`<button type="button" data-l="${k}" aria-pressed="${k===loc}">${esc(n)}<small>${dem[k]||0}</small></button>`).join('')}
+function dongHtml(x){const b=T.bien(x),n=T.nghi(x);return`<tr data-ma="${esc(x.ma)}"><td><button type="button" class="sao" aria-pressed="${sao.has(x.ma)}" title="Add to watchlist">★</button></td>
+ <td class="ma"><span class="dot${n?' nghi':''}" title="${n?'No new price for over 5 minutes: this symbol’s market is closed':'Priced'}"></span><a href="/bieu-do?ma=${encodeURIComponent(x.ma)}">${esc(x.goc)}</a><small>${esc(T.tenMa(x))}</small></td>
+ <td class="r gia">${x.q?fmt(x.q[0],x.so_le):'—'}</td><td class="r ask">${x.q?fmt(x.q[1],x.so_le):'—'}</td><td class="r sp">${T.spTxt(x)}</td>
+ <td class="r c1"></td><td class="r cd"></td><td class="r cw"></td>
+ <td class="rg">${b?`<div class="rgb"><i style="left:${(b.vt*100).toFixed(1)}%"></i></div><small><span>${fmt(b.lo,x.so_le)}</span><span>${b.adr!=null?fmt(b.adr,0)+'% ADR':''}</span><span>${fmt(b.hi,x.so_le)}</span></small>`:''}</td>
+ <td class="tia-c">${T.tia(x.tia,x.q&&x.q[0])}</td><td class="hd"><button type="button" class="chuong${coCB.has(x.ma)?' co':''}" title="Set price alert" aria-label="Set price alert ${esc(x.goc)}">🔔</button><a href="/cong-cu?ma=${encodeURIComponent(x.ma)}">Calculate</a></td></tr>`}
+function oCap(x,o,nhay){if(!o)return;const q=x.q;if(q){o.gia.textContent=fmt(q[0],x.so_le);o.ask.textContent=fmt(q[1],x.so_le);o.sp.textContent=T.spTxt(x);
+  if(nhay&&x.q0&&x.q0[0]!==q[0]){o.gia.classList.remove('up','dn');void o.gia.offsetWidth;o.gia.classList.add(q[0]>x.q0[0]?'up':'dn');clearTimeout(o.tm);o.tm=setTimeout(()=>o.gia.classList.remove('up','dn'),450)}}
+ for(const[k,el]of[['1h',o.c1],['ngay',o.cd],['tuan',o.cw]]){const v=T.doi(x,k);el.textContent=pct(v);el.className='r '+el.dataset.c+' '+cls(v)}
+ const b=T.bien(x);if(b&&o.rgi)o.rgi.style.left=(b.vt*100).toFixed(1)+'%';const n=T.nghi(x);o.dot.classList.toggle('nghi',n)}
+function bangGia(){chips();const ds=locDs(),body=$('#bg-body');O.clear();
+ document.querySelectorAll('#bg th[data-k]').forEach(th=>th.setAttribute('aria-sort',th.dataset.k===sx.k?(sx.d>0?'ascending':'descending'):'none'));
+ let h='';if(sx.k){ds.sort((a,b)=>{const p=khoa(a,sx.k),q=khoa(b,sx.k);if(p==null)return 1;if(q==null)return-1;return(typeof p==='string'?p.localeCompare(q):p-q)*sx.d});h=ds.map(dongHtml).join('')}
+ else{for(const l of T.LOPS){const g=ds.filter(x=>x.lop===l).sort((a,b)=>a.goc.localeCompare(b.goc));if(!g.length)continue;h+=`<tr class="nhom"><th colspan="11">${esc(T.S.lop[l])} · ${g.length} symbols</th></tr>`+g.map(dongHtml).join('')}}
+ body.innerHTML=h||`<tr><td colspan="11" class="small" style="padding:18px">${loc==='sao'?'Your watchlist is empty: click ★ at the start of a row to add a symbol.':'No matching symbols.'}</td></tr>`;
+ body.querySelectorAll('tr[data-ma]').forEach(tr=>{const td=tr.children,o={gia:td[2],ask:td[3],sp:td[4],c1:td[5],cd:td[6],cw:td[7],rgi:td[8].querySelector('i'),dot:td[1].querySelector('.dot')};
+  o.c1.dataset.c='c1';o.cd.dataset.c='cd';o.cw.dataset.c='cw';O.set(tr.dataset.ma,o);oCap(T.by().get(tr.dataset.ma),o,0)})}
+$('#bg-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;loc=b.dataset.l;bangGia()});
+$('#bg-tim').addEventListener('input',e=>{tim=e.target.value;bangGia()});
+$('#bg thead').addEventListener('click',e=>{const th=e.target.closest('th[data-k]');if(!th)return;const k=th.dataset.k;sx=sx.k===k?(sx.d<0?{k,d:1}:{k:'',d:-1}):{k,d:k==='ten'?1:-1};bangGia()});
+// ---- cảnh báo giá
+let coCB=new Set();const capCB=()=>{const ds=T.CB.ds(),con=ds.filter(c=>!c.da);coCB=new Set(con.map(c=>c.ma));$('#cb-n').textContent=con.length;
+ document.querySelectorAll('#bg-body tr[data-ma]').forEach(tr=>{const b=tr.querySelector('.chuong');if(b)b.classList.toggle('co',coCB.has(tr.dataset.ma))});
+ const el=$('#cb-ds');if(!el)return;el.innerHTML=ds.length?ds.slice().sort((a,b)=>(!!a.da-!!b.da)||b.luc-a.luc).map(c=>{const x=T.by().get(c.ma),d=x?x.so_le:5;
+  return`<div class="cb-r${c.da?' da':''}"><span><b>${esc(c.goc)}</b> ${c.huong==='tren'?'rises to':'falls to'} <b>${fmt(c.muc,d)}</b><small>${c.da?'Triggered at '+T.gioVN(c.da):'Waiting · current price '+(x&&x.q?fmt(x.q[0],d):'—')}${c.ghi?' · '+esc(c.ghi):''}</small></span><button type="button" data-xoa="${c.id}">Delete</button></div>`}).join('')
+  +(ds.some(c=>c.da)?'<p class="small"><button type="button" class="ghost nho" id="cb-xoa-da">Clear triggered alerts</button></p>':''):'<p class="small">No alerts yet. Click 🔔 at the end of a row in the price board to set one.</p>'};
+const POP=$('#cb-pop');let popMa=null;
+function moPop(ma,nut){const x=T.by().get(ma);if(!x||!x.q)return;popMa=ma;$('#cb-ten').textContent='Price alerts '+x.goc;const ip=$('#cb-muc');ip.value=x.q[0].toFixed(x.so_le);ip.step=x.diem;$('#cb-ghi').value='';
+ $('#cb-hien').textContent='Current price '+fmt(x.q[0],x.so_le)+'. The page alerts you when the Bid price reaches the level you enter (up or down, depending on whether that level is above or below the current price).';
+ POP.hidden=false;const r=nut.getBoundingClientRect();POP.style.left=Math.max(8,Math.min(innerWidth-300,r.right-290))+'px';POP.style.top=Math.min(innerHeight-POP.offsetHeight-8,r.bottom+6)+'px';ip.focus();ip.select()}
+$('#cb-luu').addEventListener('click',()=>{const v=parseFloat(String($('#cb-muc').value).replace(',','.'));const c=T.CB.them(popMa,v,$('#cb-ghi').value.trim());
+ if(c){POP.hidden=true;T.toast('Alert set',`${c.goc} ${c.huong==='tren'?'rises to':'falls to'} ${$('#cb-muc').value}. The Markets or Tools page must be open to receive alerts.`)}});
+$('#cb-huy').addEventListener('click',()=>{POP.hidden=true});
+$('#cb-muc').addEventListener('keydown',e=>{if(e.key==='Enter')$('#cb-luu').click();if(e.key==='Escape')POP.hidden=true});
+document.addEventListener('click',e=>{if(!POP.hidden&&!e.target.closest('#cb-pop')&&!e.target.closest('.chuong'))POP.hidden=true});
+$('#cb-mo').addEventListener('click',()=>{const p=$('#cb-panel');p.hidden=!p.hidden;$('#cb-mo').setAttribute('aria-expanded',!p.hidden);capCB()});
+$('#cb-panel').addEventListener('click',e=>{const b=e.target.closest('[data-xoa]');if(b){T.CB.xoa(b.dataset.xoa);return}if(e.target.closest('#cb-xoa-da'))T.CB.xoaDa()});
+T.on(l=>{if(l==='canh')capCB()});
+$('#bg-body').addEventListener('click',e=>{const c=e.target.closest('.chuong');if(c){e.stopPropagation();moPop(c.closest('tr').dataset.ma,c);return}});
+$('#bg-body').addEventListener('click',e=>{const b=e.target.closest('.sao');if(!b)return;const m=b.closest('tr').dataset.ma;sao.has(m)?sao.delete(m):sao.add(m);luuSao();b.setAttribute('aria-pressed',sao.has(m));if(loc==='sao')bangGia();else chips()});
+// ---- sức mạnh tiền tệ
+function sucManh(){const sm=T.sucManh(ky),mx=Math.max(.05,...sm.map(a=>Math.abs(a.v||0)));
+ $('#sm-ky').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===ky));
+ $('#sm-bar').innerHTML=sm.map(a=>{const w=a.v==null?0:Math.abs(a.v)/mx*50,inf=T.S.tien_te[a.c]||{};return`<div class="sm-r"><b>${a.c}</b><div class="sm-t"><i></i><span class="${cls(a.v)}" style="${a.v>=0?'left:50%':'left:'+(50-w)+'%'};width:${w}%"></span></div><em class="${cls(a.v)}">${pct(a.v)}</em><small>${esc(inf.ten||'')} · ${esc(inf.nh||'')} · ${a.n} pairs</small></div>`}).join('');
+ let h='<table class="mx"><thead><tr><th></th>'+T.CHINH.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+ const mxv=[];for(const a of T.CHINH)for(const b of T.CHINH){if(a===b)continue;const p=T.capTien(a,b);if(p){const v=T.doi(p.x,ky);if(v!=null)mxv.push(Math.abs(v))}}const cap=Math.max(.05,...mxv);
+ for(const a of T.CHINH){h+=`<tr><th>${a}</th>`;for(const b of T.CHINH){if(a===b){h+='<td class="cheo"></td>';continue}const p=T.capTien(a,b);let v=p?T.doi(p.x,ky):null;if(v!=null&&p.dao)v=-v;
+  const m=v==null?0:Math.min(1,Math.abs(v)/cap)*70;h+=`<td title="${a}/${b}: ${pct(v)}${p&&p.dao?' (reversed from '+p.x.goc+')':''}" style="background:color-mix(in srgb,var(--${v>=0?'gain':'loss'}) ${m.toFixed(0)}%,var(--card2))">${v==null?'—':pct(v,2).replace('%','')}</td>`}h+='</tr>'}
+ $('#sm-mx').innerHTML=h+'</tbody></table>';
+ const co=sm.filter(a=>a.v!=null);if(co.length>1){const m=co[0],y=co[co.length-1],p=T.capTien(m.c,y.c);
+  $('#sm-goi').innerHTML=`<span>Strongest <b class="gain">${m.c}</b> · weakest <b class="loss">${y.c}</b> (${esc(T.KY[ky].toLowerCase())})</span>`+(p?`<span>Cross pair: <a href="/bieu-do?ma=${encodeURIComponent(p.x.ma)}"><b>${esc(p.x.goc)}</b></a> ${pct((p.dao?-1:1)*T.doi(p.x,ky))} in the direction of ${m.c}/${y.c}</span>`:'')+'<span class="small" style="margin:0">Describes past moves only; not an entry signal.</span>'}}
+$('#sm-ky').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;ky=b.dataset.k;try{localStorage.setItem('tt-ky',ky)}catch(_){}sucManh()});
+// ---- bản đồ nhiệt
+function banDo(){$('#hm-ky').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===kyHm));
+ const ds=[...T.by().values()],v=ds.map(x=>Math.abs(T.doi(x,kyHm)||0)).sort((a,b)=>a-b),cap=Math.max(.1,v[Math.floor(v.length*.9)]||.1);let h='';
+ for(const l of T.LOPS){const g=ds.filter(x=>x.lop===l).map(x=>({x,v:T.doi(x,kyHm)})).sort((a,b)=>(b.v??-1e9)-(a.v??-1e9));if(!g.length)continue;
+  h+=`<div class="hm-nhom"><h3>${esc(T.S.lop[l])}</h3><div class="hm-g">`+g.map(({x,v})=>{const m=v==null?0:Math.min(1,Math.abs(v)/cap)*75;
+   return`<a class="hm" href="/bieu-do?ma=${encodeURIComponent(x.ma)}" title="${esc(T.tenMa(x))}" style="background:color-mix(in srgb,var(--${v>=0?'gain':'loss'}) ${m.toFixed(0)}%,var(--card2))"><b>${esc(x.goc)}</b><em>${pct(v)}</em><small>${x.q?fmt(x.q[0],x.so_le):'—'}</small></a>`}).join('')+'</div></div>'}
+ $('#hm').innerHTML=h}
+$('#hm-ky').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;kyHm=b.dataset.k;banDo()});
+// ---- tương quan
+function tuongQuan(){const q=T.S&&T.S.tuong_quan,el=$('#tq');if(!q){el.innerHTML='<p class="small">Calculating correlations (the first run reads 240 H1 candles per symbol)…</p>';return}
+ if(q.loi){el.innerHTML=`<p class="small">Can’t calculate yet: ${esc(q.loi)}</p>`;return}
+ let h='<div class="tt-wrap" style="max-height:none"><table class="tq"><thead><tr><th></th>'+q.goc.map(g=>`<th>${esc(g)}</th>`).join('')+'</tr></thead><tbody>';
+ q.ma_tran.forEach((r,i)=>{h+=`<tr><th class="hang">${esc(q.goc[i])}</th>`+r.map((v,j)=>{if(i===j)return'<td style="background:var(--track)">1</td>';const m=v==null?0:Math.abs(v)*80;
+  const nx=v==null?'':Math.abs(v)>=.7?(v>0?'strongly together':'strongly opposite'):Math.abs(v)>=.4?(v>0?'moderately together':'moderately opposite'):'nearly independent';
+  return`<td title="${esc(q.goc[i])} and ${esc(q.goc[j])}: ${v==null?'—':fmt(v,2)} · ${nx}" style="background:color-mix(in srgb,var(--${v>=0?'gain':'loss'}) ${m.toFixed(0)}%,var(--card2))">${v==null?'—':fmt(v,2)}</td>`}).join('')+'</tr>'});
+ el.innerHTML=h+`</tbody></table></div><div class="legend-bar">−1 opposite<span></span>+1 same direction</div><p class="small">Pearson correlation of hourly returns over the last ${q.so_nen} candles ${esc(q.khung)} (only hours where every symbol has a price), calculated at ${T.gioVN(Date.parse(q.luc))}. Use it to avoid opening several trades that are effectively one (e.g., buying EURUSD and GBPUSD at the same time) and to see which symbols move against each other. Correlation changes over time.</p>`}
+// ---- phiên giao dịch (múi giờ thật của từng thành phố, tự tính giờ mùa hè)
+const PH=(()=>{const DS=[{k:'Sydney',tz:'Australia/Sydney',a:7,b:16,m:'AUD, NZD'},{k:'Tokyo',tz:'Asia/Tokyo',a:9,b:18,m:'JPY, AUD, NZD'},{k:'London',tz:'Europe/London',a:8,b:17,m:'EUR, GBP, CHF, gold, DAX'},{k:'New York',tz:'America/New_York',a:8,b:17,m:'USD, CAD, oil, US indices'}];
+ const F={};const lech=(tz,ms)=>{const f=F[tz]||(F[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+  const p={};for(const x of f.formatToParts(ms))p[x.type]=x.value;return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second)-Math.floor(ms/1000)*1000};
+ const moc=(tz,y,m,d,h)=>{let g=Date.UTC(y,m,d,h);g-=lech(tz,g);return g-(lech(tz,g)-lech(tz,g+0))};
+ const ngayTz=(tz,ms)=>{const p={};for(const x of new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(ms))p[x.type]=x.value;return[+p.year,+p.month-1,+p.day]};
+ const khoang=(s,ms)=>{const out=[];for(const dd of[-1,0,1]){const[y,m,d]=ngayTz(s.tz,ms+dd*864e5);const a=moc(s.tz,y,m,d,s.a),b=moc(s.tz,y,m,d,s.b);const wd=new Date(Date.UTC(y,m,d)).getUTCDay();if(wd===0||wd===6)continue;out.push([a,b])}return out};
+ const cuoiTuan=ms=>{const[y,m,d]=ngayTz('America/New_York',ms),wd=new Date(Date.UTC(y,m,d)).getUTCDay(),h=+new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hourCycle:'h23',hour:'2-digit'}).format(ms);
+  return wd===6||(wd===5&&h>=17)||(wd===0&&h<17)};
+ const dangMo=(ms=Date.now())=>cuoiTuan(ms)?[]:DS.filter(s=>khoang(s,ms).some(([a,b])=>ms>=a&&ms<b)).map(s=>s.k);
+ const ghiChu=(ms=Date.now())=>{if(cuoiTuan(ms))return'Forex closed for the weekend (crypto still trading)';const m=dangMo(ms);return m.includes('London')&&m.includes('New York')?'London–New York overlap: highest liquidity of the day':m.length?'':'Quiet period between sessions'};
+ return{DS,khoang,dangMo,ghiChu,cuoiTuan}})();
+const dem=ms=>{const p=Math.max(0,Math.round(ms/60000)),g=Math.floor(p/60);return g?g+' hours '+(p%60)+' minutes':p+' minutes'};
+function phien(){const now=Date.now(),vn=new Date(now+7*36e5),d0=Date.UTC(vn.getUTCFullYear(),vn.getUTCMonth(),vn.getUTCDate())-7*36e5,d1=d0+864e5,pos=t=>((t-d0)/864e5*100);
+ let h='<div class="ss">';const cuoi=PH.cuoiTuan(now);
+ for(const s of PH.DS){const ks=PH.khoang(s,now),mo=!cuoi&&ks.some(([a,b])=>now>=a&&now<b),ke=ks.filter(([a])=>a>now).sort((p,q)=>p[0]-q[0])[0],dong=ks.find(([a,b])=>now>=a&&now<b);
+  const bars=ks.map(([a,b])=>[Math.max(a,d0),Math.min(b,d1),a<=now&&now<b]).filter(([a,b])=>b>a).map(([a,b,m])=>`<span class="${m&&!cuoi?'mo':''}" style="left:${pos(a)}%;width:${pos(b)-pos(a)}%"></span>`).join('');
+  h+=`<div class="ss-r"><div><b>${s.k}</b><small><span class="ss-st ${mo?'mo':'dong'}">${mo?'Open':'Close'}</span> · ${mo&&dong?'closes in '+dem(dong[1]-now):ke&&!cuoi?'opens in '+dem(ke[0]-now):'weekend'}</small></div><div class="ss-t" title="${esc(s.m)}">${bars}</div></div>`}
+ h+=`<div class="ss-gio"><div></div><div>${[0,3,6,9,12,15,18,21,24].map(g=>`<u style="left:${g/24*100}%">${String(g).padStart(2,'0')}h</u>`).join('')}</div></div>`;
+ const nowP=pos(now);h+=`</div>`;$('#ss').innerHTML=h;const ss=$('#ss .ss'),w=ss.querySelector('.ss-t');
+ if(w){const r0=ss.getBoundingClientRect(),r1=w.getBoundingClientRect(),x=r1.left-r0.left+r1.width*nowP/100;const n=document.createElement('div');n.className='ss-now';n.style.left=x+'px';n.dataset.t=new Date(now).toLocaleTimeString('en-US',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'});ss.appendChild(n)}
+ $('#ss-ghi').innerHTML=(cuoi?'<b>The Forex market is closed for the weekend</b> (reopens 17:00 Sunday, New York time). Crypto CFDs still trade. ':'<b>'+(PH.dangMo(now).join(' + ')||'No major session open yet')+'</b>. '+PH.ghiChu(now)+' ')+'Axis times are Vietnam time. Opening hours follow each center’s local business hours (adjusted automatically for daylight saving time).'}
+let calTien=new Set(),calMuc=2;try{calTien=new Set(JSON.parse(localStorage.getItem('tt-cal-tien')||'[]'));calMuc=+(localStorage.getItem('tt-cal-muc')??2)}catch(e){}
+function lich(){const L=T.S&&T.S.lich,el=$('#cal');if(!L)return;if(!L.co){el.innerHTML=`<p class="small">No news calendar yet: ${esc(L.ly_do)}.</p>`;return}
+ $('#cal-loc').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===calMuc));
+ const tienCo=(L.tien_te||[]).filter(Boolean);$('#cal-tien').innerHTML=`<button type="button" data-t="" aria-pressed="${!calTien.size}">All currencies</button>`+tienCo.map(c=>`<button type="button" data-t="${esc(c)}" aria-pressed="${calTien.has(c)}">${esc(c)}</button>`).join('');
+ const now=Date.now(),ds=L.ds.filter(e=>(e.muc>=calMuc||(e.muc===0&&calMuc<=1))&&(!calTien.size||calTien.has(e.tien))),M=L.mang||{};
+ let h=L.sap_het?`<p class="note"><b>News calendar running out:</b> calendar only covers up to ${T.gioVN(Date.parse(L.phu_toi))}${M.loi?' and the online calendar couldn’t be loaded ('+esc(M.loi)+')':''}. Open MT5 with the calendar-export EA so the USD calendar file gets updated; the rules’ news filter uses that file.</p>`:'';
+ if(M.bat&&M.loi&&!L.sap_het)h+=`<p class="small">The last online calendar download failed (${esc(M.loi)}); using the saved copy, will retry in 15 minutes.</p>`;
+ let ng='';for(const e of ds){const t=Date.parse(e.t),n=new Date(t).toLocaleDateString('en-US',{timeZone:'Asia/Ho_Chi_Minh',weekday:'long',day:'2-digit',month:'2-digit'});
+  if(n!==ng){h+=`<div class="cal-ngay">${esc(n)}</div>`;ng=n}const qua=t<now,sap=!qua&&t-now<3600000,le=e.muc===0;
+  h+=`<div class="cal-r${qua?' qua':''}${sap?' sap':''}"><b>${new Date(t).toLocaleTimeString('en-US',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'})}</b><span class="dg">${qua?'passed':'sau '+dem(t-now)}</span>`
+   +(le?'<span class="badge le">Holiday</span>':`<span class="imp m${e.muc}" title="Impact ${['','low','medium','cao'][e.muc]}"><i></i><i></i><i></i></span>`)
+   +`<span class="badge">${esc(e.tien)}</span><span class="ten">${esc(e.ten)}</span><span class="so">${e.du_bao?`<em>Forecast</em> ${esc(e.du_bao)}`:''}${e.truoc?`<em>Previous</em> ${esc(e.truoc)}`:''}</span></div>`}
+ const nguon=M.so?`this week’s ForexFactory calendar, downloaded hourly (last time ${M.lan_tai?T.gioVN(Date.parse(M.lan_tai)):'none yet'}; next week’s calendar appears from Sunday)`+(L.ds.some(e=>e.nguon==='ea')?', plus USD news from the EA’s MT5 calendar file for the period after that':''):'MT5 economic calendar exported by the EA (USD only)'+(M.bat?'; the multi-currency calendar from the web hasn’t loaded'+(M.loi?' ('+esc(M.loi)+')':''):'');
+ el.innerHTML=h+(ds.length?'':'<p class="small">No events match the filter.</p>')+`<p class="small">Source: ${nguon}. Times are Vietnam time. High-impact news often widens spreads and causes slippage; many traders stay out for a few minutes before and after high-impact USD news.</p>`}
+$('#cal-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(!b)return;calMuc=+b.dataset.m;try{localStorage.setItem('tt-cal-muc',calMuc)}catch(_){}lich()});
+$('#cal-tien').addEventListener('click',e=>{const b=e.target.closest('button[data-t]');if(!b)return;const c=b.dataset.t;if(!c)calTien.clear();else calTien.has(c)?calTien.delete(c):calTien.add(c);
+ try{localStorage.setItem('tt-cal-tien',JSON.stringify([...calTien]))}catch(_){}lich()});
+// ---- thông số hợp đồng
+function thongSo(){const tk=T.S.tai_khoan||{},tien=tk.tien||'USD',q=spTim.trim().toLowerCase();
+ const dem={};for(const x of T.by().values())dem[x.lop]=(dem[x.lop]||0)+1;
+ $('#sp-loc').innerHTML=[['tat','All']].concat(T.LOPS.filter(l=>dem[l]).map(l=>[l,T.S.lop[l]])).map(([k,n])=>`<button type="button" data-l="${k}" aria-pressed="${k===spLoc}">${esc(n)}</button>`).join('');
+ const ds=[...T.by().values()].filter(x=>(spLoc==='tat'||x.lop===spLoc)&&(!q||(x.ma+' '+x.goc+' '+x.ten).toLowerCase().includes(q))).sort((a,b)=>T.LOPS.indexOf(a.lop)-T.LOPS.indexOf(b.lop)||a.goc.localeCompare(b.goc));
+ const swapTat=ds.some(x=>x.swap&&!x.swap.bat);
+ $('#sp-body').innerHTML=ds.map(x=>{const gt=x.q&&x.gt1?x.gt1*x.q[0]:null,db=gt&&x.ky_quy_1lot?gt/x.ky_quy_1lot:null,sw=x.swap||{};
+  return`<tr><td class="ma"><b>${esc(x.goc)}</b><small>${esc(x.ten)}</small></td><td>${esc(T.S.lop[x.lop])}<small>${esc(x.kieu_tinh)}</small></td>
+  <td class="r">${fmt(x.co_hd,x.co_hd%1?2:0)}<small>${esc(x.tien_goc||'')}</small></td><td class="r">${x.so_le}<small>${x.pip?'1 pip = '+fmt(x.pip,Math.max(0,x.so_le-1)):'1 point = '+fmt(x.diem,x.so_le)}</small></td>
+  <td class="r">${x.pip?fmt(x.gt_pip,2):fmt(x.gt_diem,x.gt_diem<.1?4:2)} ${esc(tien)}<small>per ${x.pip?'pip':'points'} · 1 lot</small></td><td class="r">${fmt(x.gt1,2)} ${esc(tien)}<small>per 1,0 of price · 1 lot</small></td>
+  <td class="r">${fmt(gt,0)}<small>value of 1 lot</small></td><td class="r">${fmt(x.ky_quy_1lot,2)}<small>${db?'leverage ≈ 1:'+fmt(db,0):''}</small></td>
+  <td class="r">${fmt(x.lot_min,x.lot_min<.01?3:2)} / ${fmt(x.lot_buoc,x.lot_buoc<.01?3:2)}<small>max ${fmt(x.lot_max,0)}</small></td>
+  <td class="r ${sw.bat?'':'off'}">${fmt(sw.dai,2)} / ${fmt(sw.ngan,2)}<small>${esc(sw.kieu||'')} · x3 ${esc(sw.ngay_3||'')}</small></td><td class="r">${x.muc_dung||0}<small>points</small></td></tr>`}).join('');
+ $('#sp-ghi').innerHTML=`Account ${esc(tk.san||'')} · currency ${esc(tien)} · account leverage 1:${tk.don_bay||'—'}${tk.goi_ky_quy!=null?' · margin call at margin level '+fmt(tk.goi_ky_quy,0)+'%':''}${tk.dung_lenh?' · stop out at '+fmt(tk.dung_lenh,0)+'%':''}. Margin for 1 lot is calculated by MT5 (order_calc_margin) at the current price; "leverage ≈" is the value of 1 lot divided by margin, so indices, oil and crypto may differ from the account’s leverage.`
+  +(swapTat?' <b>Swap (overnight fee):</b> the broker has swap mode set to "Off" for the struck-through symbols, meaning this account is not charged swap; the figures are the quoted rates (buy / sell) for reference.':'')}
+$('#sp-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;spLoc=b.dataset.l;thongSo()});
+$('#sp-tim').addEventListener('input',e=>{spTim=e.target.value;thongSo()});
+// ---- tín hiệu kỹ thuật và bộ lọc mã
+let ktLoc='tat',ktDk='tat',ktTim='',ktMa=null,ktTf='H1',ktCT=null,ktLan=0;const KF=['M15','H1','H4','D1'];
+const dongThuan=x=>{const k=x.kt||{};let m=0,b=0;for(const f of KF){const d=k[f]&&k[f].d;if(d>.1)m++;else if(d<-.1)b++}return{m,b}};
+function kyThuat(){const dem={};for(const x of T.by().values())dem[x.lop]=(dem[x.lop]||0)+1;
+ $('#kt-loc').innerHTML=[['tat','All']].concat(T.LOPS.filter(l=>dem[l]).map(l=>[l,T.S.lop[l]])).map(([k,n])=>`<button type="button" data-l="${k}" aria-pressed="${k===ktLoc}">${esc(n)}</button>`).join('');
+ const q=ktTim.trim().toLowerCase();let ds=[...T.by().values()].filter(x=>x.kt&&(ktLoc==='tat'||x.lop===ktLoc)&&(!q||(x.goc+' '+x.ten+' '+(x.biet_danh||'')).toLowerCase().includes(q)));
+ const h1=x=>(x.kt.H1||{});
+ const LOC={tat:()=>true,mua:x=>dongThuan(x).m>=3,ban:x=>dongThuan(x).b>=3,qmua:x=>h1(x).rsi>=70,qban:x=>h1(x).rsi<=30,xh:x=>h1(x).adx>=25,ngang:x=>h1(x).adx<18};
+ ds=ds.filter(LOC[ktDk]||LOC.tat).sort((a,b)=>{const p=dongThuan(a),r=dongThuan(b);return Math.max(r.m,r.b)-Math.max(p.m,p.b)||Math.abs((b.kt.H1||{}).d||0)-Math.abs((a.kt.H1||{}).d||0)});
+ $('#kt-n').textContent=ds.length+' symbols';
+ $('#kt-body').innerHTML=ds.map(x=>{const t=dongThuan(x),k=x.kt,r=h1(x);return`<tr data-ma="${esc(x.ma)}"${x.ma===ktMa?' class="chon"':''}><td class="ma"><b>${esc(x.goc)}</b><small>${esc(x.biet_danh||T.S.lop[x.lop])}</small></td>`
+  +KF.map(f=>`<td>${T.kb(k[f]?k[f].d:null)}</td>`).join('')
+  +`<td><span class="dt" title="${t.m} timeframes buy, ${t.b} khung bán">${KF.map((f,i)=>`<i class="${i<t.m?'m':i<t.m+t.b?'b':''}"></i>`).join('')}</span></td><td class="r ${r.rsi>=70?'loss':r.rsi<=30?'gain':''}">${fmt(r.rsi,1)}</td><td class="r">${fmt(r.adx,1)}</td></tr>`}).join('')
+  ||'<tr><td colspan="8" class="small" style="padding:18px">'+([...T.by().values()].some(x=>x.kt)?'No symbols match the filter.':'Calculating indicators (the first run takes about 10–30 seconds after the webapp starts)…')+'</td></tr>';
+ if(!ktMa&&ds.length){ktMa=ds[0].ma;ktTai()}else if(ktMa&&Date.now()-ktLan>30000)ktTai()}
+const vong=(d,w=120)=>{const a=Math.PI*(1-((d??0)+1)/2),r=w*.4,cx=w/2,cy=w*.5,x=cx+r*Math.cos(a),y=cy-r*Math.sin(a),arc=(a0,a1,c)=>{const p=t=>[cx+r*Math.cos(Math.PI*(1-t)),cy-r*Math.sin(Math.PI*(1-t))],[x0,y0]=p(a0),[x1,y1]=p(a1);return`<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${c}" stroke-width="${w*.07}" fill="none"/>`};
+ return`<svg viewBox="0 0 ${w} ${w*.6}">${arc(0,.25,'var(--loss)')}${arc(.25,.45,'color-mix(in srgb,var(--loss) 45%,var(--track))')}${arc(.45,.55,'var(--track)')}${arc(.55,.75,'color-mix(in srgb,var(--gain) 45%,var(--track))')}${arc(.75,1,'var(--gain)')}
+ <line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-width="${w*.025}" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="${w*.035}" fill="var(--ink)"/></svg>`};
+async function ktTai(){if(!ktMa)return;const m=ktMa;ktLan=Date.now();try{const r=await fetch('/api/thi-truong/ky-thuat?ma='+encodeURIComponent(m),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();if(m===ktMa){ktCT=j;ktVe()}}
+ catch(e){$('#kt-ct').innerHTML=`<p class="small">Couldn’t calculate: ${esc(e.message)}</p>`}}
+function ktVe(){const j=ktCT,el=$('#kt-ct');if(!j)return;const x=T.by().get(j.ma),k=j.khung[ktTf];
+ let h=`<div class="kt-hd"><div><h2>${esc(j.goc)}</h2><span class="small" style="margin:0">${esc(x?T.tenMa(x):'')}</span></div><div class="lk"><a class="ghost nho" href="/bieu-do?ma=${encodeURIComponent(j.ma)}">Chart</a><a class="ghost nho" href="/cong-cu?ma=${encodeURIComponent(j.ma)}">Volume calculator</a></div></div>`
+  +`<div class="sg" id="kt-tf" style="margin-top:10px">${KF.map(f=>`<button type="button" data-f="${f}" aria-pressed="${f===ktTf}">${f}</button>`).join('')}</div>`;
+ if(!k){el.innerHTML=h+'<p class="small">Not enough candles for this timeframe.</p>';return}
+ h+=`<div class="gauge3"><div class="lon">${vong(k.d,140)}<b class="${T.cls(k.d)}">${esc(k.nhan)}</b><small>Summary</small></div><div>${vong(k.m)}<b class="${T.cls(k.m)}">${esc(k.nhan_ma)}</b><small>Moving averages · ${k.dem_ma.mua} buy / ${k.dem_ma.ban} sell</small></div><div>${vong(k.o)}<b class="${T.cls(k.o)}">${esc(k.nhan_dd)}</b><small>Ranging · ${k.dem_dd.mua} buy / ${k.dem_dd.ban} sell / ${k.dem_dd.trung} neutral</small></div></div>`;
+ const pv=p=>p>0?'<span class="p1">Buy</span>':p<0?'<span class="p-1">Sell</span>':'<span class="p0">Neutral</span>',d=j.so_le;
+ h+=`<div class="kt-bang"><div><h4>Oscillators</h4><table><tbody>${k.dd.map(r=>`<tr><td>${esc(r.ten)}</td><td class="r">${fmt(r.gt,Math.abs(r.gt)<1?Math.min(6,d):2)}</td><td class="r">${pv(r.p)}</td></tr>`).join('')}</tbody></table></div>
+  <div><h4>Moving averages (price ${fmt(k.gia,d)})</h4><table><tbody>${k.ma.map(r=>`<tr><td>${esc(r.ten)}</td><td class="r">${fmt(r.gt,d)}</td><td class="r">${pv(r.p)}</td></tr>`).join('')}</tbody></table></div></div>
+  <p class="small">Calculated at ${T.gioVN(Date.parse(j.luc))}, including candles ${ktTf} in progress. Rules follow TradingView’s Technical Ratings: an oscillator signals buy only when it is in the oversold zone and turning up, so most readings are neutral. This is a summary of indicator states, not verified to give an edge; most simple rules measured in your records are not profitable.</p>`;
+ el.innerHTML=h;el.querySelector('#kt-tf').addEventListener('click',e=>{const b=e.target.closest('button[data-f]');if(b){ktTf=b.dataset.f;ktVe()}})}
+$('#kt-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;ktLoc=b.dataset.l;kyThuat()});
+$('#kt-dk').addEventListener('change',e=>{ktDk=e.target.value;kyThuat()});
+$('#kt-tim').addEventListener('input',e=>{ktTim=e.target.value;kyThuat()});
+$('#kt-body').addEventListener('click',e=>{const tr=e.target.closest('tr[data-ma]');if(!tr)return;ktMa=tr.dataset.ma;document.querySelectorAll('#kt-body tr').forEach(r=>r.classList.toggle('chon',r===tr));
+ $('#kt-ct').innerHTML='<p class="small">Calculating…</p>';ktTai();if(innerWidth<1060)$('#kt-ct').scrollIntoView({behavior:'smooth',block:'start'})});
+// ---- biến động theo giờ
+let bdMa=null,bdKq=null;
+async function bienDong(){const s=$('#bd-ma');if(!s.options.length||s.dataset.n!=String(T.by().size)){if(!bdMa){const e=[...T.by().values()].find(x=>x.goc==='XAUUSD')||[...T.by().values()][0];bdMa=e&&e.ma}s.innerHTML=T.nhomOpt(bdMa);s.dataset.n=T.by().size}
+ if(!bdMa)return;if(bdKq&&bdKq.ma===bdMa){bdVe();return}$('#bd').innerHTML='<p class="small">Loading 720 H1 candles…</p>';
+ try{const r=await fetch('/api/thi-truong/bien-dong?ma='+encodeURIComponent(bdMa),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());bdKq=await r.json();bdVe()}catch(e){$('#bd').innerHTML=`<p class="small">Couldn’t read: ${esc(e.message)}</p>`}}
+function bdVe(){const j=bdKq,x=T.by().get(j.ma);if(!x)return;const u=x.pip?{k:x.pip,n:'pip',d:1}:{k:1,n:'price unit',d:x.so_le>3?x.so_le:2},v=j.gio.map(g=>g.tb==null?0:g.tb/u.k),mx=Math.max(...v)||1;
+ const gioNay=new Date(Date.now()+7*36e5).getUTCHours(),top=v.map((y,i)=>[y,i]).sort((a,b)=>b[0]-a[0]).slice(0,3).map(a=>String(a[1]).padStart(2,'0')+'h');
+ const TH=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],thu=j.thu.filter(t=>t.t<5),mt=Math.max(...thu.map(t=>t.tb));
+ $('#bd').innerHTML=`<p class="sub" style="margin:0 0 8px">Average range (high − low) of each 1-hour candle, in ${u.n}, over ${j.so_nen} H1 candles (${T.gioVN(j.tu*1000).slice(-5)} → ${T.gioVN(j.den*1000).slice(-5)}). Most active hour: <b>${top.join(', ')}</b> (Vietnam time). The highlighted column is the current hour.</p>
+  <div class="bd-cot">${v.map((y,i)=>`<div class="${i===gioNay?'nay':''}" style="height:${(y/mx*100).toFixed(1)}%" title="${String(i).padStart(2,'0')}:00–${String(i).padStart(2,'0')}:59 VN time: average ${fmt(y,u.d)} ${u.n}">${y===mx?`<span>${fmt(y,u.d)}</span>`:''}</div>`).join('')}</div>
+  <div class="bd-gio">${v.map((y,i)=>`<span>${i%3===0?String(i).padStart(2,'0'):''}</span>`).join('')}</div>
+  <h3>Average range by weekday</h3><div class="bd-thu">${thu.map(t=>`<div class="${t.tb===mt?'max':''}"><small>${TH[t.t]}</small><b>${fmt(t.tb/u.k,u.d)}</b><small>${u.n}</small></div>`).join('')}</div>
+  <p class="small">Use it to choose trading hours: scalping and breakouts need active hours; range trading suits quiet hours. Full-day range is based on Vietnam-time days. Past measurements ${Math.round(j.so_nen/24)} days; may change when market conditions change.</p>`}
+$('#bd-ma').addEventListener('change',e=>{bdMa=e.target.value;bdKq=null;bienDong()});
+// ---- vẽ
+let lanVe=0,choVe=0;
+function ve(day){if(!T.S)return;hero();capCB();if(tab==='bang-gia'){if(day||!O.size)bangGia()}else if(tab==='ky-thuat'){if(day)kyThuat()}else if(tab==='suc-manh')sucManh();else if(tab==='ban-do-nhiet')banDo();else if(tab==='tuong-quan')tuongQuan();
+ else if(tab==='bien-dong'){if(day)bienDong()}else if(tab==='phien'){phien();lich()}else if(tab==='thong-so')thongSo();lanVe=Date.now()}
+T.on((loai,ds)=>{if(loai==='anh'){ve(1);return}if(loai!=='gia')return;
+ if(tab==='bang-gia')for(const m of ds)oCap(T.by().get(m),O.get(m),1);
+ if(Date.now()-lanVe>1000){if(tab==='bang-gia')hero();else ve(0)}else if(!choVe){choVe=setTimeout(()=>{choVe=0;if(tab!=='bang-gia')ve(0);else hero()},1000)}});
+setInterval(()=>{if(tab==='phien'&&document.visibilityState==='visible'){phien();lich()}if(tab==='bang-gia')for(const[m,o]of O)o.dot.classList.toggle('nghi',T.nghi(T.by().get(m)))},30000);
+addEventListener('resize',()=>{if(tab==='phien')phien()});
+moTab(tab);T.batDau(30).then(()=>moTab(tab)).catch(()=>{})})();
+</script></body></html>

@@ -1,0 +1,32 @@
+name: Kiểm tra
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kiem-tra:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Cài thư viện
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Biên dịch mọi tệp Python
+        run: python -X utf8 -m compileall -q so_cong_khai kiem_nhanh.py
+
+      - name: Kiểm nhanh (không cần MetaTrader 5)
+        run: python -X utf8 kiem_nhanh.py

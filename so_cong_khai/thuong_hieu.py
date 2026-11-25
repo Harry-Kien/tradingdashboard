@@ -4,3 +4,4 @@ Tên này hiện ở góc trái mọi trang, tiêu đề tab, ảnh chia sẻ k�
 chỉnh trên trang Cài đặt, nên người dùng bản cài không thay được qua giao diện hay tệp cấu hình."""
 
 TEN = 'Harry · Gold Research'
+WEB = 'harry-kien.github.io/tradingdashboard'          # trang demo công khai, in ở góc ảnh chia sẻ để người xem tìm được app

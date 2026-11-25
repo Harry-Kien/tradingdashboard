@@ -10,20 +10,20 @@ Nó **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, không g
 ## Cần có
 
 - Máy tính Windows 10 hoặc 11.
-- **Python 3.11 trở lên**: tải ở https://www.python.org/downloads/windows/. Khi cài, nhớ tick ô **"Add python.exe to PATH"**.
 - **MetaTrader 5** bản máy tính, của bất kỳ sàn nào, đã **đăng nhập tài khoản DEMO**. Mặc định webapp chỉ nhận tài khoản demo
-  (xem mục `chi_demo` bên dưới nếu muốn đổi).
+  (đổi ở trang Cài đặt nếu muốn).
+- Python 3.11 trở lên. **Không cần tự cài**: chưa có thì `BAT_DAU.bat` hỏi rồi cài giúp bằng winget có sẵn trong Windows
+  (nguồn chính thức của Python). Máy không có winget thì tải ở https://www.python.org/downloads/windows/ và tick ô **"Add python.exe to PATH"**.
 
-## Cài lần đầu (khoảng 2 phút)
+## Bắt đầu: bấm đúp một tệp
 
-1. Giải nén tệp zip vào một thư mục, ví dụ `C:\Webapp`.
-2. Bấm đúp **`CAI_DAT.bat`**. Tệp này kiểm tra Python, cài các thư viện cần thiết và tạo tệp cấu hình `cau-hinh.json`.
+1. Giải nén tệp zip vào một thư mục, ví dụ `C:\HarryGoldResearch`.
+2. Mở MT5 và đăng nhập tài khoản demo.
+3. Bấm đúp **`BAT_DAU.bat`**. Lần đầu nó tự cài Python (nếu thiếu, có hỏi trước) và thư viện, tạo cấu hình, tạo biểu tượng
+   **Harry Gold Research** ngoài màn hình, rồi mở trang trong trình duyệt. Những lần sau bấm biểu tượng đó là xong.
+4. Muốn tắt webapp thì đóng cửa sổ đen có tên "Harry Gold Research".
 
-## Mỗi lần dùng
-
-1. Mở MT5 và đăng nhập tài khoản demo.
-2. Bấm đúp **`CHAY_WEBAPP.bat`**. Trình duyệt tự mở trang khi webapp đã sẵn sàng (lần đầu nối MT5 mất khoảng 10 giây).
-3. Muốn tắt webapp thì đóng cửa sổ đen có tên "Webapp".
+`CAI_DAT.bat` và `CHAY_WEBAPP.bat` vẫn còn cho ai quen cách cũ (cài riêng, chạy riêng).
 
 ## Có gì trong webapp
 
@@ -62,7 +62,7 @@ Mở `cau-hinh.json` bằng Notepad. Sửa xong thì tắt rồi mở lại weba
 | "không phải tài khoản DEMO" | Đăng nhập tài khoản demo trong MT5, hoặc đặt `gia.mt5.chi_demo` = `false`. |
 | "Sàn … không có mã vàng" | Ghi đúng tên mã vàng của sàn (xem trong Market Watch của MT5) vào `gia.ma_vang`. |
 | Giờ trên biểu đồ lệch vài tiếng | Ghi `gia.mt5.lech_gio_san` theo giờ máy chủ của sàn (MT5 → Market Watch, góc trên có giờ máy chủ). |
-| Cửa sổ đen báo "Chưa cài đủ thư viện" | Chạy lại `CAI_DAT.bat`. |
+| Cửa sổ đen báo "Chưa cài đủ thư viện" | Bấm đúp lại `BAT_DAU.bat` (tự cài lại thư viện). |
 | Trình duyệt không mở | Tự mở http://127.0.0.1:8765 |
 
 ## An toàn
