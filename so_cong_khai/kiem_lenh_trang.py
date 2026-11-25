@@ -67,7 +67,7 @@ async function kiem(){const ma=$('#kl-ma').value,vao=so($('#kl-vao')),sl=so($('#
  if(!ma||vao==null){$('#kl-kq').innerHTML='<p class="kl-cho">Chọn mã và nhập giá vào để bắt đầu.</p>';return}
  if(sl==null&&!daSl){$('#kl-kq').innerHTML='<p class="kl-cho">Nhập mức dừng lỗ (SL) để tính khối lượng và kiểm lệnh.</p>';return}
  const q=new URLSearchParams({ma,chieu,vao});if(sl!=null)q.set('sl',sl);if(tp!=null)q.set('tp',tp);if(rr!=null)q.set('rui_ro',rr);
- for(const k in QT){const v=so($('#'+k));if(v!=null){q.set(k,v);QT[k]=v}}try{localStorage.setItem('kl-qt',JSON.stringify(QT))}catch(e){}
+ for(const k in QT){const el=$('#'+k),v=el?so(el):null;if(v!=null){q.set(k,v);QT[k]=v}}try{localStorage.setItem('kl-qt',JSON.stringify(QT))}catch(e){}
  const n=++lan;$('#kl-kq').setAttribute('aria-busy','true');
  try{const r=await fetch('/api/kiem-lenh?'+q,{cache:'no-store'});const t=await r.text();if(n!==lan)return;if(!r.ok)throw new Error(t);ve(JSON.parse(t))}
  catch(e){if(n===lan)$('#kl-kq').innerHTML=`<p class="kl-cho">Không kiểm được: ${esc(e.message)}</p>`}

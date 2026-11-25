@@ -873,6 +873,15 @@ def _khoi_tuan(tuan: dict) -> str:
     return ''.join(out) + '</section>'
 
 
+def _nhan_lenh(o: dict) -> str:
+    """Nhãn lệnh đang mở ("EA E BÁN 0.02", "Bot 12 MUA") ghép từ tên, chiều và lot: chiều là chữ "Mua"/"Bán" trong thẻ riêng, in hoa bằng CSS, nên bản
+    tiếng Anh dịch được (Buy/Sell) với mọi tên EA ("MUA" không dấu thì bộ dịch coi là định danh, không dịch). Thiếu 'ten' thì dùng nguyên 'nhan'."""
+    if not o.get('ten') or o.get('huong') not in ('BUY', 'SELL'):
+        return escape(o.get('nhan', ''))
+    lot = f' {o["lot"]:g}' if isinstance(o.get('lot'), (int, float)) else ''
+    return f'{escape(o["ten"])} <span style="text-transform:uppercase">{"Mua" if o["huong"] == "BUY" else "Bán"}</span>{lot}'
+
+
 def _khoi_hien_tai(h: dict, live: bool = False) -> str:
     """Việc đang diễn ra ngay lúc này: lệnh còn mở của bot và của các EA demo, thị trường (chỉ khi webapp đang chạy), cảnh báo gần nhất."""
     lenh, cb = h.get('lenh') or [], h.get('canh_bao') or []
@@ -883,7 +892,7 @@ def _khoi_hien_tai(h: dict, live: bool = False) -> str:
            f'<div><h3>Lệnh đang mở ({len(lenh)})</h3>']
     if lenh:
         out.append(_table(['Nguồn', 'Loại', 'Giá vào', 'SL', 'TP kế tiếp'],
-                          [[escape(o['nhan']), 'demo' if o.get('loai') == 'demo' else 'tín hiệu', so(o['vao']) if o.get('vao') is not None else '—',
+                          [[_nhan_lenh(o), 'demo' if o.get('loai') == 'demo' else 'tín hiệu', so(o['vao']) if o.get('vao') is not None else '—',
                             so(o['sl']) if o.get('sl') is not None else '—', so(o['tp'][0]) if o.get('tp') else '—'] for o in lenh], right={2, 3, 4}))
     else:
         out.append('<p class="small">Bot và các EA demo không có lệnh nào đang mở.</p>')
@@ -956,6 +965,7 @@ MENU = [
     ('so', 'Sổ giao dịch', None, [
         ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
         ('kiem-lenh', 'Kiểm tra trước khi vào lệnh', '/kiem-lenh', 'Khối lượng theo % rủi ro, tin sắp ra, lỗ ngày, tổng rủi ro', 'tinh'),
+        ('ky-luat', 'Kỷ luật giao dịch', '/ky-luat', 'Chấm lại lệnh đã đóng: lỗi nào đang tốn tiền', 'so'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
         ('cac-tai-khoan', 'Các tài khoản đã nối', '/cac-tai-khoan', 'Mọi MT5 bạn đã thêm, demo và tiền thật: vốn, lãi lỗ, thắng thua, rủi ro', 'tk'),

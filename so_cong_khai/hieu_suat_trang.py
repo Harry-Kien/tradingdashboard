@@ -254,6 +254,6 @@ def trang_hieu_suat(ten: str) -> str:
         '<span class="small" id="the-tt" role="status"></span></div><p class="small" style="margin:10px 0 0">Ảnh được vẽ ngay trên máy bạn, không tải lên đâu cả.</p></dialog>',
         '<p class="note" style="margin-top:22px"><b>Chỉ đọc.</b> Trang đọc lịch sử lệnh đã đóng trong MT5 (mặc định chỉ tài khoản demo) và không đặt, sửa hay đóng lệnh. '
         'Kết quả quá khứ không bảo đảm kết quả tương lai; không phải lời khuyên đầu tư.</p>',
-        '<footer>Lệnh được ghép từ các lần khớp cùng mã vị thế (position); lãi ròng gồm lãi, hoa hồng, phí và swap. R là lãi ròng chia số tiền mất nếu chạm '
-        'dừng lỗ đặt lúc mở lệnh (MT5 tính, order_calc_profit). ' + escape(trang.mien_tru() if hasattr(trang, 'mien_tru') else trang.MIEN_TRU)
+        '<footer><span>Lệnh được ghép từ các lần khớp cùng mã vị thế (position); lãi ròng gồm lãi, hoa hồng, phí và swap. R là lãi ròng chia số tiền mất nếu chạm '
+        'dừng lỗ đặt lúc mở lệnh (MT5 tính, order_calc_profit).</span> ' + escape(trang.mien_tru() if hasattr(trang, 'mien_tru') else trang.MIEN_TRU)
         + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
