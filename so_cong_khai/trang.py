@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sys
 import threading
 import types
@@ -840,10 +841,26 @@ def _bang_so(now: datetime, d: dict, live: bool = False) -> str:
             + ('<a class="ttl" id="tt-dong" href="#tinh-trang" hidden></a>' if live else ''))
 
 
+_DONG_TK = re.compile(r'^(.+?) \((.+), tài khoản DEMO\): (.+)$')
+
+
+def _bai_tung_dong(bai: str) -> str:
+    """Bài tổng kết tuần trong <pre>, mỗi dòng một <span> để bản tiếng Anh dịch được từng dòng (cả bài là một khóa thì đổi một dấu là mất bản
+    dịch). Dòng tài khoản tách riêng tên tài khoản và danh sách EA (dữ liệu của từng máy) khỏi phần chữ chung. textContent vẫn y nguyên bài."""
+    out = []
+    for dong in bai.split('\n'):
+        m = _DONG_TK.match(dong)
+        if m:
+            out.append(f'<span>{escape(m.group(1))}</span> (<span>{escape(m.group(2))}</span><span>, tài khoản DEMO): {escape(m.group(3))}</span>')
+        else:
+            out.append(f'<span>{escape(dong)}</span>' if dong else '')
+    return '\n'.join(out)
+
+
 def _khoi_tuan(tuan: dict) -> str:
     out = [f'<section class="card" id="tuan"><h2>Tổng kết tuần {tuan["start"].isocalendar()[1]}</h2>'
            '<p class="sub">Bài chữ để bạn đọc lại rồi tự đăng lên Telegram hoặc Facebook. Chương trình không tự đăng gì.</p>'
-           f'<pre class="bai" id="bai-tuan">{escape(tuan["bai"])}</pre><button class="copy" type="button" data-for="bai-tuan">Chép bài</button>']
+           f'<pre class="bai" id="bai-tuan">{_bai_tung_dong(tuan["bai"])}</pre><button class="copy" type="button" data-for="bai-tuan">Chép bài</button>']
     if tuan.get('threads'):
         out.append('<h3>Bản nháp bài Threads</h3><div class="drafts">')
         for i, t in enumerate(tuan['threads']):
