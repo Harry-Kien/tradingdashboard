@@ -5,7 +5,7 @@ Chỉ đọc. Mô-đun không chọn thêm mã vào Market Watch (muốn thêm t
 phiên nối an toàn của song.py (chỉ nối vào MT5 đang mở, chỉ nhận tài khoản demo).
 
 Bốn luật ra điểm vào của hệ thống (hai kiểu của bot, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ
-17–28 giá, chốt 5 dừng 20 USD là con số của vàng. Áp cho mã khác sẽ cho mức giá vô nghĩa, nên ở đây KHÔNG gọi các luật đó.
+và mức chốt lời của chúng là con số của vàng. Áp cho mã khác sẽ cho mức giá vô nghĩa, nên ở đây KHÔNG gọi các luật đó.
 Các hàm chỉ báo dùng lại của dự án (EMA, ATR, đỉnh/đáy 2 giờ, vùng giá) đều tính theo tỷ lệ nên dùng được cho mọi mã."""
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ from . import gia, phuong_phap, song
 
 NHOM = {'Forex': 'Ngoại hối', 'Commodities': 'Hàng hóa', 'Indices': 'Chỉ số', 'Crypto': 'Tiền mã hóa'}
 SO_NEN = {'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900}
-GIAI_THICH = ('Ba luật trong sổ của bạn (bot tín hiệu, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ 17–28 giá, '
-              'chốt 5 dừng 20 USD là con số của vàng, nên không áp cho mã này. Các phương pháp tùy chọn bên dưới tính theo ATR nên áp được, '
+GIAI_THICH = ('Ba luật trong sổ của bạn (bot tín hiệu, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ và '
+              'mức chốt lời của chúng là con số của vàng, nên không áp cho mã này. Các phương pháp tùy chọn bên dưới tính theo ATR nên áp được, '
               'và được chạy lại trên nến 5 phút của chính mã này từ đầu năm (xem số đo trong từng thẻ). Số đo đó chưa đầy một năm và chưa trừ phí hoa hồng: '
               'coi là dấu hiệu để theo dõi, chưa phải bằng chứng.')
 GIAI_CHIA_SE = ('Bản chia sẻ này không có luật vào lệnh riêng của ai: các phương án dưới đây là những phương pháp tùy chọn tính theo ATR, '

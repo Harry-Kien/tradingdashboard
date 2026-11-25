@@ -48,7 +48,7 @@ def tim(luat: dict, now: datetime) -> list[dict]:
         dt = datetime.fromisoformat(t)
         if 0 < (dt - now).total_seconds() <= TRUOC_TIN_GIAY:
             res.append({'khoa': f'tin|{t}', 'tieu_de': 'Sắp có tin USD mạnh',
-                        'noi_dung': f'Tin ra lúc {dt.astimezone(VN):%H:%M ngày %d/%m} (giờ Việt Nam). Bot và các luật của bạn né 15 phút trước và sau tin.'})
+                        'noi_dung': f'Tin ra lúc {dt.astimezone(VN):%H:%M ngày %d/%m} (giờ Việt Nam). Bot và các luật của bạn né tin theo khung giờ đã đặt trong luật.'})
     return res
 
 

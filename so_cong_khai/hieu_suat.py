@@ -119,6 +119,8 @@ def phan_tich(lenh: list[dict], so_du_dau: float | None = None, tien: str = 'USD
     # chuỗi thắng/thua
     cur, best = {'t': 0, 'l': 0}, {'t': 0, 'l': 0}
     for x in lenh:
+        if not x['rong']:                                                    # hòa vốn: không thắng, không thua, giữ nguyên chuỗi
+            continue
         k = 't' if x['rong'] > 0 else 'l'
         cur[k] += 1
         cur['l' if k == 't' else 't'] = 0
@@ -295,11 +297,11 @@ def mau(so: int = 260, hat: int = 7, now: datetime | None = None) -> tuple[list[
     t = now - timedelta(days=240)
     lenh = []
     for i in range(so):
-        if t >= now - timedelta(hours=12):                                   # không sinh lệnh ở tương lai
-            break
         t += timedelta(minutes=rnd.randint(40, 1400))
         if t.weekday() >= 5:
             t += timedelta(days=7 - t.weekday())
+        if t >= now - timedelta(hours=2):                                    # không sinh lệnh ở tương lai (kiểm sau khi đã dời giờ)
+            break
         sym, pip, gia, gt_pip = rnd.choice(ma)
         mua = rnd.random() < 0.55
         lot = rnd.choice([0.05, 0.1, 0.1, 0.2])
@@ -316,6 +318,7 @@ def mau(so: int = 260, hat: int = 7, now: datetime | None = None) -> tuple[list[
         rong = pip_kq * gt_pip * lot
         vao = gia * (1 + rnd.uniform(-0.01, 0.01))
         dong = min(t + timedelta(minutes=phut), now - timedelta(minutes=1))
+        phut = (dong - t).total_seconds() / 60
         r_tien = sl_pip * gt_pip * lot if sl_pip_dat else None
         lenh.append({'id': 1000 + i, 'ma': sym, 'chieu': 'MUA' if mua else 'BAN', 'lot': lot, 'vao': round(vao, 5),
                      'ra': round(vao + (pip_kq * pip if mua else -pip_kq * pip), 5), 'mo': t.isoformat(), 'dong': dong.isoformat(), 'phut': round(phut, 1),
@@ -392,7 +395,8 @@ def lay(cfg: dict, ngay: int = 90, ma: str = '', chieu: str = '', nguon: str = '
                    'lenh': ds, 'so_du_dau': dau, 'nap_rut': []}
         else:
             goc = doc(cfg, ngay, now)
-        _nho[k] = (time.monotonic(), goc)
+        if goc.get('san_sang'):
+            _nho[k] = (time.monotonic(), goc)
     if not goc.get('san_sang'):
         return goc
     tat_ca = goc['lenh']

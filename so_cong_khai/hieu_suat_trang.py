@@ -91,10 +91,11 @@ try{const s=JSON.parse(localStorage.getItem('hs-loc')||'{}');Object.assign(st,s)
 const luu=()=>{try{localStorage.setItem('hs-loc',JSON.stringify(st))}catch(e){}};
 function dem(el,den,fn){if(giam||!isFinite(den)){el.textContent=fn(den);return}const t0=performance.now(),d=800;
  const b=t=>{const k=Math.min(1,(t-t0)/d),e=1-Math.pow(1-k,3);el.textContent=fn(den*e);if(k<1)requestAnimationFrame(b)};requestAnimationFrame(b)}
-async function tai(){$('#hs-noi').setAttribute('aria-busy','true');
+let lan=0;
+async function tai(){const so=++lan;$('#hs-noi').setAttribute('aria-busy','true');
  try{const r=await fetch('/api/hieu-suat?'+new URLSearchParams({ngay:st.ngay,ma:st.ma,chieu:st.chieu,nguon:st.nguon,mau:st.mau?1:0}),{cache:'no-store'});
-  if(!r.ok)throw new Error(await r.text());D=await r.json();ve()}
- catch(e){$('#hs-noi').innerHTML=`<div class="hs-card"><p class="note">Không đọc được lịch sử lệnh: ${esc(e.message)}</p></div>`}
+  if(!r.ok)throw new Error(await r.text());const j=await r.json();if(so!==lan)return;D=j;ve()}
+ catch(e){if(so!==lan)return;$('#hs-noi').innerHTML=`<div class="hs-card"><p class="note">Không đọc được lịch sử lệnh: ${esc(e.message)}</p></div>`}
  $('#hs-noi').removeAttribute('aria-busy')}
 function boLoc(){document.querySelectorAll('#hs-ngay button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===st.ngay));
  document.querySelectorAll('#hs-chieu button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===st.chieu));
@@ -111,7 +112,7 @@ function ve(){boLoc();const el=$('#hs-noi');
   <div class="hs-k hien"><span>Lãi ròng</span><b class="${cls(T.rong)}" data-dem="${T.rong??0}" data-kieu="tien">—</b><small>lãi gộp ${tien(T.lai_gop,t)} · phí ${tien(T.phi,t)} · swap ${tien(T.swap,t)}</small></div>
   <div class="hs-k hien"><span>Tỷ lệ thắng</span><b data-dem="${tl}" data-kieu="pct">—</b><small>Lệnh thắng ${T.thang} · lệnh thua ${T.thua}</small>
    <svg class="vong" viewBox="0 0 60 60"><circle class="nen" cx="30" cy="30" r="24"/><circle class="gt" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8" data-p="${tl}"/></svg></div>
-  <div class="hs-k hien"><span>Hệ số lợi nhuận</span><b class="${T.pf==='inf'||T.pf>1?'gain':T.pf<1?'loss':''}">${pf}</b><small>lãi gộp chia lỗ gộp; trên 1 là có lãi</small></div>
+  <div class="hs-k hien"><span>Hệ số lợi nhuận</span><b class="${T.pf==='inf'||T.pf>1?'gain':T.pf!=null&&T.pf<1?'loss':''}">${pf}</b><small>lãi gộp chia lỗ gộp; trên 1 là có lãi</small></div>
   <div class="hs-k hien"><span>Kỳ vọng mỗi lệnh</span><b class="${cls(T.tb)}">${tien(T.tb,t)}</b><small>${T.r_tb!=null?'trung bình '+(T.r_tb>0?'+':'')+fmt(T.r_tb,2)+'R trên '+T.n_r+' lệnh có SL':'chưa tính được R (lệnh không có SL)'}</small></div>
   <div class="hs-k hien"><span>Sụt vốn lớn nhất</span><b class="${T.dd_max>0?'loss':''}">${T.dd_max?'−'+fmt(T.dd_max)+' '+t:'—'}</b><small>${T.dd_pct!=null?fmt(T.dd_pct,1)+'% vốn lúc đỉnh':''} · chuỗi thua dài nhất ${T.chuoi_thua}</small></div>
   <div class="hs-k hien"><span>Số lệnh</span><b data-dem="${T.n}" data-kieu="so">—</b><small>giữ trung bình ${gio(T.giu_tb)} · chuỗi thắng dài nhất ${T.chuoi_thang}</small></div></div>`;
@@ -196,10 +197,10 @@ async function veThe(cv,coTien){
  if(st.ma)phu+=' · '+st.ma;if(st.chieu)phu+=' · '+(st.chieu==='MUA'?'chỉ lệnh mua':'chỉ lệnh bán');
  c.fillStyle=CC.ink2;c.font='500 21px '+F;c.fillText(coDan(c,phu,540),56,196);
  const pct=T.so_du_dau>0&&T.rong!=null?T.rong/T.so_du_dau*100:null,dau=x=>x>0?'+':x<0?'−':'';
- const lon=coTien||pct==null?tien(T.rong,t):dau(pct)+fmt(Math.abs(pct),1)+'%';
+ const lon=coTien?tien(T.rong,t):pct!=null?dau(pct)+fmt(Math.abs(pct),1)+'%':'—';
  c.fillStyle=(T.rong||0)>=0?CC.gain:CC.loss;vua(c,lon,800,88,560);c.fillText(lon,52,300);
  c.fillStyle=CC.ink2;c.font='500 20px '+F;
- c.fillText(coTien?(pct!=null?dau(pct)+fmt(Math.abs(pct),1)+'% trên vốn đầu kỳ':'lãi ròng'):'lợi nhuận trên vốn đầu kỳ',56,340);
+ c.fillText(coTien?(pct!=null?dau(pct)+fmt(Math.abs(pct),1)+'% trên vốn đầu kỳ':'lãi ròng'):pct!=null?'lợi nhuận trên vốn đầu kỳ':'chưa tính được % (không rõ vốn đầu kỳ)',56,340);
  const X0=640,X1=W-56,Y0=126,Y1=392;
  if(v.length>1){const ys=v.map(p=>p.v).concat([0]),lo=Math.min(...ys),hi=Math.max(...ys),sp=(hi-lo)||1,X=i=>X0+i/(v.length-1)*(X1-X0),Y=x=>Y1-(x-lo)/sp*(Y1-Y0);
   c.setLineDash([5,6]);c.strokeStyle='rgba(255,255,255,.18)';c.lineWidth=1.5;c.beginPath();c.moveTo(X0,Y(0));c.lineTo(X1,Y(0));c.stroke();c.setLineDash([]);
@@ -207,7 +208,7 @@ async function veThe(cv,coTien){
   c.beginPath();v.forEach((p,i)=>i?c.lineTo(X(i),Y(p.v)):c.moveTo(X(i),Y(p.v)));c.lineTo(X(v.length-1),Y1);c.lineTo(X0,Y1);c.closePath();c.fillStyle=g;c.fill();
   c.beginPath();v.forEach((p,i)=>i?c.lineTo(X(i),Y(p.v)):c.moveTo(X(i),Y(p.v)));c.strokeStyle=CC.series;c.lineWidth=4;c.shadowColor='rgba(141,255,8,.55)';c.shadowBlur=14;c.stroke();c.shadowBlur=0;
   const ex=X(v.length-1),ey=Y(v[v.length-1].v);c.beginPath();c.arc(ex,ey,7,0,7);c.fillStyle=CC.series;c.fill();c.lineWidth=3;c.strokeStyle=CC.bg;c.stroke()}
- const o=[['Tỷ lệ thắng',fmt(T.ty_le||0,1)+'%',null],['Hệ số lợi nhuận',T.pf==='inf'?'∞':fmt(T.pf,2),T.pf==='inf'||T.pf>1?CC.gain:T.pf<1?CC.loss:null],
+ const o=[['Tỷ lệ thắng',fmt(T.ty_le||0,1)+'%',null],['Hệ số lợi nhuận',T.pf==='inf'?'∞':fmt(T.pf,2),T.pf==='inf'||T.pf>1?CC.gain:T.pf!=null&&T.pf<1?CC.loss:null],
   ['Sụt vốn lớn nhất',coTien?(T.dd_max?'−'+fmt(T.dd_max)+' '+t:'—'):(T.dd_pct!=null?'−'+fmt(T.dd_pct,1)+'%':'—'),T.dd_max>0?CC.loss:null],['Số lệnh',fmt(T.n||0,0),null]];
  const bw=(W-112-3*16)/4;o.forEach(([n,g,mau],i)=>{const x=56+i*(bw+16);hop(c,x,428,bw,118,16);c.fillStyle=CC.card;c.fill();c.strokeStyle=CC.line;c.lineWidth=1.5;c.stroke();
   c.fillStyle=CC.ink2;c.font='600 17px '+F;c.fillText(coDan(c,n,bw-40),x+20,462);c.fillStyle=mau||CC.ink;vua(c,g,800,38,bw-40);c.fillText(coDan(c,g,bw-40),x+20,520)});
