@@ -30,7 +30,7 @@ CONG_THUC = {
     'pha_vo': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L4', 'L6')},
     'ict': {'vao': 'V3', 'sl': 'S2', 'tp': 'T0', 'loc': ('L2', 'L4', 'L6')},
     'ict_fvg': {'vao': 'V3', 'sl': 'S0', 'tp': 'T0', 'loc': ('L2', 'L4')},
-    'elliott': {'vao': 'V0', 'sl': 'S2', 'tp': 'T0', 'loc': ()},
+    'elliott': {'vao': 'V0', 'sl': 'S2', 'tp': 'T0', 'loc': ('H2',)},          # hợp lưu H2 qua cổng 26/11/2026 (cong-cu/hop_luu.py)
     'wyckoff': {'vao': 'V2', 'sl': 'S1', 'tp': 'T0', 'loc': ('L4', 'L6')},
     'price_action': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L1',)},
     'fib': {'vao': 'V1', 'sl': 'S0', 'tp': 'T0', 'loc': ('L2',)},
@@ -40,8 +40,9 @@ TEN_LOAI = {'tt': 'Vào ngay theo giá thị trường', 'gh': 'Lệnh chờ gi�
 TEN_SL = {'S0': 'mức của phương pháp', 'S1': 'cách giá vào 1,5 ATR', 'S2': 'mức của phương pháp lùi thêm đúng spread', 'S3': 'mức của phương pháp lùi thêm 0,5 ATR'}
 TEN_LOC = {'L1': 'Không nằm trong 60 phút quanh tin USD mức cao', 'L2': 'Spread không quá 2 lần mức thường',
            'L3': 'Còn ít nhất 1R trước đỉnh/đáy 24 giờ', 'L4': 'Thuận xu hướng H4 (EMA20 so với EMA50)',
-           'L6': 'D1, H4 và H1 cùng chiều lệnh (EMA20 so với EMA50)'}
-DIEU_KIEN = ('L1', 'L2', 'L3', 'L4', 'L6')
+           'L6': 'D1, H4 và H1 cùng chiều lệnh (EMA20 so với EMA50)',
+           'H2': 'Ít nhất 2 phương pháp khác cùng chiều trong 60 phút'}
+DIEU_KIEN = ('L1', 'L2', 'L3', 'L4', 'L6', 'H2')
 _nho: dict = {}
 
 
@@ -112,6 +113,17 @@ def so_do(ma: str, tep: Path | None = None) -> dict | None:
             _nho.update(lx_key=key, lx=json.loads(lx.read_text(encoding='utf-8')))
         y = _nho['lx']['pp'][ma]
         out['so_phep_so'] = (out['so_phep_so'] or 0) + int(_nho['lx'].get('so_phep_so') or 0)
+        if y['giu'] != 'nen' and y['giu'] in CONG_THUC[ma]['loc']:
+            out['phieu'] = y['bang'][y['giu']]
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    hl = tep.with_name('hop-luu.json')                      # hợp lưu giữa các phương pháp (cong-cu/hop_luu.py): qua cổng thì số đo là của bản có bộ lọc đó
+    try:
+        key = (str(hl), hl.stat().st_mtime_ns)
+        if _nho.get('hl_key') != key:
+            _nho.update(hl_key=key, hl=json.loads(hl.read_text(encoding='utf-8')))
+        y = _nho['hl']['pp'][ma]
+        out['so_phep_so'] = (out['so_phep_so'] or 0) + int(_nho['hl'].get('so_phep_so') or 0)
         if y['giu'] != 'nen' and y['giu'] in CONG_THUC[ma]['loc']:
             out['phieu'] = y['bang'][y['giu']]
     except (OSError, ValueError, KeyError, TypeError):
@@ -205,9 +217,19 @@ def xu(khung: pd.DataFrame | None, dai: timedelta, t: pd.Timestamp) -> float:
     return float(truoc.iloc[-1]) if len(truoc) else 0.0
 
 
+def hop_luu(ma: str, s: dict, m15: pd.DataFrame, h1: pd.DataFrame | None) -> int:
+    """Số phương pháp KHÁC có tín hiệu cùng chiều với `s` trong 60 phút tính tới giờ tín hiệu (cùng cách đếm với cong-cu/hop_luu.py)."""
+    t, dem = pd.Timestamp(s['t']), 0
+    for khac in PP.DS:
+        if khac != ma and any(x['huong'] == s['huong'] and t - timedelta(minutes=60) <= pd.Timestamp(x['t']) <= t for x in PP.quet(khac, m15, h1)):
+            dem += 1
+    return dem
+
+
 def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: float, spread_thuong: float, h1: pd.DataFrame | None = None,
-              d1: pd.DataFrame | None = None) -> dict:
-    """{'L1'…'L4', 'L6': True nếu điều kiện ĐẠT (tín hiệu không bị bộ lọc đó bỏ)}. L2 lúc sống so spread hiện tại với mức thường của cấu hình (phép đo
+              d1: pd.DataFrame | None = None, ma: str | None = None) -> dict:
+    """{'L1'…'L4', 'L6', 'H2': True nếu điều kiện ĐẠT (tín hiệu không bị bộ lọc đó bỏ)}. H2 (hợp lưu) chỉ tính cho phương pháp có H2 trên phiếu
+    (phải quét bảy phương pháp kia); còn lại là None và không hiện. L2 lúc sống so spread hiện tại với mức thường của cấu hình (phép đo
     dùng trung vị 1.440 nến 1 phút trước đó). L6 cần nến H1 và D1; thiếu thì coi là chưa đạt."""
     mua = s['huong'] == 'MUA'
     t = pd.Timestamp(s['t'])
@@ -220,7 +242,9 @@ def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: f
     xu4 = float(truoc.iloc[-1]) if len(truoc) else 0.0
     c = 1 if mua else -1
     l6 = xu(d1, timedelta(days=1), t) * c > 0 and xu4 * c > 0 and xu(h1, timedelta(hours=1), t) * c > 0
-    return {'L1': not gan, 'L2': not (spread > 2 * spread_thuong), 'L3': not (cho < abs(s['vao'] - s['sl'])), 'L4': not (xu4 * c < 0), 'L6': bool(l6)}
+    h2 = hop_luu(ma, s, m15, h1) >= 2 if ma and 'H2' in CONG_THUC.get(ma, {}).get('loc', ()) else None
+    return {'L1': not gan, 'L2': not (spread > 2 * spread_thuong), 'L3': not (cho < abs(s['vao'] - s['sl'])), 'L4': not (xu4 * c < 0), 'L6': bool(l6),
+            'H2': h2}
 
 
 def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: float, ask: float, now: datetime, tin: list, spread_thuong: float,
@@ -295,7 +319,7 @@ def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: flo
     lo, hi =(PP.RUI_RO_ATR[0] * (0.6 if loai == 'tt' else 1.0), PP.RUI_RO_ATR[1] * (1.3 if loai == 'tt' else 1.0))    # vào ngay: nới như phương án gốc, vì giá đã chạy từ lúc nến đóng
     if tt == 'con_hieu_luc' and not (rui > 0 and lo * s['atr'] <= rui <= hi * s['atr']):
         tt = 'rui_ro'
-    dk = dieu_kien(s, m, h4, tin, sp, spread_thuong, h1, d1)
+    dk = dieu_kien(s, m, h4, tin, sp, spread_thuong, h1, d1, ma)
     hong = [k for k in ct['loc'] if not dk[k]]
     if tt == 'con_hieu_luc' and hong:
         tt = 'bi_loc'
@@ -315,5 +339,5 @@ def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: flo
     return {'ma': ma, 'ten': PP.DS[ma]['ten'], 'huong': s['huong'], 'loai': loai, 'ten_loai': TEN_LOAI[loai], 'trang_thai': tt, 'vao': r(gia_vao), 'sl': r(sl),
             'tp': [r(gia_vao + dau * rui), r(gia_vao + dau * PP.TP_R * rui)], 'rr': [1.0, PP.TP_R], 'rui_ro_gia': r(abs(rui)), 'vung': [r(v) for v in s['vung']] if s.get('vung') else None,
             'con_phut': con if tt == 'con_hieu_luc' else None, 'tuoi_phut': int(tuoi), 'vao_luc': vao_luc, 'ket_cuc': ket, 'huy': huy, 'nen': s['t'].isoformat(), 'ly_do': s['ly_do'],
-            'dieu_kien': [{'ma': k, 'ten': TEN_LOC[k], 'dat': bool(dk[k]), 'bat_buoc': k in ct['loc']} for k in DIEU_KIEN],
+            'dieu_kien': [{'ma': k, 'ten': TEN_LOC[k], 'dat': bool(dk[k]), 'bat_buoc': k in ct['loc']} for k in DIEU_KIEN if dk.get(k) is not None],
             'loc_hong': [TEN_LOC[k] for k in hong], 'khac_luat_goc': khac, 'cong_thuc': dict(ct, loc=list(ct['loc'])), 'so_do': so_do(ma), 'ngay_do': NGAY_DO}
