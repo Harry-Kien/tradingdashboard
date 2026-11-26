@@ -1000,6 +1000,7 @@ GIAM_SAT = r"""<div id="gsr-dai" class="gsr" hidden aria-live="polite"></div><st
 .gsr-m b{display:block;font-size:13.5px}.gsr-m span{display:block;color:var(--ink2);font-size:12.5px;margin-top:2px;line-height:1.45}
 .gsr-m button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink2);font-size:18px;cursor:pointer}
 .gsr-m button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+@media (max-width:640px){.gsr{margin-top:6px;gap:4px}.gsr-m{padding:6px 10px;gap:8px}.gsr-m span{display:none}.gsr-m b{font-size:12.5px}}
 </style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const an=()=>{try{const o=JSON.parse(localStorage.getItem('gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
@@ -1008,7 +1009,7 @@ function ve(ds){const el=document.getElementById('gsr-dai');if(!el)return;const 
  el.innerHTML=con.map(a=>{const c=a[LG]||a.vi;return`<div class="gsr-m ${a.muc==='xau'?'xau':'chu_y'}" role="alert"><i>${a.muc==='xau'?'✕':'!'}</i><div><b>${esc(c.tieu)}</b><span>${esc(c.noi)}</span></div><button type="button" data-gsr="${esc(a.id)}" title="Ẩn tới hết hôm nay" aria-label="Ẩn tới hết hôm nay">×</button></div>`}).join('')}
 async function hoi(){if(document.hidden)return;let q='';try{const t=JSON.parse(localStorage.getItem('kl-qt')||'{}');
  q=new URLSearchParams(Object.entries(t).filter(([k,v])=>/^q_(rui_ro_lenh_toi_da_pct|lo_ngay_toi_da_pct|tong_rui_ro_toi_da_pct)$/.test(k)&&v!=null&&v!=='')).toString()}catch(e){}
- try{const r=await fetch('/api/giam-sat'+(q?'?'+q:''),{cache:'no-store'});if(!r.ok)return;const j=await r.json();ve(j.ds||[])}catch(e){}}
+ try{const r=await fetch('/api/giam-sat'+(q?'?'+q:''),{cache:'no-store'});if(!r.ok)return;const j=await r.json();window.GSR={ds:j.ds||[],luc:Date.now()};dispatchEvent(new Event('gsr'));ve(j.ds||[])}catch(e){}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-gsr]');if(!b)return;const o=an();o[b.dataset.gsr]=ngay();try{localStorage.setItem('gs-an',JSON.stringify(o))}catch(x){}
  b.closest('.gsr-m').remove();const el=document.getElementById('gsr-dai');if(el&&!el.children.length)el.hidden=true});
 setTimeout(hoi,1500);setInterval(hoi,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)hoi()})})();</script>"""

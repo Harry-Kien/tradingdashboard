@@ -638,16 +638,21 @@ addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTA
  else if(k==='a'||k==='A')$('#pt-btn').click();else if(k==='b'||k==='B')datTrong(!TRONG);else if(k==='f'||k==='F')$('#fs-btn').click();else if((k==='h'||k==='H')&&CP.classList.contains('max'))$('#gon-btn').click();else return;e.preventDefault()});
 // --- tính khối lượng lệnh
 const rk={von:200,rr:1,sl:20};try{Object.assign(rk,JSON.parse(localStorage.getItem('so-rk')||'{}'))}catch(e){}
-function rkDraw(){const risk=rk.von*rk.rr/100,lot=rk.sl>0?Math.floor(risk/(rk.sl*100)*100+1e-9)/100:0,min=rk.sl;let h=kv('Rủi ro cho phép',f2(risk)+' USD');
+let DT={};async function dtTai(){try{const j=await(await fetch('/api/thi-truong',{cache:'no-store'})).json();const o={};for(const x of j.ds||[])o[x.ma]=x;DT=o}catch(e){}rkDraw()}
+const dtMa=()=>ma?DT[ma]||null:Object.values(DT).find(x=>String(x.goc||'').toUpperCase()==='XAUUSD')||null;      // thông số hợp đồng MT5 của mã đang xem
+function rkDraw(){const d=dtMa(),g1=d&&d.gt1,lm=(d&&d.lot_min)||.01,lb=(d&&d.lot_buoc)||.01,dp=(String(lb).split('.')[1]||'').length,risk=rk.von*rk.rr/100;let h=kv('Rủi ro cho phép',f2(risk)+' USD');
  if(!(rk.von>0&&rk.rr>0&&rk.sl>0))h='<p class="why">Nhập đủ ba ô để tính.</p>';
- else if(lot>=.01)h+=kv('Khối lượng theo mức rủi ro',f2(lot)+' lot')+kv('Lỗ nếu chạm SL',f2(lot*100*rk.sl)+' USD ('+f2(lot*100*rk.sl/rk.von*100)+'% vốn)');
- else h+=`<p class="stale"><b>Vốn này không đủ cho 0,01 lot trong mức rủi ro đã chọn.</b> 0,01 lot với SL ${f2(rk.sl)} giá sẽ lỗ ${f2(min)} USD nếu chạm SL, tức ${f2(min/rk.von*100)}% vốn.</p>`
-  +kv('Vốn tối thiểu cho 0,01 lot ở mức rủi ro này',f2(min/(rk.rr/100))+' USD');
+ else if(!g1)h+='<p class="stale">Chưa có thông số hợp đồng của mã này từ MT5 (cần bảng giá trực tiếp), nên chưa tính lot. Dùng trang Kiểm lệnh khi MT5 đã nối.</p>';
+ else{const lot=Math.floor(risk/(rk.sl*g1)/lb+1e-9)*lb,min=lm*g1*rk.sl,lm1=lm.toFixed(dp).replace('.',',');
+  if(lot>=lm-1e-12)h+=kv('Khối lượng theo mức rủi ro',lot.toFixed(dp).replace('.',',')+' lot')+kv('Lỗ nếu chạm SL',f2(lot*g1*rk.sl)+' USD ('+f2(lot*g1*rk.sl/rk.von*100)+'% vốn)');
+  else h+=`<p class="stale"><b>Vốn này không đủ cho ${lm1} lot trong mức rủi ro đã chọn.</b> ${lm1} lot với SL ${f2(rk.sl)} giá sẽ lỗ ${f2(min)} USD nếu chạm SL, tức ${f2(min/rk.von*100)}% vốn.</p>`
+   +kv(`Vốn tối thiểu cho ${lm1} lot ở mức rủi ro này`,f2(min/(rk.rr/100))+' USD');
+  h+=`<p class="why">Thông số MT5 của ${esc(d.ma)}: 1 giá cho 1 lot = ${f2(g1)} (tiền tài khoản), lot tối thiểu ${lm1}, bước ${lb}.</p>`}
  $('#rko').innerHTML=h}
-function rkAtr(){const a=D&&D.luat&&D.luat.bot&&D.luat.bot.atr;$('#rk-atr').disabled=!a;$('#rk-atr').dataset.sl=a?Math.round(a*1.5*10)/10:''}
+function rkAtr(){setTimeout(rkDraw,0);const a=D&&D.luat&&D.luat.bot&&D.luat.bot.atr;$('#rk-atr').disabled=!a;$('#rk-atr').dataset.sl=a?Math.round(a*1.5*10)/10:''}
 const rkLuu=()=>{try{localStorage.setItem('so-rk',JSON.stringify(rk))}catch(e){}};
 for(const k of['von','rr','sl']){const el=$('#rk-'+k);el.value=rk[k];el.addEventListener('input',()=>{rk[k]=parseFloat(el.value)||0;rkLuu();rkDraw()})}
-$('#rk-atr').addEventListener('click',()=>{const v=parseFloat($('#rk-atr').dataset.sl);if(v){rk.sl=v;$('#rk-sl').value=v;rkLuu();rkDraw()}});rkDraw();
+$('#rk-atr').addEventListener('click',()=>{const v=parseFloat($('#rk-atr').dataset.sl);if(v){rk.sl=v;$('#rk-sl').value=v;rkLuu();rkDraw()}});rkDraw();dtTai();setInterval(dtTai,300000);
 // --- công cụ vẽ: hình lưu theo từng mã ngay trong trình duyệt (theo giờ và giá) nên giữ nguyên khi đổi khung, phóng to hay tải lại trang
 const VE={ds:[],cong:'tro',chon:null,tam:null,keo:null,an:false,do:null,hit:[],mau:'',cu:[],lai:[],goc:null},MAUS=['','#e5532d','#17935b','#d99a00','#6250d6','#1b1f24'],veKhoa=()=>'so-ve:'+(ma||'XAU'),FIBS=[0,.236,.382,.5,.618,.786,1],FIBMR=[0,.618,1,1.272,1.618,2,2.618],
  veLuu=kh=>{const moi=JSON.stringify(VE.ds);if(!kh&&VE.goc!=null&&VE.goc!==moi){VE.cu.push(VE.goc);if(VE.cu.length>40)VE.cu.shift();VE.lai=[]}VE.goc=moi;try{localStorage.setItem(veKhoa(),moi)}catch(e){}},      // mỗi lần lưu giữ lại bản trước để hoàn tác
@@ -1009,13 +1014,13 @@ function dlHtml(){if(!DL||!DL.co_the||!DL.muc||!DL.muc.length)return'';const g=D
  return `<p class="why" style="margin:6px 0"><b>Kiểm trên giá mới.</b> Chạy lại nguyên trạng các luật đã chốt trên giá từ 25/11/2026, phần chưa phép đo nào nhìn thấy${DL.luc?` (đo lúc ${vn(Date.parse(DL.luc)/1000)}, ${DL.so_ngay} ngày giá mới)`:''}: `+g.map(x=>`${esc(x.ten)}${/L6/.test(x.nhom||'')?' (có L6, tính từ 26/11)':''}: ${x.n} lệnh, ${esc(x.ket_ten||'')}${x.kem_ky_vong?', kém kỳ vọng rõ':''}`).join('; ')+`. Dưới 30 lệnh thì chưa kết luận; từ 30 lệnh kết luận theo khoảng tin cậy 90% của lãi lỗ mỗi lệnh. Tự đo lại mỗi tháng một lần; luật không được chỉnh theo số này.`+(DL.dang?' Đang đo lại…':` <button type="button" class="ictb dlb">Đo lại ngay</button>`)+(DL.loi?` <span class="stale">Lần đo gần nhất lỗi: ${esc(DL.loi)}</span>`:'')+'</p>'}
 function phPlan(f){return{ma:'phieu:'+f.ma,ph:1,nhom:'pp',chip:(PTR.phuong_phap.find(x=>x.ma===f.ma)||{}).chip||f.ma,ten:'Phiếu · '+f.ten,huong:f.huong,vao:f.vao,sl:f.sl,tp:f.tp,rr:f.rr,vung:f.vung,hieu_luc:f.trang_thai==='con_hieu_luc',nen:f.nen,rui_ro_gia:f.rui_ro_gia,kieu:f.ten_loai,cu:f.vao_luc==='tin_hieu',kc:f.ket_cuc}}
 function phBam(ma){const q=(PTR?[...(PTR.phuong_phap||[]),...(PTR.phuong_an||[])]:[]).find(x=>x.phieu&&x.phieu.ma===ma);if(!q||!q.phieu)return;plan=plan&&plan.ma==='phieu:'+q.phieu.ma?null:phPlan(q.phieu);planTat=plan?0:1;view.off=0;if(!PTB.hidden)ptVe();plH='';dvVe();draw()}
-const PH_TT={con_hieu_luc:['ok','Đặt được lúc này'],bi_loc:['xau','Bộ lọc loại tín hiệu'],da_khop:['','Lệnh chờ đã khớp'],da_huy:['xau','Đã hủy'],het_han:['','Hết hạn'],qua_tre:['','Quá hạn vào ngay'],da_qua:['','Giá đã qua mức chờ'],rui_ro:['xau','Dừng lỗ ngoài khoảng']};
+const PH_TT={con_hieu_luc:['ok','Đặt được lúc này'],chua_cap_nhat:['xau','Chưa cập nhật được'],tk_dung:['xau','Đủ điều kiện kỹ thuật · tài khoản đang dừng'],bi_loc:['xau','Bộ lọc loại tín hiệu'],da_khop:['','Lệnh chờ đã khớp'],da_huy:['xau','Đã hủy'],het_han:['','Hết hạn'],qua_tre:['','Quá hạn vào ngay'],da_qua:['','Giá đã qua mức chờ'],rui_ro:['xau','Dừng lỗ ngoài khoảng']};
 function phKc(f,t){return f.ket_cuc==='sl'?['xau','Đã qua · giá đã chạm dừng lỗ']:f.ket_cuc==='tp'?['','Đã qua · giá đã chạm chốt 2R']:t}
 function phNgan(ds){const fs=ds.filter(x=>x.phieu).map(x=>x.phieu).sort((a,b)=>(a.trang_thai==='con_hieu_luc'?0:1)-(b.trang_thai==='con_hieu_luc'?0:1)||a.tuoi_phut-b.tuoi_phut).slice(0,3);if(!fs.length)return'';
  return'<div class="phn"><b class="phnt">Phiếu vào lệnh theo số đo</b><small class="phnc">công thức đã đo trên 11 năm; chưa công thức nào có lãi rõ ràng</small>'+fs.map(f=>{const t=phKc(f,PH_TT[f.trang_thai]||['',f.trang_thai]),ve=!!(plan&&plan.ma==='phieu:'+f.ma),mua=f.huong==='MUA';
   return`<div class="phr${f.trang_thai==='con_hieu_luc'?' song':''}"><div class="phh"><span class="dir ${mua?'up':'dn'}">${mua?'▲ MUA':'▼ BÁN'}</span><b>${esc(f.ten)}</b><span class="hl ${t[0]}">${t[1]}</span></div><small>${esc(f.ten_loai)}${f.con_phut!=null?' · còn '+f.con_phut+' phút':' · tín hiệu cách đây '+f.tuoi_phut+' phút'}</small>`
    +`<div class="phg"><span>${f.vao_luc==='tin_hieu'?'Vào lúc tín hiệu':'Vào'} <b>${fp(f.vao)}</b></span><span>Dừng lỗ <b class="loss">${fp(f.sl)}</b></span><span>Chốt 2R <b class="gain">${fp(f.tp[1])}</b></span><button type="button" class="ictb vph" data-ma="${esc(f.ma)}" aria-pressed="${ve}">${ve?'Đang vẽ':'Vẽ lên biểu đồ'}</button></div></div>`}).join('')+'</div>'}
-function phHtml(p){const f=p.phieu;if(!f)return'';const TT={con_hieu_luc:['ok','Đặt được lúc này'],bi_loc:['xau','Bộ lọc loại tín hiệu này'],da_khop:['','Lệnh chờ đã khớp'],da_huy:['xau','Đã hủy: giá chạm dừng lỗ trước khi khớp'],het_han:['','Hết hạn 4 giờ'],qua_tre:['','Đã quá hạn vào ngay'],da_qua:['','Giá đã qua mức chờ lúc tín hiệu đến'],rui_ro:['xau','Khoảng dừng lỗ ngoài 0,5–3 ATR']}[f.trang_thai]||['',f.trang_thai],
+function phHtml(p){const f=p.phieu;if(!f)return'';const TT={con_hieu_luc:['ok','Đặt được lúc này'],chua_cap_nhat:['xau','Chưa cập nhật được'],tk_dung:['xau','Đủ điều kiện kỹ thuật · tài khoản đang dừng'],bi_loc:['xau','Bộ lọc loại tín hiệu này'],da_khop:['','Lệnh chờ đã khớp'],da_huy:['xau','Đã hủy: giá chạm dừng lỗ trước khi khớp'],het_han:['','Hết hạn 4 giờ'],qua_tre:['','Đã quá hạn vào ngay'],da_qua:['','Giá đã qua mức chờ lúc tín hiệu đến'],rui_ro:['xau','Khoảng dừng lỗ ngoài 0,5–3 ATR']}[f.trang_thai]||['',f.trang_thai],
  mua=f.huong==='MUA',von=rk.von>0?rk.von:0,lo=f.rui_ro_gia,so=v=>v==null?'—':(v>0?'+':'−')+Math.abs(v).toFixed(3).replace('.',','),pc=v=>v==null?'—':String(v).replace('.',',')+'%',ve=!!(plan&&plan.ma==='phieu:'+f.ma),
  hg=x=>`<span>${x.n.toLocaleString('vi-VN')}</span><span>${pc(x.khop_pct)}</span><span>${pc(x.thang)}</span><span class="${x.r_tb>0?'gain':'loss'}">${so(x.r_tb)}R</span><span>${x.pf==null?'—':String(x.pf).replace('.',',')}</span><span>${String(x.dd).replace('.',',')}R</span>`;
  let h=`<div class="ph"><div class="hd"><b>Phiếu vào lệnh theo số đo</b><small>đo ngày ${esc(f.ngay_do)} · không thay luật gốc ở trên</small></div><div><span class="dir ${mua?'up':'dn'}">${mua?'▲ MUA':'▼ BÁN'}</span> <span class="hl ${phKc(f,TT)[0]}">${phKc(f,TT)[1]}</span></div>`
@@ -1109,7 +1114,7 @@ function bangLenh(){const ds=ptDs().map((p,i)=>({p,i})).filter(({p})=>bat(ppKhoa
    +'</tr>'}
  return h+'</tbody></table></div><p class="why" style="margin:4px 0 8px">Số đo: tỷ lệ lệnh có lãi và lãi lỗ trung bình mỗi lệnh ('+esc((HOC&&HOC.don_vi)||'USD ở 0,01 lot')+'), chạy lại đúng quy tắc của phương pháp trên dữ liệu quá khứ; "—" là chưa có số đo. Hòa vốn cần = thua TB ÷ (thắng TB + thua TB): tỷ lệ thắng phải cao hơn mức này mới có lãi (xanh là cao hơn, đỏ là thấp hơn), nên tỷ lệ thắng cao mà thua TB lớn hơn nhiều thắng TB vẫn lỗ. Sụt giảm lớn nhất là mức lỗ cộng dồn từ đỉnh xuống đáy mà bạn phải chịu được nếu làm theo phương pháp.'+(ds.some(({p})=>(sd(p)||{}).mo_phong)?' Mô phỏng: xáo lại chuỗi lệnh quá khứ theo từng khối lệnh liền nhau hàng nghìn lần (block bootstrap); "mỗi lệnh 95%" là khoảng chứa lãi lỗ trung bình mỗi lệnh ở 95% số lần, cả khoảng trên 0 mới tách được lợi thế khỏi may; "sụt giảm xấu" là mức sụt chỉ 5% số lần vượt qua, thường sâu hơn con số đã xảy ra.':'')+(ds.some(({p})=>((sd(p)||{}).theo_ky||{}).so_ky)?' Năm (tháng) có lãi: trong các năm có ít nhất 10 lệnh, bao nhiêu năm tổng dương; các cột nhỏ là lãi lỗ từng năm, cột mờ là năm có dưới 10 lệnh. Lãi đến đều qua nhiều năm đáng tin hơn lãi chỉ nhờ một hai năm.':'')+phiTxt()+' Bấm "Vẽ" để hiện vùng vào, dừng lỗ và chốt lời trên biểu đồ. Kết quả quá khứ không bảo đảm tương lai; đây không phải lời khuyên đầu tư.</p></details>'}
 function ptVe(){if(!PTR){PTB.hidden=true;return}const cuon=PTB.scrollTop;const b=PTR.boi_canh||{},x=b.xu_huong||{},dt=PTR.dong_thuan||{};
- let h='<button type="button" class="x" id="pt-x" aria-label="Đóng">Đóng</button><h3>Phân tích lúc '+vn(Date.parse(PTR.luc)/1000)+'</h3><p class="why" style="margin:-2px 0 8px">Tự cập nhật mỗi 15 giây khi có giá trực tiếp, mỗi phút khi không.'+(PTR.ms&&PTR.ms['Tổng']!=null?' Lần này máy tính xong trong '+(PTR.ms['Tổng']/1000).toFixed(2).replace('.',',')+' giây.':'')+'</p>';
+ let h='<button type="button" class="x" id="pt-x" aria-label="Đóng">Đóng</button><h3>Phân tích lúc '+vn(Date.parse(PTR.luc)/1000)+'</h3>'+(PTR._tt?'<p class="stale">'+esc(PTR._ly)+'</p>':'')+'<p class="why" style="margin:-2px 0 8px">Tự cập nhật mỗi 15 giây khi có giá trực tiếp, mỗi phút khi không.'+(PTR.ms&&PTR.ms['Tổng']!=null?' Lần này máy tính xong trong '+(PTR.ms['Tổng']/1000).toFixed(2).replace('.',',')+' giây.':'')+'</p>';
  for(const c of PTR.canh_bao||[])h+=`<p class="stale">${esc(c)}</p>`;
  h+=kv('Giá Bid / Ask',fp(PTR.bid)+' / '+fp(PTR.ask))+kv('Xu hướng D1 · H4 · H1',[x.D1,x.H4,x.H1].map(v=>v>0?'tăng':v<0?'giảm':'ngang').join(' · '))
   +kv('ATR14 (M15)',fp(b.atr_m15))+kv('Kháng cự / hỗ trợ 2 giờ',fp(b.khang_cu)+' / '+fp(b.ho_tro));
@@ -1220,15 +1225,44 @@ function dvKiem(){if(!PTR)return;const now=Date.now(),sym=ma||'XAUUSD',pc=v=>v.t
  for(const a of DV){if(kyLuat&&!a.giu)continue;if(mhLoc&&PTR.mo_hinh&&PTR.mo_hinh.san_sang&&!(a.p.mo_hinh&&a.p.mo_hinh.hang>=90))continue;const cu=dvDa.get(a.k);if(cu&&now-cu<300000)continue;dvDa.set(a.k,now);toast({tieu_de:a.tieu,noi_dung:a.nd});if(snd)beep();
   if(window.Notification&&Notification.permission==='granted')try{new Notification(a.tieu,{body:a.nd,tag:'so-dv-'+a.k})}catch(e){}}
  try{sessionStorage.setItem('so-dv',JSON.stringify([...dvDa].slice(-60)))}catch(e){}dvVe()}
+// --- Đợt 0: độ tươi của phân tích và trạng thái tài khoản. Nhãn "còn hiệu lực"/"đặt được" chỉ hiện khi phân tích còn mới VÀ tài khoản không
+// đang dừng (giới hạn lỗ ngày). PTR_GOC = kết quả máy chủ trả; PTR = bản đem ra hiển thị (đã hạ trạng thái khi cần, kèm lý do).
+let PTR_GOC=null,ptLoi=0,ptTT='';
+const ptHan=()=>PTR_GOC&&PTR_GOC.nguon==='mt5'?45e3:150e3;                       // 3 chu kỳ tự cập nhật (15 giây khi có giá trực tiếp, 1 phút khi không)
+const tkDung=()=>!!(window.GSR&&(window.GSR.ds||[]).some(a=>String(a.id||'').startsWith('ngay-')));   // băng giám sát (trang.py): chạm giới hạn lỗ ngày
+function ptTrangThai(){if(!PTR_GOC)return'';return(ptLoi>=2||Date.now()-PTR_GOC._nhan>ptHan()?'cu':'')+(tkDung()?'dung':'')}
+function ptApDung(){if(!PTR_GOC){PTR=null;ptTT='';return}const tt=ptTrangThai();ptTT=tt;if(!tt){PTR=PTR_GOC;return}
+ const cu=tt.includes('cu'),gio=new Date(PTR_GOC._nhan).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'}),
+  ly=cu?'Chưa cập nhật được phân tích; số liệu lúc '+gio+'.':'Tài khoản đang dừng giao dịch hôm nay (chạm giới hạn lỗ ngày); đây chỉ là điều kiện kỹ thuật.',
+  st=cu?'chua_cap_nhat':'tk_dung',
+  sua=p=>{if(!p)return p;const f=p.phieu&&p.phieu.trang_thai==='con_hieu_luc'?{...p.phieu,trang_thai:st}:p.phieu;
+   return p.hieu_luc?{...p,hieu_luc:false,vi_sao_het:[ly,...(p.vi_sao_het||[])],phieu:f}:(f!==p.phieu?{...p,phieu:f}:p)};
+ PTR={...PTR_GOC,phuong_phap:(PTR_GOC.phuong_phap||[]).map(sua),phuong_an:(PTR_GOC.phuong_an||[]).map(sua),con_hieu_luc:0,_tt:tt,_ly:ly}}
+const PTK=document.createElement('p');PTK.className='ptk';PTK.setAttribute('aria-live','polite');{const s=document.querySelector('.stage');if(s)s.before(PTK)}
+function ptKhung(){if(!PTR_GOC){PTK.className='ptk';PTK.textContent='Đang chờ phân tích…';return}
+ const t=Date.parse(PTR_GOC.het||PTR_GOC.luc),giay=Math.max(0,Math.round((Date.now()-t)/1000)),cu=ptTT.includes('cu'),khac=tf!=='M15',
+  g=new Date(t).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+ PTK.className='ptk'+(cu?' cu':khac?' khac':'');
+ PTK.textContent=(cu?'Chưa cập nhật được · ':'')+'Điểm vào tính trên nến M15 đã đóng · giá lúc '+g+(giay<3600?' ('+giay+' giây trước)':'')+' · '
+  +(PTR_GOC.nguon==='mt5'?'MT5':'kho nến')+(ptTT.includes('dung')?' · tài khoản đang dừng hôm nay':'')+(khac?' · bạn đang xem '+tf+', mức giá vẫn theo M15':'')}
+function ptDoi(){if(ptTrangThai()!==ptTT){ptApDung();
+  if(PTR&&plan&&!plan.nk&&plan.ma!=='ai'){const q=[...(PTR.phuong_phap||[]),...(PTR.phuong_an||[])].find(x=>x.ma===plan.ma);if(q){plan.hieu_luc=q.hieu_luc;plan.vi_sao_het=q.vi_sao_het}else if(ptTT)plan.hieu_luc=false}
+  if(!PTB.hidden)ptVe();dvVe();draw()}
+ ptKhung()}
+setInterval(ptDoi,5000);addEventListener('gsr',ptDoi);document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.seg.tf button'))setTimeout(ptKhung,0)});
+document.head.insertAdjacentHTML('beforeend','<style>.ptk{margin:4px 0 6px;font-size:11.5px;line-height:1.4;color:var(--ink2)}.ptk.khac{color:var(--warn)}.ptk.cu{color:var(--loss);font-weight:600}</style>');
+// điện thoại: đưa nến lên màn hình đầu (ghi chú "Đọc trước" xuống dưới khung biểu đồ, dải bot tín hiệu xuống dưới nến)
+if(matchMedia('(max-width:640px)').matches){const dt=document.getElementById('doc-truoc'),dk=document.querySelector('.desk'),bt=document.getElementById('bot-tt'),sg=document.querySelector('.stage');
+ if(dt&&dk)dk.after(dt);if(bt&&sg)sg.after(bt)}
 let ptDang=0,ptCho=0,ptLan=0;async function ptTai(tu){if(window.BDPL&&BDPL.chan)return;if(ptDang){if(!tu)ptCho=1;return}ptDang=1;ptLan=Date.now();const b=$('#pt-btn'),ma0=ma;if(!tu){planTat=0;b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Đang phân tích…'}
- try{const r=await fetch('/api/phan-tich'+(ma?'?ma='+encodeURIComponent(ma):''),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();
+ try{const r=await fetch('/api/phan-tich'+(ma?'?ma='+encodeURIComponent(ma):''),{cache:'no-store',signal:AbortSignal.timeout?AbortSignal.timeout(20000):undefined});if(!r.ok)throw new Error(await r.text());const j=await r.json();
   if(ma0===ma&&!(window.BDPL&&BDPL.chan)){   // đã vào phát lại nến trong lúc chờ: không vẽ phân tích của giá hiện tại (vẫn dọn nút ở cuối)
-   PTR=j;
+   PTR_GOC=j;j._nhan=Date.now();ptLoi=0;ptApDung();ptKhung();
    if(!tu&&ppChon!=='tat'&&!ppNhom(ppChon).some(p=>p.co)&&ppNhom('tat').some(p=>p.co)){ppChon='tat';try{localStorage.setItem('so-ppc','tat')}catch(e){}}      // bấm nút mà thẻ đang nhớ không có điểm vào trong khi thẻ khác có: về 'Tất cả phương pháp'
    const ds=ptDs().filter(p=>bat(ppKhoa(p))),tn=totNhat();
    if(plan&&(plan.ma==='ai'||plan.nk)&&tu){}else if(plan&&plan.ph){const q=[...(PTR.phuong_phap||[]),...(PTR.phuong_an||[])].find(x=>x.phieu&&'phieu:'+x.phieu.ma===plan.ma);plan=q?phPlan(q.phieu):null}else{const cu=plan&&ppNhom(ppChon).find(p=>p.co&&p.ma===plan.ma);plan=cu||(tu&&planTat?null:ppTot(ppChon,tu&&ppChon==='tat'))}
    if(!tu){view.off=0;if(LW)lwNay()}if(!tu||!PTB.hidden)ptVe();draw();dvKiem();if(!KC||!KC.san_sang)kcTai();if(!HOC||!HOC.san_sang)hocTai();if(!tu&&hep()&&!fsOn())PTB.scrollIntoView({behavior:'smooth',block:'nearest'})}}
- catch(e){if(!tu){PTB.innerHTML='<p class="stale">'+(e instanceof TypeError?'Webapp không trả lời (có thể đang khởi động lại hoặc đã tắt). Chờ vài giây rồi bấm lại; nếu vẫn vậy, mở lại webapp.':'Không phân tích được: '+esc(e.message))+'</p>';PTB.hidden=false}}
+ catch(e){ptLoi++;ptDoi();if(!tu){PTB.innerHTML='<p class="stale">'+(e instanceof TypeError?'Webapp không trả lời (có thể đang khởi động lại hoặc đã tắt). Chờ vài giây rồi bấm lại; nếu vẫn vậy, mở lại webapp.':'Không phân tích được: '+esc(e.message))+'</p>';PTB.hidden=false}}
  nkTai();ptDang=0;if(!tu){b.disabled=false;b.removeAttribute('aria-busy');b.textContent='Phân tích điểm vào'}if(ptCho){ptCho=0;ptTai(0)}}
 $('#pt-btn').addEventListener('click',()=>{if(PTR&&PTB.hidden)ptVe();ptTai(0)});
 // phân tích tự chạy từ lúc mở trang: 15 giây một lần khi có giá trực tiếp, một phút một lần khi không
@@ -1338,7 +1372,7 @@ def trang_bieu_do(ten: str) -> str:
         '<label class="fld">Rủi ro mỗi lệnh (%)<input id="rk-rr" type="number" min="0.1" max="100" step="0.1" inputmode="decimal"></label>'
         '<label class="fld">Khoảng cách SL (giá)<input id="rk-sl" type="number" min="0.1" step="0.5" inputmode="decimal"></label>'
         '<button type="button" class="ghost nho" id="rk-atr">Lấy SL = 1,5 × ATR M15</button><div id="rko"></div>'
-        '<p class="why">Tính theo 1 lot = 100 ounce, tức 0,01 lot lãi lỗ 1 USD cho mỗi 1 giá, như thông số hợp đồng trong tài liệu của bạn. '
+        '<p class="why">Tính theo thông số hợp đồng MT5 của mã đang xem (giá trị 1 giá cho 1 lot, lot tối thiểu, bước lot), đọc từ bảng giá trực tiếp. '
         'Đây là phép tính, không phải lời khuyên đầu tư.</p></aside>'
         '<aside class="panel side" id="side"><p class="why">Đang tải…</p></aside>'
         '</div></div>',
