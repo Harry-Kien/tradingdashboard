@@ -3077,6 +3077,7 @@
 "Đang tính…": "Calculating…",
 "Đang tải báo cáo COT của CFTC (lần đầu khoảng {0}–{1} giây)…": "Loading the CFTC COT report (first time takes about {0}–{1} seconds)…",
 "Đang tải báo cáo từ cftc.gov lần đầu, mất chừng một phút…": "Loading the report from cftc.gov for the first time, takes about a minute…",
+"Đang tải dữ liệu nến…": "Loading candles…",
 "Đang tải giá…": "Loading prices…",
 "Đang tải lần đầu từ cftc.gov.": "First download from cftc.gov in progress.",
 "Đang tải nến…": "Loading candles…",
