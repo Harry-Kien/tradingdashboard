@@ -926,6 +926,7 @@ MENU = [
         ('thi-truong', 'Biến động theo giờ', '/thi-truong#bien-dong', 'Giờ nào, thứ nào giá chạy nhiều nhất', 'song'),
         ('thi-truong', 'Phiên & lịch tin', '/thi-truong#phien', 'Bốn phiên lớn, tin kinh tế sắp ra', 'lich'),
         ('thi-truong', 'Thông số hợp đồng', '/thi-truong#thong-so', 'Pip, ký quỹ, đòn bẩy, swap từng mã', 'ts'),
+        ('renko', 'Renko và Điểm & Hình', '/renko', 'Biểu đồ chỉ theo giá: gạch Renko, cột X và O', 'nen'),
         ('da-khung', 'Nhiều biểu đồ', '/da-khung', '2, 4 hoặc 1+3 biểu đồ: mỗi ô một mã và khung, đồng bộ con trỏ', 'nen')], 'gia'),
     ('tin-tuc', 'Tin tức', '/tin-tuc', None, 'tin'),
     ('bieu-do', 'Biểu đồ', '/bieu-do', None, 'nen'),

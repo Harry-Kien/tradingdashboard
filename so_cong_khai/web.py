@@ -269,6 +269,9 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/renko':                                        # Renko và Điểm & Hình: biểu đồ chỉ theo giá (renko_trang.py)
+                    from . import renko_trang                               # noqa: PLC0415
+                    return self._gui(200, 'text/html; charset=utf-8', renko_trang.trang_renko(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/da-khung':                                     # 2 hoặc 4 biểu đồ một mã, nhiều khung, con trỏ đồng bộ (da_khung_trang.py)
                     from . import da_khung_trang                            # noqa: PLC0415
                     return self._gui(200, 'text/html; charset=utf-8', da_khung_trang.trang_da_khung(thuong_hieu.TEN).encode('utf-8'))
@@ -388,6 +391,14 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: khung {tf}'.encode('utf-8'))
                     ma = (q.get('ma', [''])[0] or '').strip()
                     return self._day_tick(cfg.get('gia') or {}, tf, None if not ma or ma == da_ma.ma_vang(cfg) else ma)
+                if path == '/api/so-lenh':                                 # độ sâu thị trường: sổ lệnh sàn gửi về MT5, chỉ đọc (do_sau.py)
+                    from . import do_sau                                    # noqa: PLC0415
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    ma = (parse_qs(url.query).get('ma', [''])[0] or '').strip()
+                    if not re.fullmatch(r'[A-Za-z0-9._#-]{0,24}', ma):
+                        return self._gui(400, 'text/plain; charset=utf-8', 'Yêu cầu không hợp lệ.'.encode('utf-8'))
+                    kq = do_sau.doc(cfg.get('gia') or {}, None if not ma or ma == da_ma.ma_vang(cfg) else ma)
+                    return self._gui(200, LOAI['.json'], json.dumps(kq, ensure_ascii=False).encode('utf-8'))
                 if path == '/api/khoi-luong':                              # tick volume của nến cũ (tới 60.000 nến MT5 còn giữ), cho chỉ báo khối lượng
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
