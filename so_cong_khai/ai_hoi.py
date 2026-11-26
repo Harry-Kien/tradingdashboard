@@ -57,7 +57,7 @@ def trang_thai(cfg: dict, out: Path, now: datetime | None = None) -> dict:
     if da_tieu + UOC_TINH_USD > ngan_sach:
         chan.append(f'Đã chạm ngân sách {ngan_sach:.2f} USD của webapp.')
     return {'hom_nay': hom_nay, 'moi_ngay': toi_da, 'da_tieu_usd': round(da_tieu, 4), 'ngan_sach_usd': ngan_sach,
-            'uoc_tinh_usd': UOC_TINH_USD, 'chan': chan, 'gan_day': recs[-5:][::-1]}
+            'uoc_tinh_usd': UOC_TINH_USD, 'chan': chan, 'gan_day': [r for r in recs if r.get('loai') != 'doc_chi_bao'][-5:][::-1]}   # lượt "AI đọc chỉ báo" tính chung lượt và tiền, không hiện ở đây
 
 
 def _dict(o) -> dict:

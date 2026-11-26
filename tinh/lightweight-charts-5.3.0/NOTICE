@@ -1,0 +1,8 @@
+TradingView Lightweight Charts™
+Copyright (c) 2026 TradingView, Inc. https://www.tradingview.com/
+
+Licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
+
+This product includes software developed at TradingView, Inc. (https://www.tradingview.com/).
+so-cong-khai sets layout.attributionLogo to false and shows this attribution, with a link to https://www.tradingview.com/,
+as visible text at the bottom of the chart page (so_cong_khai/bieu_do.py).

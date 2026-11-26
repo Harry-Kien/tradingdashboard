@@ -66,6 +66,38 @@ function cci(H,L,C,n){const tp=H.map((h,i)=>(h+L[i]+C[i])/3),m=sma(tp,n),md=roll
 function aroon(H,L,n){const up=nul(N(H)),dn=nul(N(H));for(let i=n;i<N(H);i++){let a=i-n,b=i-n;for(let j=i-n;j<=i;j++){if(H[j]>=H[a])a=j;if(L[j]<=L[b])b=j}
  up[i]=100*(n-(i-a))/n;dn[i]=100*(n-(i-b))/n}return[up,dn]}
 // ---------------------------------------------------------------- thư viện: k → {ten, nhom, khung:'gia'|'rieng', ts:[[khóa,nhãn,mặc định,bước]], mo, tinh(H,L,C,O,p) → [[tên,mảng,kiểu?]], muc?}
+// ---------------------------------------------------------------- chỉ báo cộng đồng: công thức công khai, viết lại từ mô tả gốc (không chép mã)
+const tong=(x,n)=>roll(x,n,w=>w.reduce((a,b)=>a+b,0));
+function linreg(x,n){return roll(x,n,w=>{let sx=0,sy=0,sxy=0,sxx=0;w.forEach((v,j)=>{sx+=j;sy+=v;sxy+=j*v;sxx+=j*j});const b=(n*sxy-sx*sy)/(n*sxx-sx*sx||1),a=(sy-b*sx)/n;return a+b*(n-1)})}
+const cat=(a,b,i)=>a[i-1]!=null&&b[i-1]!=null&&a[i]!=null&&b[i]!=null&&((a[i-1]<=b[i-1]&&a[i]>b[i])||(a[i-1]>=b[i-1]&&a[i]<b[i]));   // a cắt b ở nến i (hai chiều)
+function squeeze(H,L,C,n,k,kc){const m=sma(C,n),d=sd(C,n),r=sma(tr(H,L,C),n),dt=hop(hh(H,n),ll(L,n),(a,b)=>(a+b)/2),val=linreg(C.map((c,i)=>dt[i]==null||m[i]==null?null:c-(dt[i]+m[i])/2),n),
+ on=C.map((_,i)=>m[i]==null||d[i]==null||r[i]==null?null:(m[i]-k*d[i]>m[i]-kc*r[i]&&m[i]+k*d[i]<m[i]+kc*r[i])?0:null);return[val,on]}
+function wavetrend(H,L,C,n1,n2){const ap=H.map((h,i)=>(h+L[i]+C[i])/3),esa=ema(ap,n1),d=ema(ap.map((v,i)=>esa[i]==null?null:Math.abs(v-esa[i])),n1),
+ ci=ap.map((v,i)=>esa[i]==null||!d[i]?null:(v-esa[i])/(.015*d[i])),w1=ema(ci,n2),w2=sma(w1,4),mk=[];
+ for(let i=1;i<C.length;i++)if(cat(w1,w2,i)){if(w1[i]>w2[i]&&w1[i]<-53)mk.push({i,len:1});else if(w1[i]<w2[i]&&w1[i]>53)mk.push({i,len:0})}return[w1,w2,mk]}
+function utbot(H,L,C,a,n){const x=atr(H,L,C,n),st=nul(C.length),mk=[];let p=0;
+ for(let i=0;i<C.length;i++){if(x[i]==null){continue}const nl=a*x[i],c=C[i],c1=i?C[i-1]:c;
+  const v=c>p&&c1>p?Math.max(p,c-nl):c<p&&c1<p?Math.min(p,c+nl):c>p?c-nl:c+nl;if(st[i-1]!=null){if(c1<=st[i-1]&&c>v)mk.push({i,len:1});else if(c1>=st[i-1]&&c<v)mk.push({i,len:0})}st[i]=v;p=v}return[st,mk]}
+function chandelier(H,L,C,n,k){const a=atr(H,L,C,n),hc=hh(C,n),lc=ll(C,n),lo=nul(C.length),sh=nul(C.length),dir=nul(C.length),mk=[];let L0=null,S0=null,d0=1;
+ for(let i=0;i<C.length;i++){if(a[i]==null||hc[i]==null)continue;let l=hc[i]-k*a[i],s2=lc[i]+k*a[i];const lp=L0??l,sp=S0??s2;
+  if(i&&C[i-1]>lp)l=Math.max(l,lp);if(i&&C[i-1]<sp)s2=Math.min(s2,sp);const d=C[i]>sp?1:C[i]<lp?-1:d0;if(d!==d0&&L0!=null)mk.push({i,len:d>0?1:0});
+  lo[i]=d>0?l:null;sh[i]=d<0?s2:null;L0=l;S0=s2;d0=d;dir[i]=d}return[lo,sh,mk]}
+function qqe(C,n,sf,q){const r=rsi(C,n),rm=ema(r,sf),ar=rm.map((v,i)=>i&&v!=null&&rm[i-1]!=null?Math.abs(rm[i-1]-v):null),wp=n*2-1,dar=ema(ema(ar,wp),wp).map(v=>v==null?null:v*q),
+ lb=nul(C.length),sb=nul(C.length),tl=nul(C.length);let tr0=1;
+ for(let i=0;i<C.length;i++){if(rm[i]==null||dar[i]==null)continue;const nl=rm[i]-dar[i],ns=rm[i]+dar[i],l1=lb[i-1],s1=sb[i-1],r1=rm[i-1];
+  lb[i]=l1!=null&&r1>l1&&rm[i]>l1?Math.max(l1,nl):nl;sb[i]=s1!=null&&r1<s1&&rm[i]<s1?Math.min(s1,ns):ns;
+  if(s1!=null&&((r1<=s1&&rm[i]>s1)||(r1>=s1&&rm[i]<s1)))tr0=1;else if(l1!=null&&((r1<=l1&&rm[i]>l1)||(r1>=l1&&rm[i]<l1)))tr0=-1;tl[i]=tr0===1?lb[i]:sb[i]}return[rm,tl]}
+function fisher(H,L,n){const g=H.map((h,i)=>(h+L[i])/2),a=hh(g,n),b=ll(g,n),f=nul(g.length),t=nul(g.length);let v=0,f0=0;
+ for(let i=0;i<g.length;i++){if(a[i]==null)continue;v=.66*((g[i]-b[i])/((a[i]-b[i])||1e-9)-.5)+.67*v;v=Math.max(-.999,Math.min(.999,v));const x=.5*Math.log((1+v)/(1-v))+.5*f0;t[i]=f0;f[i]=x;f0=x}return[f,t]}
+function alma(x,n,off,sig){const m=off*(n-1),sg=n/sig,w=[...Array(n)].map((_,i)=>Math.exp(-((i-m)**2)/(2*sg*sg))),tw=w.reduce((a,b)=>a+b,0);return roll(x,n,v=>v.reduce((a,b,i)=>a+b*w[i],0)/tw)}
+function kama(C,n,f,sl){const o=nul(C.length),fs=2/(f+1),ss=2/(sl+1);let k=null;for(let i=n;i<C.length;i++){let vo=0;for(let j=i-n+1;j<=i;j++)vo+=Math.abs(C[j]-C[j-1]);
+ const er=vo?Math.abs(C[i]-C[i-n])/vo:0,sc=(er*(fs-ss)+ss)**2;k=k===null?C[i]:k+sc*(C[i]-k);o[i]=k}return o}
+function mcginley(C,n){const o=nul(C.length),e=ema(C,n);let m=null;for(let i=0;i<C.length;i++){if(m===null){if(e[i]!=null)m=e[i];o[i]=m;continue}m=m+(C[i]-m)/(n*Math.pow(C[i]/m,4));o[i]=m}return o}
+// khối lượng đột biến: rel = tick volume ÷ trung bình 20 nến đã đóng ngay trước; đột biến khi rel ≥ k và thân ≥ 50% biên độ; chiều theo thân nến
+function kldb(H,L,C,O,V,n,k,xu){V=V||[];const e=ema(C,50),r=nul(C.length),mk=[],pt=nul(C.length);
+ for(let i=n;i<C.length;i++){if(V[i]==null)continue;let s=0,ok=1;for(let j=i-n;j<i;j++){if(V[j]==null){ok=0;break}s+=V[j]}if(!ok||!s)continue;
+  const x=V[i]/(s/n),len=C[i]>O[i]?1:C[i]<O[i]?0:-1;r[i]=len===0?-x:x;const bd=H[i]-L[i];
+  if(x>=k&&len>=0&&bd>0&&Math.abs(C[i]-O[i])>=.5*bd&&(!xu||(e[i]!=null&&(len?C[i]>e[i]:C[i]<e[i])))){mk.push({i,len});pt[i]=len?L[i]:H[i]}}return[r,mk,pt]}
 const L_=(t,a,k)=>[t,a,k||'duong'];
 const LIB={
  sma:{ten:'Trung bình động đơn (SMA)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',20,1]],mo:'Giá đóng trung bình của n nến.',tinh:(H,L,C,O,p)=>[L_('SMA '+p.n,sma(C,p.n))]},
@@ -106,8 +138,48 @@ const LIB={
  ao:{ten:'Awesome Oscillator',nhom:'dao',khung:'rieng',ts:[['f','Nhanh',5,1],['s','Chậm',34,1]],muc:[0],mo:'SMA 5 − SMA 34 của giá giữa nến (Bill Williams).',
   tinh:(H,L,C,O,p)=>{const g=H.map((h,i)=>(h+L[i])/2);return[L_('AO',hop(sma(g,p.f),sma(g,p.s),(a,b)=>a-b),'cot')]}},
  bbw:{ten:'Độ rộng dải Bollinger (%)',nhom:'bien',khung:'rieng',ts:[['n','Chu kỳ',20,1],['k','Độ lệch chuẩn',2,.1]],mo:'(Dải trên − dải dưới) / dải giữa; thấp kỷ lục là lúc nén chặt.',
-  tinh:(H,L,C,O,p)=>{const m=sma(C,p.n),s=sd(C,p.n);return[L_('BBW',hop(m,s,(a,b)=>a?100*2*p.k*b/a:null))]}}};
-const NHOM={xu:'Xu hướng',dao:'Dao động',bien:'Biến động'},MAUS=['#2962ff','#ff6d00','#e91e63','#00897b','#8e24aa','#fbc02d','#43a047','#6d4c41','#00acc1','#f4511e'];
+  tinh:(H,L,C,O,p)=>{const m=sma(C,p.n),s=sd(C,p.n);return[L_('BBW',hop(m,s,(a,b)=>a?100*2*p.k*b/a:null))]}},
+ sqz:{ten:'Squeeze Momentum (TTM, kiểu LazyBear)',nhom:'cd',khung:'rieng',ts:[['n','Chu kỳ',20,1],['k','Độ lệch chuẩn BB',2,.1],['kc','Hệ số Keltner',1.5,.1]],muc:[0],
+  mo:'Cột động lượng (hồi quy tuyến tính); chấm ở 0 là lúc Bollinger nằm trong Keltner, giá đang nén chờ bung.',
+  tinh:(H,L,C,O,p)=>{const[v,on]=squeeze(H,L,C,p.n,p.k,p.kc);return[L_('SQZ',v,'cot'),L_('Đang nén',on,'cham')]}},
+ wt:{ten:'WaveTrend (kiểu LazyBear)',nhom:'cd',khung:'rieng',ts:[['a','Kênh',10,1],['b','Trung bình',21,1]],muc:[60,-60],
+  mo:'Dao động nổi tiếng; mũi tên khi WT1 cắt WT2 ở vùng quá bán (dưới −53) hoặc quá mua (trên 53).',
+  tinh:(H,L,C,O,p)=>{const[a,b,mk]=wavetrend(H,L,C,p.a,p.b);return[[...L_('WT1',a),mk],L_('WT2',b)]}},
+ ut:{ten:'UT Bot (dừng lỗ dời theo ATR)',nhom:'cd',khung:'gia',ts:[['a','Hệ số',1,.1],['n','Chu kỳ ATR',10,1]],
+  mo:'Đường dừng lỗ dời theo ATR; mũi tên khi giá đóng cắt qua đường (tín hiệu mua bán của bản cộng đồng phổ biến).',
+  tinh:(H,L,C,O,p)=>{const[st,mk]=utbot(H,L,C,p.a,p.n);return[[...L_('UT Bot',st),mk]]}},
+ ce:{ten:'Chandelier Exit',nhom:'cd',khung:'gia',ts:[['n','Chu kỳ',22,1],['k','Hệ số ATR',3,.1]],
+  mo:'Dừng lỗ dời theo đỉnh/đáy giá đóng ± ATR (Chuck LeBeau); đổi phía là đổi xu hướng, có mũi tên.',
+  tinh:(H,L,C,O,p)=>{const[lo,sh,mk]=chandelier(H,L,C,p.n,p.k);return[[...L_('CE mua',lo,'tang'),mk],L_('CE bán',sh,'giam')]}},
+ qqe:{ten:'QQE',nhom:'cd',khung:'rieng',ts:[['n','Chu kỳ RSI',14,1],['sf','Làm trơn',5,1],['q','Hệ số',4.238,.1]],muc:[50],
+  mo:'RSI làm trơn kèm đường bám kiểu ATR trên RSI; cắt nhau gần mức 50 thường dùng lọc xu hướng.',tinh:(H,L,C,O,p)=>{const[a,b]=qqe(C,p.n,p.sf,p.q);return[L_('QQE',a),L_('Đường bám',b)]}},
+ fisher:{ten:'Fisher Transform (Ehlers)',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ',9,1]],muc:[0],mo:'Đổi giá về phân phối gần chuẩn; đỉnh đáy sắc nét, cắt đường trễ là đổi nhịp.',
+  tinh:(H,L,C,O,p)=>{const[f,t]=fisher(H,L,p.n);return[L_('Fisher',f),L_('Trễ',t)]}},
+ vortex:{ten:'Vortex',nhom:'xu',khung:'rieng',ts:[['n','Chu kỳ',14,1]],mo:'VI+ trên VI− là xu hướng tăng và ngược lại.',
+  tinh:(H,L,C,O,p)=>{const t=tong(tr(H,L,C),p.n),vp=tong(H.map((h,i)=>i?Math.abs(h-L[i-1]):null),p.n),vm=tong(L.map((l,i)=>i?Math.abs(l-H[i-1]):null),p.n);
+   return[L_('VI+',hop(vp,t,(a,b)=>b?a/b:null)),L_('VI−',hop(vm,t,(a,b)=>b?a/b:null))]}},
+ chop:{ten:'Choppiness Index',nhom:'bien',khung:'rieng',ts:[['n','Chu kỳ',14,1]],muc:[61.8,38.2],mo:'Trên 61,8 là thị trường đi ngang, dưới 38,2 là đang có xu hướng.',
+  tinh:(H,L,C,O,p)=>{const t=tong(tr(H,L,C),p.n),a=hh(H,p.n),b=ll(L,p.n);return[L_('CHOP',t.map((v,i)=>v==null||a[i]==null||a[i]===b[i]?null:100*Math.log10(v/(a[i]-b[i]))/Math.log10(p.n)))]}},
+ kama:{ten:'KAMA (Kaufman thích nghi)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',10,1],['f','Nhanh',2,1],['s','Chậm',30,1]],mo:'Trung bình tự chậm lại khi đi ngang, nhanh lên khi có xu hướng.',
+  tinh:(H,L,C,O,p)=>[L_('KAMA',kama(C,p.n,p.f,p.s))]},
+ alma:{ten:'ALMA (Arnaud Legoux)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',9,1],['o','Độ lệch',.85,.01],['g','Sigma',6,.1]],mo:'Trung bình trọng số Gauss: mượt và ít trễ.',
+  tinh:(H,L,C,O,p)=>[L_('ALMA',alma(C,p.n,p.o,p.g))]},
+ mcg:{ten:'McGinley Dynamic',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',14,1]],mo:'Đường trung bình tự điều chỉnh tốc độ theo giá, ít bị kéo lệch khi giá giật.',tinh:(H,L,C,O,p)=>[L_('McGinley',mcginley(C,p.n))]},
+ lsma:{ten:'Hồi quy tuyến tính (LSMA)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',25,1]],mo:'Điểm cuối của đường hồi quy bình phương nhỏ nhất trên n nến.',tinh:(H,L,C,O,p)=>[L_('LSMA',linreg(C,p.n))]},
+ trix:{ten:'TRIX',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ',18,1]],muc:[0],mo:'Độ thay đổi của EMA ba lần (log giá), lọc nhiễu mạnh.',
+  tinh:(H,L,C,O,p)=>{const e=ema(ema(ema(C.map(Math.log),p.n),p.n),p.n);return[L_('TRIX',e.map((v,i)=>i&&v!=null&&e[i-1]!=null?1e4*(v-e[i-1]):null))]}},
+ uo:{ten:'Ultimate Oscillator',nhom:'dao',khung:'rieng',ts:[['a','Ngắn',7,1],['b','Vừa',14,1],['c','Dài',28,1]],muc:[70,30],mo:'Áp lực mua trên ba khoảng thời gian (Larry Williams).',
+  tinh:(H,L,C,O,p)=>{const bp=C.map((c,i)=>i?c-Math.min(L[i],C[i-1]):null),t=C.map((c,i)=>i?Math.max(H[i],C[i-1])-Math.min(L[i],C[i-1]):null),
+   av=n=>hop(tong(bp,n),tong(t,n),(a,b)=>b?a/b:null),a=av(p.a),b=av(p.b),c=av(p.c);return[L_('UO',a.map((v,i)=>v==null||b[i]==null||c[i]==null?null:100*(4*v+2*b[i]+c[i])/7))]}},
+ elder:{ten:'Elder Ray (sức bò, sức gấu)',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ EMA',13,1]],muc:[0],mo:'Đỉnh − EMA (sức bên mua) và đáy − EMA (sức bên bán).',
+  tinh:(H,L,C,O,p)=>{const e=ema(C,p.n);return[L_('Sức mua',hop(H,e,(a,b)=>a-b),'cot'),L_('Sức bán',hop(L,e,(a,b)=>a-b),'cot')]}},
+ kld:{ten:'Khối lượng đột biến (tick volume MT5)',nhom:'cd',khung:'rieng',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
+  mo:'Cột là tick volume chia trung bình 20 nến trước (dương: nến tăng, âm: nến giảm); mũi tên khi gấp từ 2 lần, thân nến từ 50% và thuận EMA50. Vàng CFD không có khối lượng thật: tick volume là số lần giá đổi, đo độ sôi động chứ không phải lệnh của cá mập. Chỉ có khi đang nối MT5 trực tiếp.',
+  tinh:(H,L,C,O,p,V)=>{const[r,mk]=kldb(H,L,C,O,V,p.n,p.k,p.xu);return[[...L_('KL',r,'cot'),mk]]}},
+ kldg:{ten:'Khối lượng đột biến: dấu trên nến',nhom:'cd',khung:'gia',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
+  mo:'Cùng định nghĩa với "Khối lượng đột biến", nhưng vẽ mũi tên ngay dưới hoặc trên cây nến đột biến. Chỉ có khi đang nối MT5 trực tiếp.',
+  tinh:(H,L,C,O,p,V)=>{const[,mk,pt]=kldb(H,L,C,O,V,p.n,p.k,p.xu);return[[...L_('KL đột biến',pt,'cham'),mk]]}},};
+const NHOM={xu:'Xu hướng',dao:'Dao động',bien:'Biến động',cd:'Cộng đồng nổi tiếng'},MAUS=['#2962ff','#ff6d00','#e91e63','#00897b','#8e24aa','#fbc02d','#43a047','#6d4c41','#00acc1','#f4511e'];
 // ---------------------------------------------------------------- trạng thái cá nhân (lưu trong trình duyệt)
 let S={ds:[],sao:['ema','rsi','macd','bb'],mau:{}};try{Object.assign(S,JSON.parse(localStorage.getItem('so-cbcn1')||'{}'))}catch(e){}
 S.ds=(S.ds||[]).filter(x=>x&&LIB[x.k]);const luu=()=>{try{localStorage.setItem('so-cbcn1',JSON.stringify(S))}catch(e){}};
@@ -141,8 +213,10 @@ function kieuVe(B){const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||
    bottomFillColor1:'rgba(239,83,80,.03)',bottomFillColor2:'rgba(239,83,80,.28)'})}
  const ds=KBD==='ha'?heikin(cs):cs;
  PHU.setData(KBD==='ha'||KBD==='thanh'?ds.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]})):cs.map(r=>({time:r[0],value:r[4]})))}
+const MOC=[];
 function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candles||!B.D.candles.length)return;const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||{};
  try{kieuVe(B)}catch(e){console.warn('Dạng biểu đồ:',e)}
+ for(const f of MOC)try{f(B)}catch(e){console.warn('Công cụ biểu đồ:',e)}           // bieu_do_them.py: nền phiên, hồ sơ khối lượng, thang giá, so sánh mã
  const bat=S.ds.filter(x=>!x.an),coBan=1+String(LW.khDao||'').split(',').filter(Boolean).length,
   kh=coBan+'|'+(LW.khDao||'')+'|'+bat.map(x=>x.id+x.k+JSON.stringify(x.p)+x.mau).join(';'),
   mat=SER.some(s=>{try{return!c.panes().some(pa=>pa.getSeries().includes(s.s))}catch(e){return true}});
@@ -152,22 +226,32 @@ function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candle
      o={color:m,lineWidth:j===0?2:1,priceLineVisible:false,lastValueVisible:d.khung==='rieng'||j===0,title:d.khung==='rieng'?'':ten,crosshairMarkerVisible:kieu!=='cham'};
     let s;if(kieu==='cot')s=c.addSeries(LWC.HistogramSeries,{priceLineVisible:false,lastValueVisible:false},cs);
     else s=c.addSeries(LWC.LineSeries,kieu==='cham'?{...o,lineVisible:false,pointMarkersVisible:true,pointMarkersRadius:1.6}:o,cs);
-    SER.push({s,id:x.id,j,kieu,mau:m});
+    SER.push({s,id:x.id,j,kieu,mau:m,mk:null});
     if(j===0&&d.muc)for(const v of d.muc)try{s.createPriceLine({price:v,color:P.mute||'#888',lineWidth:1,lineStyle:1,axisLabelVisible:true,title:''})}catch(e){}})}
   try{c.panes().forEach((pa,i)=>{if(i>=coBan)pa.setStretchFactor(.22)})}catch(e){}}
  const cs=B.D.candles,k=cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1][4]+'|'+KH,now=Date.now();
  if(k===khoaDL||(now-TINH<800&&khoaDL.split('|')[0]==String(cs.length)))return;khoaDL=k;TINH=now;
- const H=cs.map(r=>r[2]),Lo=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]);
- for(const x of bat){const out=LIB[x.k].tinh(H,Lo,C,O,x.p);for(const it of SER.filter(s=>s.id===x.id)){const a=out[it.j]&&out[it.j][1];if(!a)continue;
-  it.s.setData(cs.map((r,i)=>a[i]==null||!isFinite(a[i])?{time:r[0]}:{time:r[0],value:a[i],...(it.kieu==='cot'?{color:a[i]>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}))}}}
+ const H=cs.map(r=>r[2]),Lo=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]),VM=B.D.vol||{},V=cs.map(r=>VM[r[0]]);          // V: tick volume của MT5 theo giờ mở nến (không có khi dùng kho nến)
+ for(const x of bat){const out=LIB[x.k].tinh(H,Lo,C,O,x.p,V);for(const it of SER.filter(s=>s.id===x.id)){const a=out[it.j]&&out[it.j][1];if(!a)continue;
+  it.s.setData(cs.map((r,i)=>a[i]==null||!isFinite(a[i])?{time:r[0]}:{time:r[0],value:a[i],...(it.kieu==='cot'?{color:a[i]>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}));
+  const mk=out[it.j][3];if(mk&&LWC.createSeriesMarkers){if(!it.mk)it.mk=LWC.createSeriesMarkers(it.s,[]);                  // mũi tên mua bán của chỉ báo (300 dấu gần nhất)
+   it.mk.setMarkers(mk.filter(m=>m.i<cs.length).slice(-300).map(m=>({time:cs[m.i][0],position:m.len?'belowBar':'aboveBar',color:m.len?'#26a69a':'#ef5350',shape:m.len?'arrowUp':'arrowDown'})))}}}}
 function doi(){KH+='*';ve();veDs()}
+// số cuối (nến đã đóng) của các chỉ báo đang bật, mũi tên gần nhất và 60 nến, cho nút "AI đọc chỉ báo"
+function tomTat(){const B=window.BDCB&&window.BDCB(),r={tf:'',ma:'XAUUSD',chi_bao:[],nen:[],lang:(document.documentElement.lang||'vi').slice(0,2)};if(!B||!B.D||!B.D.candles)return r;
+ const D=B.D,cs=D.candles,n=D.live!=null&&D.live>=0&&D.live<cs.length?D.live:cs.length,c2=cs.slice(0,n),VM=D.vol||{};r.tf=D.tf||'';r.ma=D.khac_vang?D.ma:'XAUUSD';
+ const H=c2.map(x=>x[2]),Lo=c2.map(x=>x[3]),C=c2.map(x=>x[4]),O=c2.map(x=>x[1]),V=c2.map(x=>VM[x[0]]),so=v=>v==null||!isFinite(v)?null:+(+v).toPrecision(6);
+ for(const x of S.ds.filter(v=>!v.an&&LIB[v.k])){let out;try{out=LIB[x.k].tinh(H,Lo,C,O,x.p,V)}catch(e){continue}const gt={},dau=[];
+  for(const o of out){gt[o[0]]=[so(o[1][n-1]),so(o[1][n-2])];if(o[3])for(const m of o[3].filter(m=>m.i<n).slice(-3))dau.push({len:m.len,cach:n-1-m.i})}
+  r.chi_bao.push({ten:LIB[x.k].ten,tham_so:x.p,gia_tri:gt,dau})}
+ r.nen=c2.slice(-60).map(x=>x.slice(0,5));return r}
 // ---------------------------------------------------------------- hộp chọn
 const NEN=document.createElement('div');NEN.className='cbcn-nen';NEN.hidden=true;
 NEN.innerHTML='<div class="cbcn" role="dialog" aria-modal="true" aria-label="Chỉ báo"><header><b>Chỉ báo</b><button type="button" class="ghost" data-dong>Đóng</button></header>'
  +'<div class="tim"><input type="search" placeholder="Tìm chỉ báo: EMA, RSI, MACD, Bollinger…" aria-label="Tìm chỉ báo"></div>'
  +'<div class="tab" role="group" aria-label="Nhóm chỉ báo"></div><div class="ds"></div></div>';
 document.body.appendChild(NEN);let TAB='tat';const DS=NEN.querySelector('.ds'),TIM=NEN.querySelector('.tim input');
-const TABS=[['tat','Tất cả'],['sao','Yêu thích'],['dung','Đang dùng'],['xu','Xu hướng'],['dao','Dao động'],['bien','Biến động'],['co_san','Có sẵn của hệ thống'],['mau','Mẫu của tôi']];
+const TABS=[['tat','Tất cả'],['sao','Yêu thích'],['dung','Đang dùng'],['xu','Xu hướng'],['dao','Dao động'],['bien','Biến động'],['cd','Cộng đồng nổi tiếng'],['co_san','Có sẵn của hệ thống'],['mau','Mẫu của tôi']];
 function veTab(){NEN.querySelector('.tab').innerHTML=TABS.map(([k,n])=>`<button type="button" class="ghost" data-tab="${k}" aria-pressed="${TAB===k}">${n}${k==='dung'&&S.ds.length?' ('+S.ds.length+')':''}</button>`).join('')}
 function hangLib(k){const d=LIB[k],sao=S.sao.includes(k),dem=S.ds.filter(x=>x.k===k).length;
  return`<div class="h"><button type="button" class="sao" data-sao="${k}" aria-pressed="${sao}" aria-label="Yêu thích" title="Yêu thích">${sao?'★':'☆'}</button>`
@@ -211,5 +295,12 @@ let nut=null;const t2=document.querySelector('.tools.t2');if(t2){nut=document.cr
  const ch=document.createElement('label');ch.className='sel cbcn-kieu';ch.title='Dạng biểu đồ';
  ch.innerHTML='<select aria-label="Dạng biểu đồ">'+Object.entries(KIEU).map(([k,n])=>`<option value="${k}"${k===KBD?' selected':''}>${n}</option>`).join('')+'</select>';
  ch.querySelector('select').addEventListener('change',e=>{KBD=e.target.value;try{localStorage.setItem('so-kieu-bd',KBD)}catch(_){}ve()});nut.before(ch)}
-return{ve,mo,LIB,KIEU,_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin}}})();
+return{ve,mo,LIB,KIEU,moc:MOC,tomTat,_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
 """
+
+from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script
+
+from . import bieu_do_phat_lai as _pl  # noqa: E402 - phát lại nến, chạy sau công cụ thêm
+
+CSS += _them.CSS + _pl.CSS
+JS += _them.JS + _pl.JS

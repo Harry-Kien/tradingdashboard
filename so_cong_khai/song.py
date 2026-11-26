@@ -17,7 +17,7 @@ from pathlib import Path
 
 from . import noi_mt5
 
-SO_NEN = {'M5': 900, 'M15': 900, 'M30': 400, 'H1': 1000, 'H4': 1000, 'D1': 900}
+SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 400, 'H1': 1000, 'H4': 1000, 'D1': 900}   # M1: 900 nến xem + 400 nến khởi động chỉ báo
 LUU_LECH = Path(__file__).resolve().parent.parent / 'out' / 'lech-gio-san.json'
 _khoa = threading.Lock()
 _tt: dict = {'deps': None, 'mt5': None, 'ly_do': 'chưa thử nối', 'thu': 0.0, 'luc': 0.0, 'fr': None}
@@ -118,6 +118,32 @@ def tick(g: dict, tf: str, sym: str | None = None) -> dict | None:
     return out
 
 
+def khoi_luong(tf: str, sym: str | None = None, n: int = 1500) -> dict[int, int] | None:
+    """Tick volume (số lần giá đổi trong nến) của n nến ĐÃ ĐÓNG gần nhất, {giờ mở nến (giây UTC): tick volume}. None khi chưa nối MT5 hoặc lỗi đọc.
+
+    Vàng CFD không có khối lượng giao dịch thật; đây chỉ là thước đo độ sôi động. Đọc thẳng từ MT5 (chỉ đọc), nhớ vài giây cho mỗi mã và khung."""
+    if tf not in SO_NEN:
+        raise ValueError(f'khung không hỗ trợ: {tf}')
+    with _khoa:
+        mt5 = _tt['mt5']
+        if mt5 is None:
+            return None
+        sym = sym or _tt.get('sym')
+        k, now = (sym, tf), time.monotonic()
+        nho = _tt.setdefault('kl', {})
+        if k in nho and now - nho[k][0] < 4:
+            return nho[k][1]
+        try:
+            r = mt5.copy_rates_from_pos(sym, getattr(mt5, 'TIMEFRAME_' + tf), 1, int(n))
+        except Exception:                                        # noqa: BLE001 - thiếu khối lượng thì biểu đồ vẫn vẽ
+            return None
+        if r is None or not len(r) or 'tick_volume' not in (r.dtype.names or ()):
+            return None
+        out = {int(x['time']): int(x['tick_volume']) for x in r}
+        nho[k] = (now, out)
+        return out
+
+
 def ngat() -> None:
     with _khoa:
         if _tt['mt5'] is not None:
@@ -154,6 +180,8 @@ def khung_song(g: dict, noi=_noi) -> dict | None:
             tick = deps.get_tick()
             fr = {}
             for tf, n in SO_NEN.items():
+                if tf == 'M1':                                   # vòng của EA không có M1: đọc riêng ngay dưới
+                    continue
                 df = deps.get_bars(tf, n)
                 if df is None or len(df) < 60:
                     raise RuntimeError(f'MT5 chưa trả đủ nến {tf}')
@@ -165,6 +193,15 @@ def khung_song(g: dict, noi=_noi) -> dict | None:
                 pass
             _tt.update(deps=None, mt5=None, fr=None, ly_do=f'mất kết nối MT5: {e}')
             return None
+        try:                                                     # M1 chỉ để xem: đọc thẳng nến đã đóng; lỗi thì biểu đồ M1 lấy từ kho nến
+            r = _tt['mt5'].copy_rates_from_pos(_tt.get('sym'), _tt['mt5'].TIMEFRAME_M1, 1, SO_NEN['M1'])
+            if r is not None and len(r) >= 60:
+                import pandas as pd                              # noqa: PLC0415
+                m1 = pd.DataFrame(r)
+                m1.index = pd.to_datetime(m1['time'], unit='s', utc=True)
+                fr['M1'] = m1[['open', 'high', 'low', 'close']].astype(float)
+        except Exception:                                        # noqa: BLE001
+            pass
         het = fr['M5'].index[-1] + timedelta(minutes=5)
         fr['het'] = (tick[2] if tick else het.to_pydatetime())
         fr['nguon'] = 'mt5'

@@ -960,7 +960,8 @@ MENU = [
         ('thi-truong', 'Tương quan', '/thi-truong#tuong-quan', 'Mã nào đi cùng chiều, ngược chiều', 'tq'),
         ('thi-truong', 'Biến động theo giờ', '/thi-truong#bien-dong', 'Giờ nào, thứ nào giá chạy nhiều nhất', 'song'),
         ('thi-truong', 'Phiên & lịch tin', '/thi-truong#phien', 'Bốn phiên lớn, tin kinh tế sắp ra', 'lich'),
-        ('thi-truong', 'Thông số hợp đồng', '/thi-truong#thong-so', 'Pip, ký quỹ, đòn bẩy, swap từng mã', 'ts')], 'gia'),
+        ('thi-truong', 'Thông số hợp đồng', '/thi-truong#thong-so', 'Pip, ký quỹ, đòn bẩy, swap từng mã', 'ts'),
+        ('da-khung', 'Nhiều biểu đồ', '/da-khung', '2, 4 hoặc 1+3 biểu đồ: mỗi ô một mã và khung, đồng bộ con trỏ', 'nen')], 'gia'),
     ('tin-tuc', 'Tin tức', '/tin-tuc', None, 'tin'),
     ('bieu-do', 'Biểu đồ', '/bieu-do', None, 'nen'),
     ('cong-cu', 'Công cụ', '/cong-cu', None, 'tinh'),
@@ -976,6 +977,7 @@ MENU = [
         ('telegram', 'Nhóm Telegram', '/telegram', 'Tín hiệu, kết quả từng lệnh, tin sắp ra gửi vào một nhóm cố định', 'tin'),
         ('sao-luu', 'Sao lưu', '/sao-luu', 'Mỗi ngày một bản sao mã, nhật ký, kết quả đo; chọn nơi cất', 'nk')], 'nk'),
     ('hoc', 'Học', None, [
+        ('bat-dau', 'Bắt đầu sử dụng', '/bat-dau', 'Năm bước: nối MT5, tài khoản, biểu đồ, kiểm lệnh', 'hoc'),
         ('hoc', 'Học giao dịch', '/hoc-giao-dich', 'CFD, Forex, loại lệnh, 16 phong cách', 'hoc'),
         ('kien-thuc', 'Kiến thức', '/kien-thuc', 'Giải thích từng chỉ báo và luật trong hệ thống', 'kt2')], 'hoc'),
     ('cai-dat', 'Cài đặt', '/cai-dat', None, 'cd'),

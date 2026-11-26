@@ -17,7 +17,8 @@ main.rong{max-width:1240px}
 .ky-loc select{min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);padding:0 12px;font:600 13px/1 inherit;font-family:inherit;max-width:100%}
 details.ky-qt{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--card)}
 details.ky-qt summary{cursor:pointer;font-size:13px;font-weight:700;min-height:26px;display:flex;align-items:center}
-.ky-qt-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:10px}
+.ky-qt-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:10px;margin-top:10px}
+@media(max-width:640px){details.ky-qt{flex:1 1 100%;min-width:0}}   /* lỗi đã gặp: trên điện thoại ô quy tắc tràn mép phải (210→400px) */
 .ky-qt-f label{display:grid;gap:5px;font-size:12.5px;color:var(--ink2);font-weight:600}
 .ky-qt-f input{min-height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);padding:0 10px;font:600 14px/1 inherit;font-family:inherit;width:100%;box-sizing:border-box}
 .ky-kq{display:grid;gap:14px;margin-top:14px}

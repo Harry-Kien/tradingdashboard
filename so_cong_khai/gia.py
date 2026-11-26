@@ -18,7 +18,7 @@ import pandas as pd
 
 from . import doc_so, song
 
-KHUNG ={'M5': 5, 'M15': 15, 'M30': 30, 'H1': 60, 'H4': 240, 'D1': 1440}
+KHUNG ={'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30, 'H1': 60, 'H4': 240, 'D1': 1440}   # M1 chỉ để xem biểu đồ; không luật nào tính trên M1
 _QUY = {'M5': '5min', 'M15': '15min', 'M30': '30min', 'H1': '1h', 'H4': '4h'}
 _OHLC = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last'}
 _nho: dict = {}
@@ -48,6 +48,7 @@ def khung(g: dict) -> dict:
         m1.index = m1.index.tz_localize('UTC')
     het = m1.index[-1] + timedelta(minutes=1)                     # nến 1 phút cuối đóng lúc này
     fr = {}
+    fr['M1'] = m1[m1.index + timedelta(minutes=1) <= het]          # nến 1 phút của kho, cho khung M1 của biểu đồ
     for tf, rule in _QUY.items():
         b = m1.resample(rule, origin='epoch', label='left', closed='left').agg(_OHLC).dropna()
         fr[tf] = b[b.index + timedelta(minutes=KHUNG[tf]) <= het]
@@ -441,6 +442,8 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
         return da_ma.goi(cfg, da_ma.ma_vang(cfg), tf, n, now)
     now = now or datetime.now(timezone.utc)
     fr = song.khung_song(g) or khung(g)           # giá trực tiếp từ MT5 nếu bật và nối được, không thì kho nến 1 phút
+    if tf not in fr:                              # MT5 chưa trả nến M1 (khung chỉ để xem): lấy từ kho nến 1 phút
+        fr = khung(g)
     bars = fr[tf]
     n = max(50, min(int(n), 1500))
     close = bars['close']
@@ -458,6 +461,10 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
         out.update(chi_bao_them.tinh(bars, n, so_le=2, buoc_giay=KHUNG[tf] * 60))
     except Exception as e:                                        # noqa: BLE001 - lỗi chỉ báo không làm mất biểu đồ
         out['loi_chi_bao'] = f'{type(e).__name__}: {e}'
+    if fr['nguon'] == 'mt5':                                      # tick volume (chỉ báo Khối lượng đột biến); kho nến 1 phút không có
+        kl = song.khoi_luong(tf, None, n + 30)
+        if kl:
+            out['vol'] = {c[0]: kl[c[0]] for c in out['candles'] if c[0] in kl}   # theo giờ mở nến: trang ghép thêm nến cũ phía trước
     dc = (fr.get('dang_chay') or {}).get(tf)
     if dc and out['candles'] and dc[0] > out['candles'][-1][0]:      # cây nến đang chạy: chỉ để vẽ
         out['dang_chay'] = [dc[0]] + [_so(v) for v in dc[1:]]

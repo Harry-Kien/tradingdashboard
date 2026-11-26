@@ -17,7 +17,7 @@ import pandas as pd
 from . import gia, phuong_phap, song
 
 NHOM = {'Forex': 'Ngoại hối', 'Commodities': 'Hàng hóa', 'Indices': 'Chỉ số', 'Crypto': 'Tiền mã hóa'}
-SO_NEN = {'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900}
+SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900}
 GIAI_THICH = ('Ba luật trong sổ của bạn (bot tín hiệu, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ và '
               'mức chốt lời của chúng là con số của vàng, nên không áp cho mã này. Các phương pháp tùy chọn bên dưới tính theo ATR nên áp được, '
               'và được chạy lại trên nến 5 phút của chính mã này từ đầu năm (xem số đo trong từng thẻ). Số đo đó chưa đầy một năm và chưa trừ phí hoa hồng: '
@@ -209,6 +209,9 @@ def goi(cfg: dict, ma: str, tf: str = 'M15', n: int = 600, now: datetime | None 
         out['loi_chi_bao'] = f'{type(e).__name__}: {e}'
     if tf in chay and out['candles'] and gia._giay(chay[tf][0]) > out['candles'][-1][0]:
         out['dang_chay'] = [gia._giay(chay[tf][0])] + [_lam_tron(v, d) for v in chay[tf][1:]]
+    kl = song.khoi_luong(tf, ma, n + 30)                         # tick volume cho chỉ báo Khối lượng đột biến
+    if kl:
+        out['vol'] = {c[0]: kl[c[0]] for c in out['candles'] if c[0] in kl}       # theo giờ mở nến: trang ghép thêm nến cũ phía trước
     bc, loi = _boi_canh(g, fr, bid, d, het)
     try:
         if tf in ('M5', 'M15', 'M30'):

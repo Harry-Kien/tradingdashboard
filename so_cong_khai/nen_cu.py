@@ -28,7 +28,7 @@ def _vang(g: dict, tu: datetime) -> dict:
         m1 = hoc._m1_dai(g, tu.year)
         m1 = m1[m1.index >= tu]
         het = m1.index[-1] + timedelta(minutes=1)
-        fr = {}
+        fr = {'M1': m1[m1.index + timedelta(minutes=1) <= het]}
         for tf, rule in gia._QUY.items():
             b = m1.resample(rule, origin='epoch', label='left', closed='left').agg(gia._OHLC).dropna()
             fr[tf] = b[b.index + timedelta(minutes=gia.KHUNG[tf]) <= het]
@@ -70,13 +70,17 @@ def goi(cfg: dict, ma: str = '', tf: str = 'M15', now: datetime | None = None) -
         raise ValueError(f'khung không hỗ trợ: {tf}')
     now = now or datetime.now(timezone.utc)
     tu = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+    if tf == 'M1':                                                 # M1 rất dày: chỉ lùi 20 ngày (khoảng 29.000 nến)
+        tu = max(tu, now - timedelta(days=20))
     vang = not ma or ma == da_ma.ma_vang(cfg)
     if vang:
         gia.can_gia(cfg['gia'])
     if vang and gia.chia_se_song(cfg['gia']):     # bản chia sẻ không có kho nến 1 phút nhiều năm: lấy thẳng từ MT5 như mọi mã
         ma, vang = da_ma.ma_vang(cfg), False
     if vang:
-        bars, d = _vang(cfg['gia'], tu)[tf], 2
+        bars, d = _vang(cfg['gia'], datetime(now.year, 1, 1, tzinfo=timezone.utc))[tf], 2
+        if tf == 'M1':                                             # chỉ báo chỉ tính trên phần cần (kèm 1 ngày khởi động), không trên cả năm
+            bars = bars[bars.index >= tu - timedelta(days=1)]
     else:
         bars, d = _ma_khac(cfg, ma, tf, tu, now)
     close = bars['close']

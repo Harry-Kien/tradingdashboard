@@ -17,6 +17,7 @@ main.rong{max-width:1320px}
 .song-pill i{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
 .song-pill.ok i{background:var(--gain);box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent);animation:nhip 1.8s infinite}
 .song-pill.loi i{background:var(--loss)}.song-pill b{color:var(--ink);font-weight:600}
+.tt-moi{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:12px 0 0;padding:12px 16px;border-radius:14px;border:1px solid color-mix(in srgb,var(--series) 45%,var(--line));background:color-mix(in srgb,var(--series) 8%,var(--card));font-size:14px}.tt-moi[hidden]{display:none}.tt-moi span{color:var(--ink2);flex:1 1 260px}.tt-moi a{display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border-radius:10px;background:var(--series);color:var(--btn-ink);font-weight:700;text-decoration:none}.tt-moi button{min-height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--ink2);font:inherit;cursor:pointer}
 .song-pill.loi{white-space:normal;max-width:100%;min-width:0;border-radius:12px;overflow-wrap:anywhere}  /* lý do lỗi dài (MT5 tắt) không đẩy trang rộng 2169px trên điện thoại */
 @keyframes nhip{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .tt-hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0 4px}
@@ -458,6 +459,10 @@ def trang_thi_truong(ten: str) -> str:
         trang.thanh_dau(ten, 'thi-truong', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="tt-top"><div><h1>Thị trường Forex &amp; CFD</h1><p>Giá trực tiếp của mọi cặp tiền, kim loại, năng lượng, chỉ số và tiền mã hóa mà sàn cung cấp, '
         'đẩy về trình duyệt ngay khi có tick mới.</p></div><span id="song" class="song-pill"><i></i>Đang nối…</span></div>',
+        '<div class="tt-moi" id="tt-moi" hidden><b>Lần đầu dùng webapp?</b><span>Năm bước để nối MT5, xem tài khoản của bạn và dùng biểu đồ, '
+        'mỗi bước tự kiểm trên máy này.</span><a href="/bat-dau">Xem 5 bước bắt đầu</a><button type="button" id="tt-moi-an">Ẩn</button></div>'
+        '<script>(()=>{const b=document.getElementById("tt-moi");let da=1;try{da=localStorage.getItem("so-bat-dau")}catch(e){}if(!da)b.hidden=false;'
+        'document.getElementById("tt-moi-an").addEventListener("click",()=>{b.hidden=true;try{localStorage.setItem("so-bat-dau","1")}catch(e){}})})()</script>',
         '<div class="tt-hero" id="tt-hero"></div>',
         f'<nav class="tt-tabs" aria-label="Các phần"><div class="sg" id="tt-tabs" role="tablist">{tab}</div></nav>',
         # bảng giá
