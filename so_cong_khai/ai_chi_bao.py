@@ -41,13 +41,18 @@ Do not add a disclaimer at the end; the page adds one."""
 def _so(v):
     try:
         f = float(v)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     return f if math.isfinite(f) else None
 
 
 def lam_sach(body: dict) -> dict:
     """Kiểm tra và cắt gọn dữ liệu trang gửi lên. Sai dạng thì ValueError."""
+    if not isinstance(body, dict):
+        raise ValueError('dữ liệu không hợp lệ')
+    for k in ('chi_bao', 'nen'):
+        if not isinstance(body.get(k), list):
+            raise ValueError(f'{k} phải là danh sách')
     tf = str(body.get('tf') or '')
     if tf not in KHUNG:
         raise ValueError('khung không hợp lệ')
@@ -56,8 +61,16 @@ def lam_sach(body: dict) -> dict:
     for x in (body.get('chi_bao') or [])[:TOI_DA_CB]:
         if not isinstance(x, dict):
             continue
+        for k in ('gia_tri', 'tham_so'):
+            if x.get(k) is not None and not isinstance(x[k], dict):
+                raise ValueError(f'{k} phải là đối tượng')
+        if x.get('dau') is not None and not isinstance(x['dau'], list):
+            raise ValueError('dau phải là danh sách')
+        for d in x.get('dau') or []:
+            if isinstance(d, dict) and (v := _so(d.get('cach') or 0)) is not None and not 0 <= v <= 1000000:
+                raise ValueError('số nến không hợp lệ')
         gt = {str(k)[:30]: [_so(a) for a in (v if isinstance(v, list) else [v])][:2] for k, v in list((x.get('gia_tri') or {}).items())[:6]}
-        dau = [{'chieu': 'MUA' if d.get('len') else 'BAN', 'cach_nen': int(d.get('cach') or 0)} for d in (x.get('dau') or [])[:4] if isinstance(d, dict)]
+        dau = [{'chieu': 'MUA' if d.get('len') else 'BAN', 'cach_nen': int(_so(d.get('cach') or 0) or 0)} for d in (x.get('dau') or [])[:4] if isinstance(d, dict)]
         tham = {str(k)[:12]: _so(v) for k, v in list((x.get('tham_so') or {}).items())[:6]}
         cb.append({'ten': str(x.get('ten') or '')[:80], 'tham_so': tham, 'gia_tri': gt, 'dau_gan': dau})
     if not cb:
@@ -65,7 +78,9 @@ def lam_sach(body: dict) -> dict:
     nen = []
     for r in (body.get('nen') or [])[-TOI_DA_NEN:]:
         if isinstance(r, list) and len(r) >= 5 and all(_so(v) is not None for v in r[:5]):
-            nen.append([int(r[0])] + [_so(v) for v in r[1:5]])
+            if not 0 <= float(r[0]) <= 253402300799:
+                raise ValueError('thời gian nến không hợp lệ')
+            nen.append([int(float(r[0]))] + [_so(v) for v in r[1:5]])
     if len(nen) < 20:
         raise ValueError('thiếu nến')
     return {'tf': tf, 'ma': ma, 'chi_bao': cb, 'nen': nen, 'lang': 'en' if body.get('lang') == 'en' else 'vi'}
@@ -78,6 +93,7 @@ def _noi_dung(d: dict) -> str:
             + '\n\nLast closed candles:\n' + '\n'.join(dong))
 
 
+@ai_hoi.gioi_han_dong_thoi
 def hoi(cfg: dict, out: Path, body: dict, client=None, now: datetime | None = None) -> dict:
     """Một lượt AI đọc chỉ báo. `client` chỉ để bài kiểm thay bằng Claude giả."""
     now = now or datetime.now(timezone.utc)

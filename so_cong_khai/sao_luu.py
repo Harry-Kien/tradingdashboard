@@ -104,7 +104,8 @@ def dat_noi(duong: str, goc: Path = HERE) -> tuple[bool, str]:
 def nen_chep(p: Path, goc: Path) -> bool:
     """Tệp này có được đưa vào bản sao không."""
     phan = p.relative_to(goc).parts
-    if any(x in BO_THU_MUC for x in phan[:-1]):
+    if (any(x.lower() in BO_THU_MUC or any(t in x.lower() for t in BO_TEN) for x in phan[:-1])
+            or p.is_symlink() or not _trong(p, goc)):
         return False
     ten = p.name.lower()
     if p.suffix.lower() in BO_DUOI or p.suffix.lower() in BO_DUOI_KHOA:

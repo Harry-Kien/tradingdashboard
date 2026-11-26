@@ -1,0 +1,22 @@
+# Ruff (https://docs.astral.sh/ruff/): công cụ dò lỗi mã, chỉ dùng khi phát triển (không cần cho webapp chạy, không vào gói chia sẻ).
+# Chạy: python -m ruff check so_cong_khai cong-cu tests   ·   tests/test_ruff.py tự chạy khi máy có Ruff.
+# Chỉ bật các nhóm bắt LỖI THẬT, không ép kiểu viết: F (pyflakes: tên chưa định nghĩa, import thừa…), E9 (lỗi cú pháp),
+# PLE (lỗi kiểu pylint), B (bugbear: các bẫy hay gặp như hàm dùng biến vòng lặp, tham số mặc định có thể đổi),
+# S (bảo mật, bản Ruff của flake8-bandit; bật 26/11/2026 cho mã webapp: lệnh gọi tiến trình, địa chỉ tải, pickle…).
+line-length = 200
+target-version = "py311"
+
+[lint]
+select = ["F", "E9", "PLE", "B", "S"]
+ignore = [
+    "B905",   # zip() không có strict=: các chỗ dùng đều cùng độ dài theo cách dựng; ép strict là đổi kiểu viết, không phải sửa lỗi
+    "B007",   # biến vòng lặp không dùng: chỉ là kiểu viết
+    "S110", "S112",   # try/except bỏ qua: webapp chỉ đọc, chủ ý không để lỗi phụ làm dừng trang
+    "S311",   # random cho mô phỏng Monte Carlo, không dùng làm khóa hay mã bí mật
+]
+
+[lint.per-file-ignores]
+# công cụ đo đã chốt số (kết quả ghi trong DIEM_VAO_BAO_CAO.md): không sửa mã chỉ vì kiểu viết. Các hàm lồng trong vòng lặp ở đó đều được gọi ngay
+# trong cùng lượt lặp (đã kiểm từng chỗ ngày 26/11/2026), nên B023 là báo nhầm.
+"cong-cu/*" = ["F841", "B023", "S"]
+"tests/*" = ["S"]   # bài kiểm: assert, gọi node và máy chủ thử cục bộ

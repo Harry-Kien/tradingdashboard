@@ -7,6 +7,8 @@ Mô-đun này không đặt lệnh. Kết quả là ý kiến của một mô h�
 from __future__ import annotations
 
 import json
+import threading
+from functools import wraps
 import os
 import sys
 from dataclasses import asdict, is_dataclass
@@ -19,6 +21,23 @@ from .doc_so import VN
 SO_NEN = {'M5': 300, 'M15': 500, 'M30': 300, 'H1': 1000, 'H4': 1000, 'D1': 60}       # như BARS_TO_FETCH của vòng chạy bóng
 GIA_MOI_GIAY = 120
 UOC_TINH_USD = 0.08                                                                       # theo VAN_HANH_NHANH.md của dự án
+
+
+_luot_hoi = threading.Lock()
+
+
+def gioi_han_dong_thoi(fn):
+    """Giữ chốt từ kiểm hạn mức tới ghi chi phí: hai tab không tiêu cùng một lượt còn lại."""
+    @wraps(fn)
+    def goi(*args, **kwargs):
+        if not _luot_hoi.acquire(blocking=False):
+            ly_do = 'Đang có một lượt AI xử lý; chờ xong rồi gửi tiếp.'
+            return {'ok': False, 'chan': [ly_do], 'ly_do': ly_do}
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            _luot_hoi.release()
+    return goi
 
 
 def _so(out: Path) -> Path:
@@ -70,6 +89,7 @@ def _dict(o) -> dict:
     return dict(o)
 
 
+@gioi_han_dong_thoi
 def hoi(cfg: dict, out: Path, analyze=None, now: datetime | None = None, khung_song=None) -> dict:
     """Một lượt hỏi AI. `analyze` và `khung_song` chỉ để bài kiểm thay thế; mặc định là hàm thật của dự án."""
     g = cfg['gia']

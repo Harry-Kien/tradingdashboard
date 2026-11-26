@@ -358,7 +358,7 @@ html.nv-khoa{overflow:hidden}
 .nv-rong{padding:22px;text-align:center;color:var(--mute);font-size:13px}
 @media(prefers-reduced-motion:reduce){.nv-m{transition:none}}
 
-main.rong{max-width:1320px}
+main.rong{max-width:1560px}
 .hs-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .hs-top h1{margin:0}.hs-top p{margin:6px 0 0;color:var(--ink2);max-width:760px}
 .hs-tk{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
@@ -648,16 +648,16 @@ function veLich(){const box=$('#lich'),ds=D.ngay;if(!ds.length){box.innerHTML='<
   h+=`<div class="thang"><b>${String(mo+1).padStart(2,'0')}/${y}</b><div class="o">${o}</div></div>`;c=new Date(Date.UTC(y,mo+1,1))}
  box.innerHTML=h;box.scrollLeft=box.scrollWidth}
 function veNhom(){const ds=(D.bang[tab]||[]).filter(x=>x.n),box=$('#pn');if(!ds.length){box.innerHTML='<p class="small">Không có dữ liệu.</p>';return}
- const cap=Math.max(...ds.map(x=>Math.abs(x.rong)))||1,ten=x=>tab==='gio'?String(x.k).padStart(2,'0')+':00':tab==='chieu'?(x.k==='MUA'?'MUA':'BÁN'):(LG==='en'&&x.k_en!=null?x.k_en:x.k);
+ const cap=Math.max(...ds.map(x=>Math.abs(x.rong)))||1,ten=x=>tab==='gio'?String(x.k).padStart(2,'0')+':00':tab==='chieu'?(x.k==='MUA'?(LG==='en'?'BUY':'MUA'):(LG==='en'?'SELL':'BÁN')):(LG==='en'&&x.k_en!=null?x.k_en:x.k);
  box.innerHTML='<div class="pn"><div>'+ds.map(x=>{const w=Math.abs(x.rong)/cap*50;return`<div class="cot-n"><span>${esc(ten(x))}</span><div class="t"><u></u><i style="${x.rong>=0?'left:50%':'left:'+(50-w)+'%'};width:${w}%;background:var(--${x.rong>=0?'gain':'loss'})"></i></div><em class="${cls(x.rong)}">${tien(x.rong,'')}</em></div>`}).join('')
   +'</div><div class="hs-wrap" style="max-height:none"><table><thead><tr><th>Nhóm</th><th class="r">Lệnh</th><th class="r">Thắng</th><th class="r">Hệ số LN</th><th class="r">TB/lệnh</th><th class="r">R bình quân</th></tr></thead><tbody>'
   +ds.map(x=>`<tr><td>${esc(ten(x))}</td><td class="r">${x.n}</td><td class="r">${fmt(x.ty_le,0)}%</td><td class="r">${x.pf==='inf'?'∞':fmt(x.pf,2)}</td><td class="r ${cls(x.tb)}">${tien(x.tb,'')}</td><td class="r">${x.r_tb!=null?fmt(x.r_tb,2):'—'}</td></tr>`).join('')+'</tbody></table></div></div>'}
 function veDs(){const ds=D.lenh.slice().sort((a,b)=>{const p=a[sx.k],q=b[sx.k];if(p==null)return 1;if(q==null)return-1;return(typeof p==='string'?p.localeCompare(q):p-q)*sx.d}),N=25,tong=Math.ceil(ds.length/N)||1;
  trangSo=Math.min(trangSo,tong-1);document.querySelectorAll('#hs-noi th[data-k]').forEach(th=>th.setAttribute('aria-sort',th.dataset.k===sx.k?(sx.d>0?'ascending':'descending'):'none'));
- $('#ds').innerHTML=ds.slice(trangSo*N,trangSo*N+N).map(x=>{const d=x.vao>100?2:x.vao>10?3:5;return`<tr><td>${ngayVN(x.dong)}</td><td><b>${esc(x.ma)}</b></td><td class="${x.chieu==='MUA'?'gain':'loss'}">${x.chieu==='MUA'?'MUA':'BÁN'}</td>
+ $('#ds').innerHTML=ds.slice(trangSo*N,trangSo*N+N).map(x=>{const d=x.vao>100?2:x.vao>10?3:5;return`<tr><td>${ngayVN(x.dong)}</td><td><b>${esc(x.ma)}</b></td><td class="${x.chieu==='MUA'?'gain':'loss'}">${x.chieu==='MUA'?(LG==='en'?'BUY':'MUA'):(LG==='en'?'SELL':'BÁN')}</td>
   <td class="r">${fmt(x.lot,2)}</td><td class="r">${fmt(x.vao,d)}</td><td class="r">${fmt(x.ra,d)}</td><td class="r">${gio(x.phut)}</td><td class="r ${cls(x.rong)}"><b>${tien(x.rong,'')}</b></td>
   <td class="r ${cls(x.r)}">${x.r!=null?(x.r>0?'+':'')+fmt(x.r,2):'—'}</td><td>${esc(x.nguon)}</td></tr>`}).join('')||'<tr><td colspan="10" class="small">Không có lệnh.</td></tr>';
- $('#trang-so').innerHTML=tong>1?`<button type="button" class="ghost nho" data-p="-1"${trangSo?'':' disabled'}>‹ Trước</button><span>Trang ${trangSo+1}/${tong}</span><button type="button" class="ghost nho" data-p="1"${trangSo<tong-1?'':' disabled'}>Sau ›</button>`:'';
+ $('#trang-so').innerHTML=tong>1?`<button type="button" class="ghost nho" data-p="-1"${trangSo?'':' disabled'}>‹ Trước</button><span>${LG==='en'?'Page':'Trang'} ${trangSo+1}/${tong}</span><button type="button" class="ghost nho" data-p="1"${trangSo<tong-1?'':' disabled'}>Sau ›</button>`:'';
  $('#trang-so').onclick=e=>{const b=e.target.closest('button[data-p]');if(!b)return;trangSo+= +b.dataset.p;veDs()}}
 $('#hs-ngay').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;st.ngay=+b.dataset.v;luu();tai()});
 $('#hs-chieu').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;st.chieu=b.dataset.v;luu();tai()});

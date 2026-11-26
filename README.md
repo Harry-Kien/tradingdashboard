@@ -55,6 +55,20 @@ Chỉ cần **MetaTrader 5** đã đăng nhập tài khoản **demo** (sàn bấ
 
 Chi tiết cấu hình và cách xử lý sự cố: [HUONG_DAN.md](HUONG_DAN.md).
 
+## Kiểm tra khi sửa mã
+
+Cài thư viện phát triển bằng `python -m pip install -r requirements-dev.txt`, rồi chạy:
+
+```powershell
+python -m ruff check so_cong_khai tests
+python -X utf8 kiem_nhanh.py
+python -X utf8 -m unittest discover -s tests -q
+python -X utf8 -m bandit -r so_cong_khai -lll
+python -X utf8 -m pip_audit -r requirements.txt --progress-spinner off
+```
+
+Bộ kiểm dùng dữ liệu giả, không gọi AI hay gửi Telegram thật. Cài Node.js để kiểm cả JavaScript tiếng Việt và tiếng Anh. GitHub Actions chạy các bước này khi đẩy lên `main` và khi mở pull request; Bandit chặn phát hiện mức cao, còn các cảnh báo khác vẫn cần đọc và đánh giá theo ngữ cảnh.
+
 ## Dữ liệu và quyền riêng tư
 
 - Giá, nến, thông số hợp đồng, lịch sử lệnh đã đóng: MT5 trên máy bạn (chỉ đọc; mặc định chỉ nhận tài khoản demo). Trang chỉ nghe ở 127.0.0.1, máy khác không vào được.

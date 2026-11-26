@@ -23,10 +23,27 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Cài thư viện
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Dò lỗi mã và bảo mật bằng Ruff
+        run: python -m ruff check so_cong_khai tests
 
       - name: Biên dịch mọi tệp Python
         run: python -X utf8 -m compileall -q so_cong_khai kiem_nhanh.py
 
       - name: Kiểm nhanh (không cần MetaTrader 5)
         run: python -X utf8 kiem_nhanh.py
+
+      - name: Kiểm chức năng, JavaScript và hồi quy bảo mật
+        run: python -X utf8 -m unittest discover -s tests -q
+
+      - name: Bandit - chặn phát hiện mức cao
+        run: python -X utf8 -m bandit -r so_cong_khai -lll
+
+      - name: Kiểm lỗ hổng thư viện bắt buộc
+        run: python -X utf8 -m pip_audit -r requirements.txt --progress-spinner off

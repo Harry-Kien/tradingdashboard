@@ -414,5 +414,10 @@ def csv_lenh(lenh: list[dict]) -> str:
     cot = ['id', 'ma', 'chieu', 'lot', 'vao', 'ra', 'mo', 'dong', 'phut', 'lai', 'phi', 'swap', 'rong', 'sl', 'tp', 'r', 'nguon']
     w.writerow(cot)
     for x in lenh:
-        w.writerow([x.get(c) for c in cot])
+        # Excel diễn giải các chuỗi này thành công thức, dù CSV đã đặt trong dấu ngoặc kép.
+        def sach(v):
+            if isinstance(v, str) and (v.startswith(('\t', '\r', '\n')) or v.lstrip().startswith(('=', '+', '-', '@'))):
+                return "'" + v
+            return v
+        w.writerow([sach(x.get(c)) for c in cot])
     return '﻿' + f.getvalue()

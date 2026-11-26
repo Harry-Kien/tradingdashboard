@@ -17,7 +17,8 @@ import re
 import threading
 import time
 import urllib.request
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as DET
+from defusedxml.common import DefusedXmlException
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -72,15 +73,11 @@ def _sach(s: str | None, toi_da: int = 240) -> str:
 
 
 def _phan_tich_xml(body: bytes):
-    """Phân tích XML từ mạng an toàn: RSS hợp lệ không cần DOCTYPE hay ENTITY, nên tệp có khai báo đó bị từ chối (chặn XXE và bom thực thể).
-    Có defusedxml thì dùng nó."""
-    if re.search(rb'<!\s*(DOCTYPE|ENTITY)', body[:20000], re.I):
-        raise ValueError('tệp RSS có khai báo DOCTYPE/ENTITY: từ chối')
+    """RSS từ mạng: luôn chặn DTD/ENTITY, kể cả UTF-16 hay khai báo sau prolog dài."""
     try:
-        from defusedxml import ElementTree as DET                           # noqa: PLC0415
-        return DET.fromstring(body)
-    except ImportError:
-        return ET.fromstring(body)                                          # noqa: S314 - đã chặn DOCTYPE/ENTITY ở trên
+        return DET.fromstring(body, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+    except DefusedXmlException as e:
+        raise ValueError('tệp RSS có khai báo DOCTYPE/ENTITY: từ chối') from e
 
 
 def doc_rss(body: bytes, nguon: dict) -> list[dict]:

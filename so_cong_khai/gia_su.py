@@ -17,7 +17,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import giu_lenh
+from . import ai_hoi, giu_lenh
 from . import hoc_giao_dich as HG
 from .__main__ import HERE
 from .doc_so import VN
@@ -137,7 +137,6 @@ def doc_so(out: Path) -> list[dict]:
 
 def co_khoa() -> bool:
     """Chỉ kiểm tra CÓ khóa hay không, như nút Hỏi AI; không đọc giá trị của khóa."""
-    from . import ai_hoi                                           # noqa: PLC0415
     return ai_hoi.co_khoa()
 
 
@@ -240,6 +239,7 @@ def _khoi(b) -> dict:
 
 
 # --------------------------------------------------------------------------- hỏi
+@ai_hoi.gioi_han_dong_thoi
 def hoi(cfg: dict, out: Path, phien: str | None, cd: str, cau: str, client=None, now: datetime | None = None, lang: str = 'vi',
         goc: Path = HERE, khi_chu=None) -> dict:
     """Một lượt của buổi học. Không có `phien` (hoặc phiên khác chủ đề) là buổi mới, `cau` rỗng nghĩa là bắt đầu.
