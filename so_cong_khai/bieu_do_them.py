@@ -65,12 +65,13 @@ let GAN=null,YC=null;const PRIM={attached(p){YC=p.requestUpdate},detached(){YC=n
  paneViews(){return[{zOrder:()=>'bottom',renderer:()=>({draw:t=>{try{vePhien(t)}catch(e){}}})},{zOrder:()=>'top',renderer:()=>({draw:t=>{try{veHoSo(t)}catch(e){}}})}]}};
 const capNhat=()=>{YC&&YC()};
 // ---------------------------------------------------------------- so sánh với mã khác (thang trái) và tương quan lợi suất
-let SS=null,ssKhoa='',ssLuc=0;
-function ssBo(c){if(SS){try{c.removeSeries(SS)}catch(e){}SS=null}ssKhoa='';try{c.applyOptions({leftPriceScale:{visible:false}})}catch(e){}}
+let SS=null,ssKhoa='',ssLuc=0,ssDL=null,ssVe='';
+function ssBo(c){if(SS){try{c.removeSeries(SS)}catch(e){}SS=null}ssKhoa='';ssDL=null;ssVe='';try{c.applyOptions({leftPriceScale:{visible:false}})}catch(e){}}
 async function ssNap(B){const c=B.LW.chart,tf=B.D.tf||'M15',k=ON.ss+'|'+tf;if(!ON.ss||(B.D.khac_vang&&B.D.ma===ON.ss)){if(SS)ssBo(c);return}
- if(k===ssKhoa&&Date.now()-ssLuc<60000)return;ssKhoa=k;ssLuc=Date.now();
- let j;try{const r=await fetch('/api/gia?tf='+tf+'&n=1500&ma='+encodeURIComponent(ON.ss),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());j=await r.json()}
- catch(e){console.warn('So sánh mã:',e);ssKhoa='';return}
+ if(k!==ssKhoa||Date.now()-ssLuc>=60000){ssKhoa=k;ssLuc=Date.now();
+  try{const r=await fetch('/api/gia?tf='+tf+'&n=1500&ma='+encodeURIComponent(ON.ss),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();
+   const B2=BD();if(!B2||!B2.D||ON.ss+'|'+(B2.D.tf||'M15')!==k)return;ssDL=j;B=B2;ssVe=''}catch(e){console.warn('So sánh mã:',e);ssKhoa='';return}}   // phản hồi cũ (đã đổi mã, khung) thì bỏ
+ const j=ssDL;if(!j)return;const kv=k+'|'+B.D.candles.length+'|'+B.D.candles[B.D.candles.length-1][0];if(kv===ssVe&&SS)return;ssVe=kv;   // vẽ lại theo đúng chuỗi nến đang vẽ (cả khi phát lại)
  const cs=B.D.candles,co=new Set(cs.map(x=>x[0])),m=new Map(j.candles.filter(x=>co.has(x[0])).map(x=>[x[0],x[4]]));if(!m.size)return;
  const chung=cs.filter(x=>m.has(x[0])).slice(-101);let tq=null;
  if(chung.length>30){const a=[],b=[];for(let i=1;i<chung.length;i++){a.push(Math.log(chung[i][4]/chung[i-1][4]));b.push(Math.log(m.get(chung[i][0])/m.get(chung[i-1][0])))}
@@ -78,11 +79,11 @@ async function ssNap(B){const c=B.LW.chart,tf=B.D.tf||'M15',k=ON.ss+'|'+tf;if(!O
  if(!SS){SS=c.addSeries(LightweightCharts.LineSeries,{priceScaleId:'left',color:'#4f8cff',lineWidth:1.5,priceLineVisible:false,crosshairMarkerVisible:false},0);
   c.applyOptions({leftPriceScale:{visible:true,borderVisible:false}})}
  const ds=[...m].sort((p,q)=>p[0]-q[0]),goc=ds[0][1];                 // % thay đổi so với nến chung đầu tiên, như "So sánh" của TradingView
- SS.applyOptions({title:ON.ss+' %'+(tq!=null?' · tương quan '+tq.toFixed(2):'')});SS.setData(ds.map(([t,v])=>({time:t,value:(v/goc-1)*100})))}
+ SS.applyOptions({title:ON.ss+' %'+(tq!=null&&isFinite(tq)?' · tương quan '+tq.toFixed(2):'')});SS.setData(ds.map(([t,v])=>({time:t,value:(v/goc-1)*100})))}
 // ---------------------------------------------------------------- tick volume của nến cũ: tải một lần mỗi mã và khung (tới 30.000 nến MT5 còn giữ), ghép theo giờ nến
 const KLM=new Map();let klDang='';
 async function napKL(B){if(!(ON.hoso||CBCN.dung('kld')||CBCN.dung('kldg'))||!B.D||B.D.nguon!=='mt5')return;const ma=B.D.khac_vang?B.D.ma:'',tf=B.D.tf||'',k=ma+'|'+tf,c=KLM.get(k);
- if(c&&c.m){const v=B.D.vol||(B.D.vol={});if(B.D._kl!==k){for(const[t,x]of c.m)if(v[t]==null)v[t]=x;B.D._kl=k;CBCN.tinhLai();capNhat()}return}
+ if(c&&c.m){const v=B.D.vol||(B.D.vol={});if(B.D._kl!==k){for(const[t,x]of c.m)if(v[t]==null)v[t]=x;B.D._kl=k;const F=window.CBPL&&CBPL.PL.on&&CBPL.PL.F;if(F){F._kl=k;F.vol=v}CBCN.tinhLai();capNhat()}return}
  if(klDang===k||(c&&Date.now()-c.luc<600000))return;klDang=k;
  try{const j=await(await fetch('/api/khoi-luong?tf='+tf+'&n=30000'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'})).json();
   KLM.set(k,{luc:Date.now(),m:j.t&&j.t.length?j.t.map((t,i)=>[t,j.v[i]]):null});while(KLM.size>6)KLM.delete(KLM.keys().next().value)}catch(e){KLM.set(k,{luc:Date.now(),m:null})}

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import shutil
 import string
+import os
 import subprocess
 import threading
 import time
@@ -187,15 +188,20 @@ def tuoi_gio(dich: Path, now: float | None = None) -> float | None:
 
 _o_cung: dict = {}
 
+def _powershell() -> str:
+    """Đường dẫn đầy đủ tới powershell.exe của Windows (không gọi tên trơn: Windows tìm cả thư mục hiện hành trước, Ruff S607)."""
+    p = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe'
+    return str(p) if p.is_file() else 'powershell'
+
 
 def o_vat_ly(chu: str) -> int | None:
     """Số thứ tự ổ cứng vật lý của một chữ ổ (Windows); None nếu không biết (ổ mạng, Google Drive, máy khác Windows)."""
     chu = (chu or '').rstrip(':\\/').upper()[:1]
-    if not chu:
+    if not ('A' <= chu <= 'Z'):                                              # chỉ chữ ổ A–Z mới đưa vào lệnh PowerShell
         return None
     if chu not in _o_cung:
         try:
-            r = subprocess.run(['powershell', '-NoProfile', '-Command', f'(Get-Partition -DriveLetter {chu} -ErrorAction Stop).DiskNumber'],
+            r = subprocess.run([_powershell(), '-NoProfile', '-Command', f'(Get-Partition -DriveLetter {chu} -ErrorAction Stop).DiskNumber'],   # noqa: S603 - lệnh và tham số cố định, PID ép int, chữ ổ đã kiểm A–Z
                                capture_output=True, text=True, timeout=15, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             _o_cung[chu] = int(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip().isdigit() else None
         except (OSError, ValueError, subprocess.SubprocessError):

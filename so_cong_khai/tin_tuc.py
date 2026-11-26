@@ -118,7 +118,7 @@ def gop(cu: list[dict], moi: list[dict], now: datetime | None = None) -> list[di
 
 
 def _tai_url(url: str, cho: float = 20.0) -> bytes:
-    rq = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; so-cong-khai/1.0)', 'Accept': 'application/rss+xml, application/xml, text/xml'})
+    rq = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; so-cong-khai/1.0)', 'Accept': 'application/rss+xml, application/xml, text/xml'})   # noqa: S310 - địa chỉ https cố định, chỉ tải về
     with urllib.request.urlopen(rq, timeout=cho) as r:                       # noqa: S310 - địa chỉ https cố định trong cấu hình, chỉ tải về
         return r.read(3_000_000)
 

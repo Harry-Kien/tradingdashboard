@@ -173,10 +173,10 @@ const LIB={
    av=n=>hop(tong(bp,n),tong(t,n),(a,b)=>b?a/b:null),a=av(p.a),b=av(p.b),c=av(p.c);return[L_('UO',a.map((v,i)=>v==null||b[i]==null||c[i]==null?null:100*(4*v+2*b[i]+c[i])/7))]}},
  elder:{ten:'Elder Ray (sức bò, sức gấu)',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ EMA',13,1]],muc:[0],mo:'Đỉnh − EMA (sức bên mua) và đáy − EMA (sức bên bán).',
   tinh:(H,L,C,O,p)=>{const e=ema(C,p.n);return[L_('Sức mua',hop(H,e,(a,b)=>a-b),'cot'),L_('Sức bán',hop(L,e,(a,b)=>a-b),'cot')]}},
- kld:{ten:'Khối lượng đột biến (tick volume MT5)',nhom:'cd',khung:'rieng',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
+ kld:{ten:'Khối lượng đột biến (tick volume MT5)',nhom:'cd',khung:'rieng',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1,0]],
   mo:'Cột là tick volume chia trung bình 20 nến trước (dương: nến tăng, âm: nến giảm); mũi tên khi gấp từ 2 lần, thân nến từ 50% và thuận EMA50. Vàng CFD không có khối lượng thật: tick volume là số lần giá đổi, đo độ sôi động chứ không phải lệnh của cá mập. Đo trên vàng 2026 (M5, M15, H1): nến có mũi tên KHÔNG đi tiếp tốt hơn nến thường, nên đừng dùng làm tín hiệu vào lệnh. Chỉ có khi đang nối MT5 trực tiếp.',
   tinh:(H,L,C,O,p,V)=>{const[r,mk]=kldb(H,L,C,O,V,p.n,p.k,p.xu);return[[...L_('KL',r,'cot'),mk]]}},
- kldg:{ten:'Khối lượng đột biến: dấu trên nến',nhom:'cd',khung:'gia',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
+ kldg:{ten:'Khối lượng đột biến: dấu trên nến',nhom:'cd',khung:'gia',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1,0]],
   mo:'Cùng định nghĩa với "Khối lượng đột biến", nhưng vẽ mũi tên ngay dưới hoặc trên cây nến đột biến. Chỉ có khi đang nối MT5 trực tiếp.',
   tinh:(H,L,C,O,p,V)=>{const[,mk,pt]=kldb(H,L,C,O,V,p.n,p.k,p.xu);return[[...L_('KL đột biến',pt,'cham'),mk]]}},};
 const NHOM={xu:'Xu hướng',dao:'Dao động',bien:'Biến động',cd:'Cộng đồng nổi tiếng'},MAUS=['#2962ff','#ff6d00','#e91e63','#00897b','#8e24aa','#fbc02d','#43a047','#6d4c41','#00acc1','#f4511e'];
@@ -232,7 +232,7 @@ function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candle
  const cs=B.D.candles,k=cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1][4]+'|'+KH,now=Date.now();
  if(k===khoaDL||(now-TINH<800&&khoaDL.split('|')[0]==String(cs.length)))return;khoaDL=k;TINH=now;
  const H=cs.map(r=>r[2]),Lo=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]),VM=B.D.vol||{},V=cs.map(r=>VM[r[0]]);          // V: tick volume của MT5 theo giờ mở nến (không có khi dùng kho nến)
- for(const x of bat){const out=LIB[x.k].tinh(H,Lo,C,O,x.p,V);for(const it of SER.filter(s=>s.id===x.id)){const a=out[it.j]&&out[it.j][1];if(!a)continue;
+ for(const x of bat){let out;try{out=LIB[x.k].tinh(H,Lo,C,O,x.p,V)}catch(e){console.warn('Chỉ báo '+x.k+':',e);continue}for(const it of SER.filter(s=>s.id===x.id)){const a=out[it.j]&&out[it.j][1];if(!a)continue;
   it.s.setData(cs.map((r,i)=>a[i]==null||!isFinite(a[i])?{time:r[0]}:{time:r[0],value:a[i],...(it.kieu==='cot'?{color:a[i]>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}));
   const mk=out[it.j][3];if(mk&&LWC.createSeriesMarkers){if(!it.mk)it.mk=LWC.createSeriesMarkers(it.s,[]);                  // mũi tên mua bán của chỉ báo (300 dấu gần nhất)
    it.mk.setMarkers(mk.filter(m=>m.i<cs.length).slice(-300).map(m=>({time:cs[m.i][0],position:m.len?'belowBar':'aboveBar',color:m.len?'#26a69a':'#ef5350',shape:m.len?'arrowUp':'arrowDown'})))}}}}
@@ -258,7 +258,7 @@ function hangLib(k){const d=LIB[k],sao=S.sao.includes(k),dem=S.ds.filter(x=>x.k=
  +`<b>${esc(d.ten)}</b><button type="button" class="them" data-them="${k}">Thêm${dem?' ('+dem+')':''}</button><small>${esc(NHOM[d.nhom])} · ${d.khung==='gia'?'trên biểu đồ giá':'khung riêng'} · ${esc(d.mo)}</small></div>`}
 function hangDung(x){const d=LIB[x.k];return`<div class="dg${x.an?' an':''}" data-id="${x.id}"><input type="color" value="${x.mau}" data-mau aria-label="Màu">`
  +`<b>${esc(d.ten)}</b><button type="button" class="ghost" data-an>${x.an?'Hiện':'Ẩn'}</button><button type="button" class="ghost" data-chep>Nhân bản</button><button type="button" class="ghost xoa" data-xoa>Xóa</button>`
- +`<div class="ts">${d.ts.map(([k,n,,b])=>`<label>${esc(n)}<input type="number" step="${b}" min="${b}" data-ts="${k}" value="${x.p[k]}"></label>`).join('')}</div></div>`}
+ +`<div class="ts">${d.ts.map(([k,n,,b,mn])=>`<label>${esc(n)}<input type="number" step="${b}" min="${mn??b}" data-ts="${k}" value="${x.p[k]}"></label>`).join('')}</div></div>`}
 function veDs(){if(NEN.hidden)return;veTab();const q=TIM.value.trim().toLowerCase(),khop=k=>!q||(k+' '+LIB[k].ten+' '+LIB[k].mo).toLowerCase().includes(q);let h='';
  if(TAB==='dung')h=S.ds.length?S.ds.map(hangDung).join(''):'<p class="rong">Chưa dùng chỉ báo nào. Chọn ở tab Tất cả.</p>';
  else if(TAB==='co_san'){const ch=[...document.querySelectorAll('.chips .chip[data-k]')].filter(b=>!q||b.textContent.toLowerCase().includes(q));
@@ -283,7 +283,8 @@ NEN.addEventListener('click',e=>{const t=e.target;if(t===NEN||t.closest('[data-d
  else if(b.dataset.ap){S.ds=(S.mau[b.dataset.ap]||[]).filter(v=>LIB[v.k]).map(v=>({id:moiId(),k:v.k,p:{...macDinh(v.k),...v.p},mau:v.mau,an:false}));luu();TAB='dung';doi()}
  else if(b.dataset.boMau){delete S.mau[b.dataset.boMau];luu();veDs()}});
 NEN.addEventListener('change',e=>{const t=e.target,dg=t.closest('.dg'),x=dg&&S.ds.find(v=>v.id===dg.dataset.id);if(!x)return;
- if(t.hasAttribute('data-mau'))x.mau=t.value;else if(t.dataset.ts){const v=parseFloat(t.value);if(isFinite(v)&&v>0){x.p[t.dataset.ts]=Math.min(v,1000)}else t.value=x.p[t.dataset.ts]}luu();doi()});
+ if(t.hasAttribute('data-mau'))x.mau=t.value;else if(t.dataset.ts){const q=LIB[x.k].ts.find(r=>r[0]===t.dataset.ts)||[],mn=q[4]??0,nguyen=q[3]>=1;let v=parseFloat(t.value);   // bước 1 là chu kỳ: làm tròn số nguyên
+ if(isFinite(v)&&v>=mn&&(v>0||mn===0)){if(nguyen)v=Math.max(mn,Math.round(v));x.p[t.dataset.ts]=Math.min(v,1000);t.value=x.p[t.dataset.ts]}else t.value=x.p[t.dataset.ts]}luu();doi()});
 TIM.addEventListener('input',()=>{if(TAB==='dung'||TAB==='mau')TAB='tat';veDs()});
 function mo(){NEN.hidden=false;TIM.value='';veDs();setTimeout(()=>TIM.focus(),30)}function dong(){NEN.hidden=true;nut&&nut.focus()}
 addEventListener('keydown',e=>{if(!NEN.hidden&&e.key==='Escape'){e.stopPropagation();dong();return}

@@ -13,6 +13,7 @@ Thêm hai việc mà bản chia sẻ cần:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from datetime import datetime, timedelta, timezone
@@ -30,11 +31,17 @@ VUA_DOI = 'MT5 vừa đổi tiến trình trong lúc kiểm tra; chưa nối, s�
 TU_MO = ('Trong lúc nối, thư viện MT5 đã tự mở thêm một MT5 khác; đã ngắt và đóng bản vừa mở. Hãy để MT5 mở sẵn và đăng nhập rồi thử lại.')
 
 
+def _powershell() -> str:
+    """Đường dẫn đầy đủ tới powershell.exe của Windows (không gọi tên trơn: Windows tìm cả thư mục hiện hành trước, Ruff S607)."""
+    p = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe'
+    return str(p) if p.is_file() else 'powershell'
+
+
 # ---- tiến trình và cửa sổ (chỉ liệt kê, không nối vào MT5)
 def tien_trinh() -> list[tuple[str, int, str]] | None:
     """(tên tệp chạy, PID, đường dẫn) của mọi terminal64 và metatester64 đang chạy; None nếu không đọc được."""
     try:
-        r = subprocess.run(['powershell', '-NoProfile', '-Command', _LIET_KE], capture_output=True, text=True, timeout=30,
+        r = subprocess.run([_powershell(), '-NoProfile', '-Command', _LIET_KE], capture_output=True, text=True, timeout=30,   # noqa: S603 - lệnh và tham số cố định, PID ép int, chữ ổ đã kiểm A–Z
                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         if r.returncode != 0:
             return None
@@ -80,7 +87,7 @@ def co_cua_so(pid: int) -> bool:
 def _dong(pid: int) -> None:
     """Yêu cầu một MT5 đóng êm (CloseMainWindow). Chỉ dùng cho MT5 do thư viện vừa tự mở."""
     try:
-        subprocess.run(['powershell', '-NoProfile', '-Command',
+        subprocess.run([_powershell(), '-NoProfile', '-Command',   # noqa: S603 - lệnh và tham số cố định, PID ép int, chữ ổ đã kiểm A–Z
                         f'$p = Get-Process -Id {int(pid)} -ErrorAction SilentlyContinue; $t = (Get-Date).AddSeconds(40); '
                         'while ($p -and -not $p.HasExited -and (Get-Date) -lt $t) { $p.Refresh(); $p.CloseMainWindow() | Out-Null; Start-Sleep -Seconds 2 }'],
                        capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))

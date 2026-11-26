@@ -112,7 +112,7 @@ def tom_tat(ds: list[dict]) -> list[dict]:
 
 
 def _tai(url: str, cho: float = 60.0, toi_da: int = 40_000_000) -> bytes:
-    rq = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; so-cong-khai/1.0)'})
+    rq = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (compatible; so-cong-khai/1.0)'})   # noqa: S310 - địa chỉ https cố định, chỉ tải về
     with urllib.request.urlopen(rq, timeout=cho) as r:                       # noqa: S310 - địa chỉ https cố định, chỉ tải về
         b = r.read(toi_da + 1)
     if len(b) > toi_da:

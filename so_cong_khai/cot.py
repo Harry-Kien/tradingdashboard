@@ -34,7 +34,7 @@ _khoa = threading.Lock()
 
 
 def _tai(url: str) -> bytes:
-    rq = urllib.request.Request(url, headers={'User-Agent': 'so-cong-khai/1'})
+    rq = urllib.request.Request(url, headers={'User-Agent': 'so-cong-khai/1'})   # noqa: S310 - địa chỉ https cố định, chỉ tải về
     with urllib.request.urlopen(rq, timeout=60) as r:                      # noqa: S310 - địa chỉ là hằng số https ở trên
         b = r.read(TOI_DA_BYTE + 1)
     if len(b) > TOI_DA_BYTE:

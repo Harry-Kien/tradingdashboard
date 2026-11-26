@@ -122,7 +122,10 @@ function baoThem(p){const g=G(),cur=giaNay(g);if(cur==null||!isFinite(p))return;
  if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}}
 function baoVe(){const g=G();if(!g.LW||!g.LW.nen)return;const nen=g.LW.nen;if(plNen!==nen){PL=[];plNen=nen}for(const l of PL)try{nen.removePriceLine(l)}catch(e){}
  PL=baoDs(g).map(a=>nen.createPriceLine({price:a.p,color:'#f5a623',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'🔔'}))}
-setInterval(()=>{const g=G();if(CBV()||window.PHAT_LAI||!g.D||g.D!==dRef||kyMa(g)!==kRef)return;   // có cảnh báo máy chủ thì máy chủ kiểm   // đang phát lại nến cũ (bieu_do_phat_lai.py): không so giá cũ với cảnh báoconst ds=baoDoc(g);if(!ds.length)return;const cur=giaNay(g);if(cur==null)return;   // chỉ so với giá của đúng mã đang hiện
+// cảnh báo cục bộ (chỉ khi không có cảnh báo máy chủ): có cảnh báo máy chủ thì máy chủ kiểm; đang phát lại nến cũ (bieu_do_phat_lai.py) thì không so giá cũ;
+// chỉ so với giá của đúng mã đang hiện
+setInterval(()=>{const g=G();if(CBV()||window.PHAT_LAI||!g.D||g.D!==dRef||kyMa(g)!==kRef)return;
+ const ds=baoDoc(g);if(!ds.length)return;const cur=giaNay(g);if(cur==null)return;
  const no=ds.filter(a=>a.len?cur>=a.p:cur<=a.p);if(!no.length)return;baoGhi(g,ds.filter(a=>!no.includes(a)));
  for(const a of no){const tieu='Giá chạm '+g.fp(a.p),nd=g.tkMa()+' · '+g.fp(cur);g.toast({tieu_de:tieu,noi_dung:nd});g.beep();
   if(window.Notification&&Notification.permission==='granted')try{new Notification(tieu,{body:nd,tag:'so-bao-'+a.id})}catch(e){}}},1000);

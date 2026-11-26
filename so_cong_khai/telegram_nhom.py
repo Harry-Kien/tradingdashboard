@@ -170,13 +170,13 @@ def _goi(tk: str, lenh: str, du: dict | None = None, timeout: float = 15) -> dic
             than, loai = _nhieu_phan(du)
         except OSError as e:
             return {'ok': False, 'description': f'không đọc được ảnh: {type(e).__name__}'}
-        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=than, headers={'Content-Type': loai}, method='POST')
+        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=than, headers={'Content-Type': loai}, method='POST')   # noqa: S310 - địa chỉ https cố định, chỉ tải về
         timeout = max(timeout, 30)
     else:
-        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=json.dumps(du or {}).encode('utf-8'),
+        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=json.dumps(du or {}).encode('utf-8'),   # noqa: S310 - địa chỉ https cố định, chỉ tải về
                                      headers={'Content-Type': 'application/json'}, method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:   # noqa: S310 - địa chỉ https cố định, chỉ tải về
             return json.loads(r.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
         try:
