@@ -384,7 +384,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
                     tf = q.get('tf', ['M15'])[0]
-                    if tf not in song.SO_NEN:
+                    if tf not in song.SO_NEN and tf not in song.KHUNG_XEM:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: khung {tf}'.encode('utf-8'))
                     ma = (q.get('ma', [''])[0] or '').strip()
                     return self._day_tick(cfg.get('gia') or {}, tf, None if not ma or ma == da_ma.ma_vang(cfg) else ma)
@@ -392,7 +392,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)
                     tf, ma = q.get('tf', ['M15'])[0], (q.get('ma', [''])[0] or '').strip()
-                    if tf not in song.SO_NEN or not re.fullmatch(r'[A-Za-z0-9._#-]{0,24}', ma):
+                    if (tf not in song.SO_NEN and tf not in song.KHUNG_XEM) or not re.fullmatch(r'[A-Za-z0-9._#-]{0,24}', ma):
                         return self._gui(400, 'text/plain; charset=utf-8', 'Yêu cầu không hợp lệ.'.encode('utf-8'))
                     try:
                         n = max(100, min(int(q.get('n', ['30000'])[0]), 60000))

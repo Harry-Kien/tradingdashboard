@@ -17,6 +17,8 @@ from pathlib import Path
 
 from . import noi_mt5
 
+# khung CHỈ ĐỂ XEM (phút mỗi nến; MN1 lấy 30 ngày làm bước ước lượng): đọc thẳng từ MT5 khi người dùng chọn, không nằm trong vòng nến của luật
+KHUNG_XEM = {'M2': 2, 'M3': 3, 'M10': 10, 'H2': 120, 'H3': 180, 'W1': 10080, 'MN1': 43200}
 SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 400, 'H1': 1000, 'H4': 1000, 'D1': 900}   # M1: 900 nến xem + 400 nến khởi động chỉ báo
 LUU_LECH = Path(__file__).resolve().parent.parent / 'out' / 'lech-gio-san.json'
 _khoa = threading.Lock()
@@ -95,7 +97,7 @@ def tick(g: dict, tf: str, sym: str | None = None) -> dict | None:
 
     Trả {'ms': giờ tick theo mili giây, 'bid', 'ask', 'nen': [giờ mở, mở, cao, thấp, đóng]}; None khi chưa nối được MT5 hoặc mã chưa có tick.
     Chỉ đọc, chỉ để vẽ: luật vẫn tính trên nến đã đóng qua khung_song."""
-    if tf not in SO_NEN:
+    if tf not in SO_NEN and tf not in KHUNG_XEM:
         raise ValueError(f'khung không hỗ trợ: {tf}')
     if _tt['mt5'] is None and khung_song(g) is None:              # chưa nối: nối theo đúng đường an toàn (có giãn cách thử lại)
         return None
@@ -122,7 +124,7 @@ def khoi_luong(tf: str, sym: str | None = None, n: int = 1500) -> dict[int, int]
     """Tick volume (số lần giá đổi trong nến) của n nến ĐÃ ĐÓNG gần nhất, {giờ mở nến (giây UTC): tick volume}. None khi chưa nối MT5 hoặc lỗi đọc.
 
     Vàng CFD không có khối lượng giao dịch thật; đây chỉ là thước đo độ sôi động. Đọc thẳng từ MT5 (chỉ đọc), nhớ vài giây cho mỗi mã và khung."""
-    if tf not in SO_NEN:
+    if tf not in SO_NEN and tf not in KHUNG_XEM:
         raise ValueError(f'khung không hỗ trợ: {tf}')
     with _khoa:
         mt5 = _tt['mt5']

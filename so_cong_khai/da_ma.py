@@ -17,7 +17,8 @@ import pandas as pd
 from . import gia, phuong_phap, song
 
 NHOM = {'Forex': 'Ngoại hối', 'Commodities': 'Hàng hóa', 'Indices': 'Chỉ số', 'Crypto': 'Tiền mã hóa'}
-SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900}
+SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900,
+          'M2': 1300, 'M3': 1300, 'M10': 900, 'H2': 900, 'H3': 900, 'W1': 600, 'MN1': 300}     # hàng dưới: khung chỉ để xem (song.KHUNG_XEM)
 GIAI_THICH = ('Ba luật trong sổ của bạn (bot tín hiệu, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ và '
               'mức chốt lời của chúng là con số của vàng, nên không áp cho mã này. Các phương pháp tùy chọn bên dưới tính theo ATR nên áp được, '
               'và được chạy lại trên nến 5 phút của chính mã này từ đầu năm (xem số đo trong từng thẻ). Số đo đó chưa đầy một năm và chưa trừ phí hoa hồng: '

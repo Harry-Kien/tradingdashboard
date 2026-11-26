@@ -19,6 +19,7 @@ import pandas as pd
 from . import doc_so, song
 
 KHUNG ={'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30, 'H1': 60, 'H4': 240, 'D1': 1440}   # M1 chỉ để xem biểu đồ; không luật nào tính trên M1
+KHUNG.update(song.KHUNG_XEM)                                       # khung chỉ để xem: M2, M3, M10, H2, H3, W1, MN1 (đọc thẳng MT5)
 _QUY = {'M5': '5min', 'M15': '15min', 'M30': '30min', 'H1': '1h', 'H4': '4h'}
 _OHLC = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last'}
 _nho: dict = {}
@@ -437,7 +438,7 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
         raise ValueError(f'khung không hỗ trợ: {tf}')
     g = cfg['gia']
     can_gia(g)
-    if chia_se_song(g):                           # bản chia sẻ: vàng dùng chung đường với mọi mã (không có luật riêng của chủ dự án)
+    if chia_se_song(g) or tf in song.KHUNG_XEM:   # bản chia sẻ, hoặc khung chỉ để xem: vàng dùng chung đường với mọi mã (đọc thẳng MT5, không có phần luật)
         from . import da_ma                       # noqa: PLC0415 - da_ma nạp gia, tránh vòng nạp
         return da_ma.goi(cfg, da_ma.ma_vang(cfg), tf, n, now)
     now = now or datetime.now(timezone.utc)

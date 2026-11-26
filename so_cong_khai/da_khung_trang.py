@@ -50,7 +50,7 @@ main.rong{max-width:none;padding-left:16px;padding-right:16px}
 JS = r"""
 (()=>{const $=s=>document.querySelector(s),LWC=window.LightweightCharts,G=$('#dk-luoi'),TT=window.TT;if(!G)return;
 if(!LWC){G.innerHTML='<p class="dk-cho">Không nạp được thư viện biểu đồ.</p>';return}
-const TFS={M1:60,M5:300,M15:900,M30:1800,H1:3600,H4:14400,D1:86400},TFK=Object.keys(TFS),tz={timeZone:'Asia/Ho_Chi_Minh'},SO={'2':2,'4':4,'1+3':4};
+const TFS={M1:60,M2:120,M3:180,M5:300,M10:600,M15:900,M30:1800,H1:3600,H2:7200,H3:10800,H4:14400,D1:86400,W1:604800,MN1:2592000},TFK=Object.keys(TFS),tz={timeZone:'Asia/Ho_Chi_Minh'},SO={'2':2,'4':4,'1+3':4};
 const ST={bo:'4',o:[],dongMa:1,dongKhung:0,dongTro:1,dongTg:0};
 try{const c=JSON.parse(localStorage.getItem('so-dk')||'{}');Object.assign(ST,c);if(c.tf&&!c.o)ST.o=c.tf.map(tf=>({ma:c.ma||'',tf}))}catch(e){}
 const MAC=['M5','M15','H1','H4'];for(let i=0;i<4;i++)ST.o[i]=Object.assign({ma:'',tf:MAC[i]},ST.o[i]||{});if(!SO[ST.bo])ST.bo='4';

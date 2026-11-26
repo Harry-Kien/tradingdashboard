@@ -75,7 +75,9 @@ def goi(cfg: dict, ma: str = '', tf: str = 'M15', now: datetime | None = None) -
     vang = not ma or ma == da_ma.ma_vang(cfg)
     if vang:
         gia.can_gia(cfg['gia'])
-    if vang and gia.chia_se_song(cfg['gia']):     # bản chia sẻ không có kho nến 1 phút nhiều năm: lấy thẳng từ MT5 như mọi mã
+    if tf in song.KHUNG_XEM and tf in ('W1', 'MN1'):               # nến tuần, tháng: lùi nhiều năm (MT5 có bao nhiêu trả bấy nhiêu)
+        tu = datetime(now.year - 15, 1, 1, tzinfo=timezone.utc)
+    if vang and (gia.chia_se_song(cfg['gia']) or tf in song.KHUNG_XEM):     # bản chia sẻ, hoặc khung chỉ để xem: lấy thẳng từ MT5 như mọi mã
         ma, vang = da_ma.ma_vang(cfg), False
     if vang:
         bars, d = _vang(cfg['gia'], datetime(now.year, 1, 1, tzinfo=timezone.utc))[tf], 2
