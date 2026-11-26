@@ -9,6 +9,13 @@ from . import bieu_do_chi_bao, trang
 CSS = """
 .desk{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;margin-top:14px}
 @media(max-width:980px){.desk{grid-template-columns:1fr}}
+.trai{display:grid;gap:16px;align-content:start;min-width:0}.trai>*{min-width:0}
+.duoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}.duoi>*,.cum>*{min-width:0}.cum{display:grid;gap:16px;align-content:start}
+.lt a{display:grid;gap:2px;padding:9px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}.lt a:last-child{border-bottom:0;padding-bottom:2px}
+.lt a b{color:var(--series);font-size:13.5px}.lt a small{color:var(--mute);font-size:12px;line-height:1.4}.lt a:hover b,.lt a:focus-visible b{text-decoration:underline}
+@media(min-width:981px){.desk>.col{position:sticky;top:70px;max-height:calc(100vh - 84px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:2px}.desk>.col>.tkt{top:0}}
+@media(max-width:980px){.trai{display:contents}.duoi{order:1}}
+.stage[data-doi]::before{content:"Đang tải dữ liệu nến…";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:7px 16px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink2);font-size:12.5px;box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 .col{display:grid;gap:16px;align-content:start}
 .grow{flex:1}.act:disabled{cursor:progress;opacity:.75}
@@ -182,7 +189,7 @@ function lwDoc(k){if(!D)return;const cs=D.candles;if(k==null||k<0||k>=cs.length)
 function lwNay(){if(!LW||!D)return;const n=D.candles.length;LW.chart.timeScale().setVisibleLogicalRange({from:n-defN(),to:n+4})}
 function lwZoom(f){const ts=LW.chart.timeScale(),r=ts.getVisibleLogicalRange();if(!r)return;ts.setVisibleLogicalRange({from:r.to-Math.max(15,(r.to-r.from)*f),to:r.to})}
 function lwCuon(d){const ts=LW.chart.timeScale();ts.scrollToPosition(ts.scrollPosition()+d,false)}
-function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'XAU')+'|'+tf,moi=key!==LW.key,ts=c.timeScale(),giu=moi?null:(LW.cho||ts.getVisibleLogicalRange()),mo=h=>h.length===7?h+'99':h;
+function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'XAU')+'|'+(D.tf||tf),moi=key!==LW.key,ts=c.timeScale(),giu=moi?null:(LW.cho||ts.getVisibleLogicalRange()),mo=h=>h.length===7?h+'99':h;
  c.applyOptions({layout:{background:{type:'solid',color:P.bg},textColor:P.fg,fontFamily:'Tahoma, "Segoe UI", Arial, sans-serif',fontSize:11,attributionLogo:true},
   grid:{vertLines:{color:P.grid,style:1},horzLines:{color:P.grid,style:1}}});
  LW.nen.applyOptions({upColor:P.bull,downColor:P.bear,wickUpColor:P.wick,wickDownColor:P.wickDn,borderUpColor:P.wick,borderDownColor:P.wickDn,priceLineColor:P.bid,
@@ -225,7 +232,7 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
   if(c0){const m=tr>0?c0.dinh:c0.day;ngang(m,P.vao,'',1,1,false);LW.nhan.push([m,P.vao,'Bot '+(tr>0?'MUA':'BÁN')+' nếu nến '+c0.tf+' đóng '+(tr>0?'trên ':'dưới ')+fp(m),12,'left'])}}
  LW.askL=null;if(D.nguon==='mt5'&&D.ask){ngang(D.ask,P.ask,'',0,1);LW.askL=LW.lines[LW.lines.length-1]}LW.tCuoi=cs[cs.length-1][0];
  let xem=giu;if(giu&&LW.t0!=null&&cs[0][0]<LW.t0){const k=LW.idx.get(LW.t0);if(k>0)xem={from:giu.from+k,to:giu.to+k}}LW.t0=cs[0][0];
- if(moi){LW.key=key;lwNay()}else if(xem)ts.setVisibleLogicalRange(xem);
+ if(moi){LW.key=key;try{LW.nen.priceScale().applyOptions({autoScale:true})}catch(e){}lwNay()}else if(xem)ts.setVisibleLogicalRange(xem);   // đổi mã/khung: bỏ thang giá kéo tay trước đó, kẻo nến mới nằm ngoài khung
  lwDoc(null);requestAnimationFrame(lwPhu);if(window.CBCN)try{CBCN.ve()}catch(e){console.warn('Chỉ báo cá nhân:',e)}}
 // lớp phủ: vùng rủi ro và lợi nhuận của phương án, vùng giá gần nhất, giờ tin, và các lần luật ra lệnh trước đây
 function lwPhu(){if(!LW||!D||!D.candles.length)return;const d=window.devicePixelRatio||1,W=LWE.clientWidth,H=LWE.clientHeight,c=LW.chart,ts=c.timeScale(),cs=D.candles,P=pal();
@@ -522,10 +529,11 @@ function sgKe(){sgVe=0;if(!D||!D.candles.length)return;const cs=D.candles,i=cs.l
  srcVe();
  const bay=performance.now();if(bay-sgBen>500){sgBen=bay;botTT()}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(D)load(1)}else sgDong()});
-async function load(keep){try{const r=await fetch('/api/gia?tf='+tf+'&n=900'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());D=await r.json();D.live=-1;dg=D.so_le==null?2:D.so_le;document.body.toggleAttribute('data-khac',!!D.khac_vang);$('#tieu-de').textContent=D.khac_vang&&!D.chia_se?'Biểu đồ '+D.ma:'Biểu đồ vàng';{const cn=$('#chan-nguon');if(cn&&D.chia_se)cn.textContent='Giá và nến đọc trực tiếp từ MT5 của bạn ở chế độ chỉ đọc. Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo tính trên nến đã đóng; các phương pháp tùy chọn tính theo ATR. '}{const dt=$('#doc-truoc');if(dt&&D.chia_se)dt.innerHTML='<b>Đọc trước:</b> giá và nến lấy trực tiếp từ MT5 của bạn. Các phương án ở nút Phân tích điểm vào là những phương pháp tùy chọn tính theo ATR, kèm kết quả đo lại trên dữ liệu quá khứ của chính mã đó; kết quả quá khứ không bảo đảm tương lai. Trang này không đặt lệnh và không phải lời khuyên đầu tư.'}$('#ma-nhan').textContent=D.khac_vang?D.ma+(D.chia_se?' · bản chia sẻ, phương pháp tùy chọn tính theo ATR':' · phương pháp tùy chọn, đo trên dữ liệu của chính mã'):'XAUUSD · luật tính trên nến đã đóng';
+async function load(keep){const t0=tf,m0=ma,cu=()=>t0!==tf||m0!==ma,hen=!keep&&D?setTimeout(()=>{if(!cu())$('.stage').dataset.doi='1'},350):0,xong=()=>{clearTimeout(hen);delete $('.stage').dataset.doi};   // phản hồi về sau khi người dùng đã đổi khung/mã thì bỏ, kẻo nến khung cũ đè lên khung mới và biểu đồ trôi khỏi khung hình
+ try{const r=await fetch('/api/gia?tf='+tf+'&n=900'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();if(cu())return;xong();D=j;D.live=-1;dg=D.so_le==null?2:D.so_le;document.body.toggleAttribute('data-khac',!!D.khac_vang);$('#tieu-de').textContent=D.khac_vang&&!D.chia_se?'Biểu đồ '+D.ma:'Biểu đồ vàng';{const cn=$('#chan-nguon');if(cn&&D.chia_se)cn.textContent='Giá và nến đọc trực tiếp từ MT5 của bạn ở chế độ chỉ đọc. Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo tính trên nến đã đóng; các phương pháp tùy chọn tính theo ATR. '}{const dt=$('#doc-truoc');if(dt&&D.chia_se)dt.innerHTML='<b>Đọc trước:</b> giá và nến lấy trực tiếp từ MT5 của bạn. Các phương án ở nút Phân tích điểm vào là những phương pháp tùy chọn tính theo ATR, kèm kết quả đo lại trên dữ liệu quá khứ của chính mã đó; kết quả quá khứ không bảo đảm tương lai. Trang này không đặt lệnh và không phải lời khuyên đầu tư.'}$('#ma-nhan').textContent=D.khac_vang?D.ma+(D.chia_se?' · bản chia sẻ, phương pháp tùy chọn tính theo ATR':' · phương pháp tùy chọn, đo trên dữ liệu của chính mã'):'XAUUSD · luật tính trên nến đã đóng';
   hisGhep();plCach();if(D.dang_chay){D.candles.push(D.dang_chay);for(const k of['ema20','ema50','bb_tren','bb_duoi','ho_tro','khang_cu','rsi'])if(D[k])D[k].push(null);D.live=D.candles.length-1}
   CBS=null;if(SG&&SG.k===sgK())sgAp(SG);else cbSong();                                                  // tick mới nhất của luồng luôn mới hơn bản vừa tải
-  if(!keep)view={n:defN(),off:0};draw();side();botTT();rkAtr();zNow();sgMo();srcVe();$('#err').textContent='';delete $('.stage').dataset.tai;hisTai();tkTai()}catch(e){$('#err').textContent='Không tải được dữ liệu: '+e.message;delete $('.stage').dataset.tai}}
+  if(!keep)view={n:defN(),off:0};draw();side();botTT();rkAtr();zNow();sgMo();srcVe();$('#err').textContent='';delete $('.stage').dataset.tai;hisTai();tkTai()}catch(e){if(cu())return;xong();$('#err').textContent='Không tải được dữ liệu: '+e.message;delete $('.stage').dataset.tai}}
 const luu=()=>{try{localStorage.setItem('so-on2',JSON.stringify(on));localStorage.setItem('so-kieu3',kieu)}catch(e){}};
 document.querySelectorAll('.seg.tf button').forEach(b=>b.addEventListener('click',()=>{tf=b.dataset.tf;document.querySelectorAll('.seg.tf button').forEach(o=>o.setAttribute('aria-pressed',o===b));load()}));
 document.querySelectorAll('.seg.kieu button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.kieu===kieu);b.addEventListener('click',()=>{kieu=b.dataset.kieu;document.querySelectorAll('.seg.kieu button').forEach(o=>o.setAttribute('aria-pressed',o===b));luu();draw()})});
@@ -1094,6 +1102,9 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&fsOn()&&!document.fullscreen
 async function loop(){if(document.visibilityState==='visible')await load(1);setTimeout(loop,D&&D.nguon==='mt5'?(ES?15000:5000):60000)}
 fit();cb();setInterval(cb,10000);cotTai();setInterval(cotTai,1800000);load().then(()=>{ai();setTimeout(loop,D&&D.nguon==='mt5'?5000:60000)});
 setInterval(()=>{if(!$('#ask')||!$('#ask').textContent.startsWith('Đang'))ai()},60000)})();
+{const lt=document.getElementById('lt');if(lt)for(const ev of['pointerdown','focusin','click'])lt.addEventListener(ev,e=>{   // lối tắt mang theo mã đang xem
+ const a=e.target.closest('a[data-lt]'),m=document.getElementById('ma'),o=m&&m.options[m.selectedIndex];   // ô trống = mã vàng mặc định, tên nằm ở đầu chữ của ô
+ const v=m&&(m.value||(o?o.textContent.split(' · ')[0].trim():''));if(a&&v)a.href=a.dataset.lt+'?ma='+encodeURIComponent(v)})}
 """
 
 
@@ -1115,7 +1126,7 @@ def trang_bieu_do(ten: str) -> str:
         '<div class="top"><div><h1 id="tieu-de">Biểu đồ vàng</h1></div><div class="stamp"><span id="ma-nhan">XAUUSD · luật tính trên nến đã đóng</span><br><span id="src">đang tải…</span></div></div>',
         '<p class="note" id="doc-truoc"><b>Đọc trước:</b> các ô bên phải cho biết luật bạn đã viết đang nói gì trên nến đã đóng gần nhất. '
         'Theo chính báo cáo của bạn, chưa luật nào được chứng minh là có lãi. Trang này không đặt lệnh và không phải lời khuyên đầu tư.</p>',
-        '<div class="desk"><div class="panel chartp" id="cp">',
+        '<div class="desk"><div class="trai"><div class="panel chartp" id="cp">',
         '<div class="tools"><label class="sel"><select id="ma" aria-label="Chọn mã" title="Các mã đang hiện trong Market Watch của MT5">'
         '<option value="">XAUUSDp · Gold vs US Dollar</option></select></label>'
         f'<div class="seg tf" role="group" aria-label="Khung thời gian">{tfs}</div>'
@@ -1135,7 +1146,14 @@ def trang_bieu_do(ten: str) -> str:
         '<div class="bott" id="bot-tt" aria-live="polite"></div>',
         '<div class="stage" data-tai="1"><div id="lw"></div><canvas id="lwo" aria-hidden="true"></canvas><canvas id="cv" role="img" aria-label="Biểu đồ nến XAUUSD"></canvas><div id="read"></div></div>',
         '<div class="dvb" id="dv" aria-live="polite" hidden></div>',
-        '<details class="plct hint"><summary>Cách dùng và phím tắt</summary><p class="why">Lăn chuột để phóng to, thu nhỏ. Kéo để xem lùi. Bấm đúp để về hiện tại. Nến mờ ở cuối là nến đang chạy. Phím tắt: 1–6 đổi khung, + và − phóng to thu nhỏ, ← → xem lùi và tiến, 0 về hiện tại, A phân tích, F toàn màn hình, H ẩn hoặc hiện phần phía trên khi toàn màn hình, Ctrl+Z hoàn tác hình vẽ, Delete xóa hình đang chọn, Esc thôi công cụ đang cầm.</p></details><p class="hint"><span id="his"></span> Biểu đồ vẽ bằng <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>. <span id="err"></span></p></div>',
+        '<details class="plct hint"><summary>Cách dùng và phím tắt</summary><p class="why">Lăn chuột để phóng to, thu nhỏ. Kéo để xem lùi. Bấm đúp để về hiện tại. Nến mờ ở cuối là nến đang chạy. Phím tắt: 1–6 đổi khung, + và − phóng to thu nhỏ, ← → xem lùi và tiến, 0 về hiện tại, A phân tích, F toàn màn hình, H ẩn hoặc hiện phần phía trên khi toàn màn hình, Ctrl+Z hoàn tác hình vẽ, Delete xóa hình đang chọn, Esc thôi công cụ đang cầm.</p></details><p class="hint"><span id="his"></span> Biểu đồ vẽ bằng <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>. <span id="err"></span></p></div>'
+        # Phần dưới biểu đồ (26/11/2026): AI, lối tắt và COT nằm ở đây thay vì cuối cột phải, để hai cột cao gần bằng nhau, dưới biểu đồ không còn khoảng trống.
+        '<div class="duoi"><div class="cum"><aside class="panel side" id="ai"><h3>AI phân tích điểm vào</h3><p class="why">Đang tải…</p></aside>'
+        '<aside class="panel side lt" id="lt" aria-label="Làm tiếp với mã đang xem"><h3>Làm tiếp với mã đang xem</h3>'
+        '<a data-lt="/ke-hoach" href="/ke-hoach"><b>Lập kế hoạch lệnh</b><small>Tính lot theo vốn, gợi ý SL và TP theo cấu trúc giá</small></a>'
+        '<a data-lt="/kiem-lenh" href="/kiem-lenh"><b>Kiểm tra lệnh trước khi vào</b><small>Chấm lệnh theo quy tắc rủi ro và lịch sử của bạn</small></a>'
+        '<a href="/ky-luat"><b>Xem điểm kỷ luật</b><small>Những thói quen đang làm mất tiền trong lịch sử lệnh</small></a></aside></div>'
+        '<aside class="panel side" id="cot" aria-label="Vị thế COT của vàng tương lai" hidden></aside></div></div>',
         '<div class="col" data-tab="cb"><aside class="panel side tkt" id="tkt" aria-label="Tóm tắt tài khoản và rủi ro"><p class="why">Đang đọc tài khoản…</p></aside>'
         '<aside id="pt" class="pt panel side" hidden aria-label="Kết quả phân tích"></aside>'
         '<div class="ctab" role="tablist" aria-label="Thông tin bên phải"><button type="button" role="tab" data-t="cb">Cảnh báo<b id="cb-moi" hidden></b></button>'
@@ -1149,8 +1167,7 @@ def trang_bieu_do(ten: str) -> str:
         '<p class="why">Tính theo 1 lot = 100 ounce, tức 0,01 lot lãi lỗ 1 USD cho mỗi 1 giá, như thông số hợp đồng trong tài liệu của bạn. '
         'Đây là phép tính, không phải lời khuyên đầu tư.</p></aside>'
         '<aside class="panel side" id="side"><p class="why">Đang tải…</p></aside>'
-        '<aside class="panel side" id="cot" aria-label="Vị thế COT của vàng tương lai" hidden></aside>'
-        '<aside class="panel side" id="ai"><h3>AI phân tích điểm vào</h3><p class="why">Đang tải…</p></aside></div></div>',
+        '</div></div>',
         '<footer><span id="chan-nguon">Giá đọc trực tiếp từ MT5 demo của bạn ở chế độ chỉ đọc; khi không nối được thì trang dùng kho nến 1 phút do hệ thống tự lưu. '
         'Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo và luật gọi thẳng các hàm trong mã của bạn '
         '(bot tín hiệu, luật ba khung, luật đỉnh/đáy), tính trên nến đã đóng. </span>' + escape(trang.MIEN_TRU) + '</footer></main>',
