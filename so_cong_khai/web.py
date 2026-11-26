@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
-from . import cai_dat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, tin_phan_ung
+from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, tin_phan_ung
 from .__main__ import HERE, xay
 
 
@@ -213,6 +213,19 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         if qt:
                             cfg['kiem_lenh'] = {**(cfg.get('kiem_lenh') or {}), **qt}
                         body = kiem_lenh.kiem(cfg, bang, lenh)
+                    except ValueError as e:
+                        return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/giam-sat':                                 # dải cảnh báo rủi ro trên mọi trang: chỉ đọc MT5
+                    q = parse_qs(url.query)
+                    try:
+                        qt = {}
+                        for k in ('q_rui_ro_lenh_toi_da_pct', 'q_lo_ngay_toi_da_pct', 'q_tong_rui_ro_toi_da_pct'):
+                            s = (q.get(k, [''])[0] or '').strip().replace(',', '.')
+                            if s and 0 < (v := _so(s)) <= 100:
+                                qt[k[2:]] = v
+                        cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                        body = giam_sat.doc(cfg, bang, qt)
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))

@@ -312,7 +312,9 @@ def _khoi_tai_khoan(acc: dict) -> str:
     if e is None:
         return ''.join(out) + '</section>'
     names = ', '.join(p['ten'] + (f' {p["version"]}' if p['version'] else '') for p in e['per_ea'])
-    out.append(f'<p class="sub">{escape(names)} · EA tự đặt lệnh trên tài khoản demo. Tiền demo, không phải tiền thật. Nhật ký đọc tới {gio(e["last_time"])} (giờ Việt Nam).</p>')
+    # tên và phiên bản EA nằm trong thẻ riêng: phần câu còn lại là một khóa dịch chung, không phải thêm khóa mỗi lần EA lên phiên bản mới
+    out.append(f'<p class="sub"><span>{escape(names)}</span> · EA tự đặt lệnh trên tài khoản demo. Tiền demo, không phải tiền thật. '
+               f'Nhật ký đọc tới {gio(e["last_time"])} (giờ Việt Nam).</p>')
     out.append('<div class="tabs" role="tablist">' + ''.join(
         f'<button type="button" role="tab" aria-selected="{"true" if i == 0 else "false"}">{n}</button>'
         for i, n in enumerate(('Tổng quan', 'Lãi &amp; lỗ', 'Rủi ro', f'Lệnh ({e["n"]})'))) + '</div>')
@@ -1010,7 +1012,33 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
             f'<div class="nv-phai"><button type="button" class="nv-tim-b" aria-label="Tìm mã hoặc trang (Ctrl+K)">{hinh("tim")}<span>Tìm mã, trang…</span><kbd>Ctrl K</kbd></button>'
             f'<button type="button" class="nv-lang" id="nv-lang" title="Đổi ngôn ngữ">EN</button>'
             f'{phai}<button type="button" class="nv-mb" aria-label="Mở menu" aria-expanded="false">{hinh("menu")}</button></div></div>{sub}'
-            f'<nav class="nv-ngan" hidden aria-label="Menu">{"".join(ngan)}</nav></header>')
+            f'<nav class="nv-ngan" hidden aria-label="Menu">{"".join(ngan)}</nav></header>' + GIAM_SAT)
+
+
+# Dải cảnh báo rủi ro (giam_sat.py) dưới thanh điều hướng của mọi trang: hỏi /api/giam-sat mỗi 30 giây khi tab đang mở, theo quy tắc người dùng
+# đặt ở trang Kiểm tra lệnh (localStorage kl-qt). Mỗi cảnh báo tắt được tới hết ngày (localStorage gs-an). Không có API (bản demo) thì im lặng.
+GIAM_SAT = r"""<div id="gs-dai" class="gs" hidden aria-live="polite"></div><style>
+.gs{max-width:1240px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
+.gs-m{display:grid;grid-template-columns:26px minmax(0,1fr) 32px;gap:10px;align-items:start;border-radius:12px;padding:10px 12px;border:1px solid var(--line);background:var(--card)}
+.gs-m.xau{border-color:color-mix(in srgb,var(--loss) 55%,var(--line));background:color-mix(in srgb,var(--loss) 9%,var(--card))}
+.gs-m.chu_y{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--card))}
+.gs-m i{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px}
+.gs-m.xau i{background:var(--loss);color:#1a0606}.gs-m.chu_y i{background:var(--warn);color:#161000}
+.gs-m b{display:block;font-size:13.5px}.gs-m span{display:block;color:var(--ink2);font-size:12.5px;margin-top:2px;line-height:1.45}
+.gs-m button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink2);font-size:18px;cursor:pointer}
+.gs-m button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+</style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date().toISOString().slice(0,10);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const an=()=>{try{const o=JSON.parse(localStorage.getItem('gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
+function ve(ds){const el=document.getElementById('gs-dai');if(!el)return;const o=an(),con=ds.filter(a=>!o[a.id]);
+ if(!con.length){el.hidden=true;el.innerHTML='';return}el.hidden=false;
+ el.innerHTML=con.map(a=>{const c=a[LG]||a.vi;return`<div class="gs-m ${a.muc==='xau'?'xau':'chu_y'}" role="alert"><i>${a.muc==='xau'?'✕':'!'}</i><div><b>${esc(c.tieu)}</b><span>${esc(c.noi)}</span></div><button type="button" data-gs="${esc(a.id)}" title="Ẩn tới hết hôm nay" aria-label="Ẩn tới hết hôm nay">×</button></div>`}).join('')}
+async function hoi(){if(document.hidden)return;let q='';try{const t=JSON.parse(localStorage.getItem('kl-qt')||'{}');
+ q=new URLSearchParams(Object.entries(t).filter(([k,v])=>/^q_(rui_ro_lenh_toi_da_pct|lo_ngay_toi_da_pct|tong_rui_ro_toi_da_pct)$/.test(k)&&v!=null&&v!=='')).toString()}catch(e){}
+ try{const r=await fetch('/api/giam-sat'+(q?'?'+q:''),{cache:'no-store'});if(!r.ok)return;const j=await r.json();ve(j.ds||[])}catch(e){}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;const o=an();o[b.dataset.gs]=ngay();try{localStorage.setItem('gs-an',JSON.stringify(o))}catch(x){}
+ b.closest('.gs-m').remove();const el=document.getElementById('gs-dai');if(el&&!el.children.length)el.hidden=true});
+setTimeout(hoi,1500);setInterval(hoi,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)hoi()})})();</script>"""
 
 
 def trang_html(ten: str, now: datetime, d: dict, tuan: dict | None = None, live: bool = False, hien_tai: dict | None = None) -> str:
