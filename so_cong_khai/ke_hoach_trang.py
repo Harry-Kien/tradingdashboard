@@ -116,7 +116,7 @@ function ve(){const t=D.tien||'',V=D.von,L=D.lenh,M=D.muc,P=D.mo_phong,dl=D.so_l
   <div class="kh-so"><div><small>Khối lượng</small><b>${fmt(L.lot,2)} <em>lot</em></b><span>${L.duoi_lot_min?'mức tối thiểu của sàn':'làm tròn xuống theo bước lot'}</span></div>
    <div><small>Mất nếu chạm dừng lỗ</small><b>${tien(-L.rui_ro_tien,t,1)}</b><span>${fmt(L.rui_ro_that_pct,2)}% vốn</span></div>
    <div><small>Ký quỹ cần</small><b>${L.ky_quy!=null?tien(L.ky_quy,t):'—'}</b><span>${L.ky_quy_pct!=null?fmt(L.ky_quy_pct,1)+'% vốn':''}</span></div>
-   <div><small>Giá chạy ngược tới mức sàn đóng lệnh</small><b>${L.kc_dung_lenh!=null?fmt(L.kc_dung_lenh,dl):'—'}</b><span>${L.kc_dung_lenh!=null?'dừng lỗ cách '+fmt(Math.abs(D.vao-L.sl),dl):''}</span></div></div>
+   <div><small>Giá chạy ngược tới mức sàn đóng lệnh</small><b>${L.kc_dung_lenh!=null?fmt(L.kc_dung_lenh,dl):'—'}</b><span>${L.kc_dung_lenh!=null?'dừng lỗ cách '+fmt(Math.abs(D.vao-L.sl),dl)+' · chỉ tính lệnh này':'sàn tính mức đóng lệnh bằng tiền'}</span></div></div>
   <h3 style="font-size:13.5px;margin:16px 0 6px">Dừng lỗ gợi ý</h3><div class="kh-bang"><table><thead><tr><th>Cách đặt</th><th>Giá</th><th>Khoảng</th><th></th></tr></thead><tbody>${sl||'<tr><td colspan="4">Chưa đủ dữ liệu nến để gợi ý.</td></tr>'}</tbody></table></div>
   <h3 style="font-size:13.5px;margin:16px 0 6px">Chốt lời</h3><div class="kh-bang"><table><thead><tr><th>Mức</th><th>Giá</th><th>Lời/lỗ</th><th>Lời nếu chạm</th></tr></thead><tbody>${tp}</tbody></table></div>
   <div class="kh-hd" style="margin-top:14px"><a class="btn" href="/kiem-lenh?${link}">Kiểm tra lệnh này trước khi vào</a><span class="kh-ghi">Trang kiểm tra xem thêm tin mạnh, spread, lỗ trong ngày và các lệnh đang mở.</span></div></section>`}

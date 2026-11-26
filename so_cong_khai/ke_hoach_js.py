@@ -5,7 +5,10 @@ tests/test_ke_hoach_js.py chạy cả hai bản trên cùng đầu vào bằng N
 JS_TINH = r"""
 const KH=(()=>{
 const MUC={an_toan:{lenh:.5,ngay:1.5,mo:2},can_bang:{lenh:1,ngay:3,mo:4},manh:{lenh:2,ngay:5,mo:6}},KHUNG=['M15','H1','H4'];
-const R=(x,d)=>Number(x.toFixed(d));                 // như round() của Python: làm tròn đúng giá trị nhị phân của số
+// như round() của Python: làm tròn đúng giá trị nhị phân của số (toFixed làm vậy); chỉ khi khai triển thập phân CHÍNH XÁC của số nằm đúng giữa
+// hai mức (0,125 ở 2 chữ số; toFixed(d+40) cho các chữ số chính xác) thì về số chẵn như Python thay vì làm tròn lên
+const R=(x,d)=>{const t=Math.abs(x).toFixed(Math.min(100,d+40)),[i,f='']=t.split('.');
+ if(f[d]==='5'&&/^0*$/.test(f.slice(d+1))){const g=d?i+'.'+f.slice(0,d):i;if(+g.slice(-1)%2===0)return Math.sign(x)*Number(g)}return Number(x.toFixed(d))};
 const loi=s=>{throw new Error(s)};
 function chuoi(r,mat){r=Math.min(Math.max(r,1e-9),99.999)/100;return Math.max(1,Math.ceil(Math.log(1-mat/100)/Math.log(1-r)))}
 function von(v,muc,rr){if(!v||v<=0)loi('vốn phải lớn hơn 0');let m=Object.assign({},MUC[muc]||MUC.can_bang);
@@ -42,12 +45,12 @@ function lap(raw,p,tk){const{chieu,khung='H1',muc='can_bang',thang=50,rr=2}=p;le
  if(!KHUNG.includes(khung))loi('khung phải là M15, H1 hoặc H4');const dt=raw.dac_ta||{};
  let nguon='nhap';if(v==null){v=tk.von;nguon='mt5'}const kh=von(v,muc,muc==='tu_dat'?p.rui_ro:null);let mp=moPhong(kh.rui_ro_pct,thang,rr);
  const bid=raw.bid,ask=raw.ask;if(vao==null){if(bid==null)loi('chưa có giá trực tiếp của mã này, hãy nhập giá vào');vao=chieu==='MUA'?ask:bid}
- const spread=bid!=null?ask-bid:0,so_le=dt.so_le||2,thieu=[];if(!raw.cao.length)thieu.push('chưa đọc được nến từ MT5');if(!raw.atr)thieu.push('chưa có ATR của khung này');
+ const spread=bid!=null?ask-bid:0,so_le=dt.so_le??2,thieu=[];if(!raw.cao.length)thieu.push('chưa đọc được nến từ MT5');if(!raw.atr)thieu.push('chưa có ATR của khung này');
  const m=goiY(chieu,+vao,raw.cao,raw.thap,raw.atr,spread,so_le,(dt.muc_dung||0)*(dt.diem||0));
  const sd=sl!=null?sl:(m.chon?m.sl[m.chon].gia:null);let L=null;
  if(sd!=null){if((chieu==='MUA'&&sd>=vao)||(chieu==='BAN'&&sd<=vao))loi('dừng lỗ nằm sai phía giá vào');const kc=Math.abs(vao-sd),dau=chieu==='MUA'?1:-1;
   const tps=[1,2,3].map(k=>R(vao+dau*k*kc,so_le));for(const t of m.tp)if(t.k==='cau_truc')tps.push(t.gia);
-  if(dt.gt1){L=lenh(kh.von,kh.rui_ro_pct,+vao,+sd,tps,+dt.gt1,+(dt.lot_min||.01),+(dt.lot_buoc||.01),+(dt.lot_max||100),dt.ky_quy_1lot,tk.dung_lenh);L.sl=sd;
+  if(dt.gt1){L=lenh(kh.von,kh.rui_ro_pct,+vao,+sd,tps,+dt.gt1,+(dt.lot_min||.01),+(dt.lot_buoc||.01),+(dt.lot_max||100),dt.ky_quy_1lot,tk.dung_lenh_tien?null:tk.dung_lenh);L.sl=sd;
    if(L.duoi_lot_min&&L.rui_ro_that_pct>kh.rui_ro_pct){const r=Math.min(L.rui_ro_that_pct,99);mp=Object.assign(moPhong(r,thang,rr),{theo_rui_ro_that:r});
     L.thua_lien_mat_20=chuoi(r,20);L.thua_lien_mat_50=chuoi(r,50)}}else thieu.push('chưa có giá trị bước giá của mã này')}
  return{ma:raw.ma,goc:dt.goc||raw.ma,chieu,khung,vao:+vao,bid,ask,so_le,tien:tk.tien||'USD',nguon_von:nguon,don_bay:tk.don_bay,dung_lenh_pct:tk.dung_lenh,

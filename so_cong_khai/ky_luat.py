@@ -152,11 +152,12 @@ def ghep_lenh(deals, orders, ky_hieu: dict, tien_tk: str, so_du_hien: float, tu:
     so_du = so_du_hien - sum(tien(x) for x in deals)
     sl_lenh = {int(o.ticket): float(o.sl or 0) for o in orders}
     vt: dict = {}
-    so_du_luc: list[tuple[datetime, float]] = []
+    so_du_dau = so_du
+    so_du_luc: list[tuple[datetime, float]] = []                            # (lúc khớp, số dư ngay SAU lần khớp đó)
     for x in deals:
         t = datetime.fromtimestamp(int(x.time), timezone.utc)
-        so_du_luc.append((t, so_du))                                        # số dư ngay TRƯỚC lần khớp này
         so_du += tien(x)
+        so_du_luc.append((t, so_du))
         if int(x.type) not in (0, 1):
             continue
         pid = int(getattr(x, 'position_id', 0) or 0)
@@ -165,10 +166,11 @@ def ghep_lenh(deals, orders, ky_hieu: dict, tien_tk: str, so_du_hien: float, tu:
         v = vt.setdefault(pid, {'vao': [], 'ra': []})
         (v['vao'] if int(x.entry) == 0 else v['ra']).append((t, x))
 
-    def so_du_truoc(t: datetime) -> float | None:
-        kq = None
+    def so_du_truoc(t: datetime) -> float:
+        """Số dư ngay trước thời điểm t: sau mọi lần khớp xảy ra TRƯỚC t (lần khớp mở của chính lệnh lúc t không tính)."""
+        kq = so_du_dau
         for tt, sd in so_du_luc:
-            if tt > t:
+            if tt >= t:
                 break
             kq = sd
         return kq
@@ -187,9 +189,9 @@ def ghep_lenh(deals, orders, ky_hieu: dict, tien_tk: str, so_du_hien: float, tu:
             continue
         mua = int(d0.type) == 0
         s = ky_hieu.get(d0.symbol)
-        d = int(getattr(s, 'digits', 2) or 2) if s else 2
+        d = int(getattr(s, 'digits', 2)) if s is not None and getattr(s, 'digits', None) is not None else 2
         sl = sl_lenh.get(int(getattr(d0, 'order', 0) or 0)) or None
-        vao = float(d0.price)
+        vao = sum(float(x.price) * float(x.volume) for _, x in v['vao']) / lot_vao   # vào nhiều lần: giá vào trung bình theo khối lượng
         rr = None
         if sl and s is not None:
             tv, ts = float(getattr(s, 'trade_tick_value', 0) or 0), float(getattr(s, 'trade_tick_size', 0) or 0)
@@ -207,7 +209,7 @@ def ghep_lenh(deals, orders, ky_hieu: dict, tien_tk: str, so_du_hien: float, tu:
         out.append({'id': pid, 'ma': d0.symbol, 'chieu': 'MUA' if mua else 'BAN', 'mo': t_mo.isoformat(), 'dong': t_dong.isoformat(),
                     'lot': round(lot_vao, 2), 'vao': round(vao, d), 'ra': round(ra, d), 'sl': round(sl, d) if sl else None,
                     'dong_boi_sl': int(getattr(dc, 'reason', -1)) == 4, 'lai': round(lai, 2), 'magic': int(d0.magic),
-                    'von_truoc': _r(von), 'von_dau_ngay': _r(so_du_truoc(dau_ngay) or von), 'rui_ro_tien': _r(rr),
+                    'von_truoc': _r(von), 'von_dau_ngay': _r(so_du_truoc(dau_ngay)), 'rui_ro_tien': _r(rr),
                     'tien_lien_quan': _tien_lien_quan(dt, d0.symbol) if dt else ['USD']})
     return out
 
@@ -244,7 +246,8 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30, nguon: str | Non
         lich = thi_truong.lich_tong(cfg, HERE, now, lui_gio=(ngay + 1) * 24, toi_ngay=0)
         ds = [e for e in lich.get('ds', []) if e.get('muc') == 3]
         if ds:
-            tin, tin_tu = ds, min(e['t'] for e in ds)
+            # lịch phủ từ sự kiện sớm nhất có trong lịch (mọi mức), không phải từ tin mạnh đầu tiên: lệnh vào ngay trước tin mạnh đầu tiên vẫn được kiểm
+            tin, tin_tu = ds, min(e['t'] for e in lich['ds'])
         else:
             ly_do_tin = 'lịch tin không có tin mạnh nào trong khoảng này'
     except Exception as e:                                                   # noqa: BLE001

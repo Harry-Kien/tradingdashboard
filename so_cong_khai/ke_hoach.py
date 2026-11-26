@@ -173,7 +173,7 @@ def du_lieu_tho(bang, ma: str, khung: str) -> dict:
     g, _ = bang._cfg()
     mt5 = bang._mt5_fn(g)
     r = bang._rates(mt5, ma, khung, 120) if mt5 is not None else None
-    d = int(dt.get('so_le') or 2)
+    d = int(dt['so_le'] if dt.get('so_le') is not None else 2)
     return {'ma': ma, 'khung': khung, 'dac_ta': {k: dt.get(k) for k in DAC_TA_CAN}, 'bid': q[0] if len(q) >= 2 else None,
             'ask': q[1] if len(q) >= 2 else None, 'atr': atr,
             'cao': [round(float(x), d) for x in r['high'][:-1]] if r is not None else [], 'thap': [round(float(x), d) for x in r['low'][:-1]] if r is not None else []}
@@ -214,7 +214,7 @@ def lap(cfg: dict, bang, ma: str, chieu: str, khung: str = 'H1', vao: float | No
             raise ValueError('chưa có giá trực tiếp của mã này, hãy nhập giá vào')
         vao = ask if chieu == 'MUA' else bid
     spread = (ask - bid) if bid is not None else 0.0
-    so_le = int(dt.get('so_le') or 2)
+    so_le = int(dt['so_le'] if dt.get('so_le') is not None else 2)        # mã không có chữ số lẻ (so_le = 0) giữ 0, không thành 2
     cao, thap = [], []
     try:
         g, _ = bang._cfg()
@@ -242,7 +242,8 @@ def lap(cfg: dict, bang, ma: str, chieu: str, khung: str = 'H1', vao: float | No
         tps += [t['gia'] for t in muc_gy['tp'] if t['k'] == 'cau_truc']
         if dt.get('gt1'):
             lenh = tinh_lenh(kh['von'], kh['rui_ro_pct'], float(vao), float(sl_dung), tps, float(dt['gt1']), float(dt.get('lot_min') or 0.01),
-                             float(dt.get('lot_buoc') or 0.01), float(dt.get('lot_max') or 100), dt.get('ky_quy_1lot'), tk_san.get('dung_lenh'))
+                             float(dt.get('lot_buoc') or 0.01), float(dt.get('lot_max') or 100), dt.get('ky_quy_1lot'),
+                             None if tk_san.get('dung_lenh_tien') else tk_san.get('dung_lenh'))   # sàn đặt mức đóng lệnh bằng tiền: không tính khoảng theo %
             lenh['sl'] = sl_dung
             if lenh['duoi_lot_min'] and lenh['rui_ro_that_pct'] > kh['rui_ro_pct']:
                 # vốn nhỏ phải vào lot tối thiểu: rủi ro thật lớn hơn mức chọn, mô phỏng theo rủi ro thật để không vẽ ra bức tranh an toàn giả

@@ -82,7 +82,7 @@ function ve(D){const t=D.tien||'';const icon={xau:'✕',chu_y:'!',tot:'✓',tin:
   ${(D.thieu||[]).length?`<p class="kl-thieu">Chưa kiểm được hết: ${D.thieu.map(esc).join('; ')}.</p>`:''}
   <div class="kl-ds">${D.muc.map(m=>{const c=m[LG]||m.vi;return`<div class="kl-m ${m.muc}"><i>${icon[m.muc]}</i><div><b>${esc(c.tieu)}</b>${c.noi?`<p>${esc(c.noi)}</p>`:''}</div></div>`}).join('')}</div>`}
 $('#kl-ch').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;chieu=b.dataset.v;boChieu();goi()});
-$('#kl-ma').addEventListener('change',()=>{$('#kl-sl').value='';$('#kl-tp').value='';datGia()});
+$('#kl-ma').addEventListener('change',()=>{$('#kl-sl').value='';$('#kl-tp').value='';daSl=false;datGia()});
 $('#kl-lay').addEventListener('click',datGia);
 document.querySelectorAll('.kl-f input').forEach(el=>el.addEventListener('input',goi));$('#kl-sl').addEventListener('input',()=>{daSl=true});
 taiMa().then(goi)})();

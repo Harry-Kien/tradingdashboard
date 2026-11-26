@@ -428,6 +428,7 @@ class BangGia:
             if ai is not None:
                 self.tai_khoan = {'tien': getattr(ai, 'currency', 'USD'), 'don_bay': int(getattr(ai, 'leverage', 0) or 0),
                                   'goi_ky_quy': _so(getattr(ai, 'margin_so_call', None)), 'dung_lenh': _so(getattr(ai, 'margin_so_so', None)),
+                                  'dung_lenh_tien': int(getattr(ai, 'margin_so_mode', 0) or 0) == 1,   # 1 = mức gọi/đóng lệnh tính bằng tiền, không phải %
                                   'san': getattr(ai, 'company', '')}
             self.phien += 1
             self._dk.notify_all()

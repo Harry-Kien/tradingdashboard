@@ -80,8 +80,8 @@ def cham(lenh: dict, du: dict, quy_tac: dict | None = None) -> dict:
         tien_rr = von * rr_pct / 100
         lot = tien_rr / (kc * gt)
         buoc, lmin, lmax = du.get('lot_buoc') or 0.01, du.get('lot_min') or 0.01, du.get('lot_max') or 100.0
-        lot_lam_tron = max(0.0, (int(lot / buoc + 1e-9)) * buoc)
-        kq.update(lot_tinh=round(lot, 4), lot=round(min(lot_lam_tron, lmax), 4), rui_ro_tien=round(kc * gt * lot_lam_tron, 2), rui_ro_muc_tieu=round(tien_rr, 2))
+        lot_lam_tron = min(max(0.0, (int(lot / buoc + 1e-9)) * buoc), lmax)   # chặn ở lot tối đa của sàn; tiền rủi ro tính theo đúng lot này
+        kq.update(lot_tinh=round(lot, 4), lot=round(lot_lam_tron, 4), rui_ro_tien=round(kc * gt * lot_lam_tron, 2), rui_ro_muc_tieu=round(tien_rr, 2))
         if lot_lam_tron < lmin:
             that = kc * gt * lmin
             kq.update(lot=lmin, rui_ro_tien=round(that, 2), duoi_lot_min=True)   # số thật nếu vẫn vào ở mức tối thiểu của sàn
@@ -216,6 +216,12 @@ def cham(lenh: dict, du: dict, quy_tac: dict | None = None) -> dict:
         if pct > gh:
             them('tong', 'xau', (f'Tổng rủi ro sẽ là {V(pct, 1)}% vốn', f'Cả lệnh đang mở và lệnh này cùng chạm dừng lỗ thì mất {V(tong)} {tien}, quá mức {V(gh, 1)}% bạn đặt.'),
                  (f'Total risk would be {E(pct, 1)}% of equity', f'If all open trades and this one hit their stops you lose {E(tong)} {tien}, above your {E(gh, 1)}% limit.'))
+        elif du.get('mo_chua_tinh'):
+            n = du['mo_chua_tinh']
+            them('tong', 'chu_y', (f'Tổng rủi ro sau lệnh này: ít nhất {V(pct, 1)}% vốn',
+                                   f'{n} lệnh đang mở không có dừng lỗ (hoặc tính bằng đồng tiền khác) chưa cộng vào tổng: rủi ro thật cao hơn con số này.'),
+                 (f'Total risk after this trade: at least {E(pct, 1)}% of equity',
+                  f'{n} open trade(s) without a stop loss (or in another currency) are not included: the real risk is higher than this.'))
         else:
             them('tong', 'tot', (f'Tổng rủi ro sau lệnh này: {V(pct, 1)}% vốn',), (f'Total risk after this trade: {E(pct, 1)}% of equity',))
 
@@ -304,7 +310,9 @@ def thu_thap(cfg: dict, bang, lenh: dict, now: datetime | None = None) -> dict:
         tk = {'san_sang': False, 'ly_do': str(e)}
     if tk.get('san_sang'):
         hom_nay = now.astimezone(VN).date().isoformat()
-        du.update(von=tk.get('von'), tien=tk.get('tien', 'USD'), rui_ro_dang_mo=(tk.get('rui_ro') or {}).get('tong', 0.0),
+        rr_mo = tk.get('rui_ro') or {}
+        du.update(von=tk.get('von'), tien=tk.get('tien', 'USD'), rui_ro_dang_mo=rr_mo.get('tong', 0.0),
+                  mo_chua_tinh=int(rr_mo.get('khong_sl') or 0) + int(rr_mo.get('khong_tinh') or 0),
                   vi_the=[{'ma': x['ma'], 'chieu': x['huong']} for x in tk.get('lenh', [])],
                   lo_hom_nay=next((x['lai'] for x in tk.get('theo_ngay', []) if x['ngay'] == hom_nay), 0.0))
         dd = tk.get('da_dong') or []

@@ -22,6 +22,15 @@ from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_t
 from . import cai_dat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, tin_phan_ung
 from .__main__ import HERE, xay
 
+
+def _so(s: str) -> float:
+    """Số từ tham số đường dẫn: float('inf'), float('nan') và '1e999' cũng parse được nhưng làm hỏng phép tính phía sau (500 hoặc NaN trong JSON),
+    nên báo ValueError (400) như số sai cú pháp."""
+    x = float(s)
+    if x != x or x in (float('inf'), float('-inf')):
+        raise ValueError(f'số không hợp lệ: {s}')
+    return x
+
 LOAI = {'.png': 'image/png', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json; charset=utf-8'}
 
 
@@ -192,10 +201,12 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         chieu = lay('chieu').upper()
                         if chieu not in ('MUA', 'BAN') or not lay('ma'):
                             raise ValueError('cần ma và chieu=MUA|BAN')
-                        so = lambda k: float(lay(k)) if lay(k) else None    # noqa: E731
-                        lenh = {'ma': lay('ma'), 'chieu': chieu, 'vao': float(lay('vao')), 'sl': so('sl'), 'tp': so('tp'), 'rui_ro_pct': so('rui_ro')}
+                        so = lambda k: _so(lay(k)) if lay(k) else None      # noqa: E731
+                        lenh = {'ma': lay('ma'), 'chieu': chieu, 'vao': _so(lay('vao')), 'sl': so('sl'), 'tp': so('tp'), 'rui_ro_pct': so('rui_ro')}
                         if lenh['rui_ro_pct'] is not None and not 0 < lenh['rui_ro_pct'] <= 100:
                             raise ValueError('rui_ro phải trong (0, 100]')
+                        if lenh['vao'] <= 0 or any(lenh[k] is not None and lenh[k] < 0 for k in ('sl', 'tp')):
+                            raise ValueError('giá vào phải dương, dừng lỗ và chốt lời không âm')
                         cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                         qt = {k[2:]: v for k in ('q_rui_ro_lenh_toi_da_pct', 'q_lo_ngay_toi_da_pct', 'q_tong_rui_ro_toi_da_pct')
                               if (v := so(k)) is not None and 0 < v <= 100}
@@ -223,7 +234,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                             raise ValueError('cần ma và chieu=MUA|BAN')
                         if khung not in ke_hoach.KHUNG or (muc not in ke_hoach.MUC_RUI_RO and muc != 'tu_dat'):
                             raise ValueError('khung hoặc mức rủi ro không hợp lệ')
-                        so = lambda k: float(lay(k)) if lay(k) else None    # noqa: E731
+                        so = lambda k: _so(lay(k)) if lay(k) else None      # noqa: E731
                         von, vao, sl, rr_tu = so('von'), so('vao'), so('sl'), so('rui_ro')
                         thang, rr = so('thang'), so('rr')
                         if (von is not None and von <= 0) or (vao is not None and vao <= 0) or (sl is not None and sl <= 0):
@@ -249,10 +260,11 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                             raise ValueError('ngay phải từ 1 tới 365')
                         nguon = (q.get('nguon', [''])[0] or '').strip()[:80] or None
                         qt = {}
-                        for k, lo, hi in (('q_rui_ro_lenh_toi_da_pct', 0, 100), ('q_lo_ngay_toi_da_pct', 0, 100), ('q_so_lenh_ngay_toi_da', -1, 1000)):
+                        for k, hop_le in (('q_rui_ro_lenh_toi_da_pct', lambda v: 0 < v <= 100), ('q_lo_ngay_toi_da_pct', lambda v: 0 < v <= 100),
+                                          ('q_so_lenh_ngay_toi_da', lambda v: 0 <= v <= 1000 and v == int(v))):   # số lệnh: số nguyên, 0 = không kiểm
                             if lay(k):
-                                v = float(lay(k))
-                                if lo < v <= hi:
+                                v = _so(lay(k))
+                                if hop_le(v):
                                     qt[k[2:]] = v
                         cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                         body = ky_luat.doc(cfg, ngay=ngay, nguon=nguon, quy_tac=qt)
@@ -265,7 +277,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         if bang is None:
                             raise ValueError(TAT['ly_do'])
                         lay = lambda k: (q.get(k, [''])[0] or '').strip()   # noqa: E731
-                        body = bang.tinh(lay('ma'), lay('loai'), float(lay('lot')), float(lay('vao')), float(lay('ra')) if lay('ra') else None)
+                        body = bang.tinh(lay('ma'), lay('loai'), _so(lay('lot')), _so(lay('vao')), _so(lay('ra')) if lay('ra') else None)
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
