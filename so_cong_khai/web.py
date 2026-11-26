@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import socket
 import sys
 import threading
 import time
@@ -50,6 +51,19 @@ def tao_vong_canh(cau_hinh: str):
 
 
 NHIP_TICK = 0.008       # luồng đẩy giá hỏi MT5 mỗi 8 ms (mỗi lần đọc dưới 0,1 ms): tick tới trang trễ trung vị khoảng 5 ms, tối đa khoảng 10 ms phía máy chủ
+
+
+class _MayChuDocQuyen(ThreadingHTTPServer):
+    """Máy chủ giữ cổng ĐỘC QUYỀN. Mặc định http.server bật SO_REUSEADDR, mà trên Windows tùy chọn đó cho tiến trình thứ hai mở cùng cổng:
+    hai webapp cùng chạy thì vòng Telegram, nhật ký, cảnh báo đều chạy đôi (gửi tin trùng). Ở đây bản thứ hai báo lỗi ngay lúc mở cổng,
+    trước khi vòng nền nào khởi động (main mở cổng trước rồi mới bật các vòng)."""
+    allow_reuse_address = False
+    daemon_threads = True
+
+    def server_bind(self):
+        if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):                # Windows
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=None, bang=None, ghi_thieu: bool = False) -> ThreadingHTTPServer:
@@ -743,7 +757,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
         def log_message(self, *a):                                  # im lặng: không in mỗi lượt tải trang
             pass
 
-    return ThreadingHTTPServer((host, port), H)
+    return _MayChuDocQuyen((host, port), H)
 
 
 def main(argv=None) -> int:
