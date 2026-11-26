@@ -2942,6 +2942,8 @@
 "Đang nối lại MT5…": "Reconnecting MT5…",
 "Đang nối lại…": "Reconnecting…",
 "Đang nối…": "Connecting…",
+"Đang phát lại: phân tích của hệ thống tính trên giá hiện tại nên tạm tắt. Bấm Thoát để dùng lại.": "Replaying: the system analysis uses current prices, so it is paused. Click Exit to use it again.",
+"Đang phát lại: phím A và B (phân tích, biểu đồ trống) tạm tắt. Bấm Thoát để dùng lại.": "Replaying: keys A and B (analysis, clean chart) are paused. Click Exit to use them again.",
 "Đang phân tích…": "Analyzing…",
 "Đang sao lưu…": "Backing up…",
 "Đang soát…": "Checking…",

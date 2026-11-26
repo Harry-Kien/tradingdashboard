@@ -104,13 +104,18 @@ let gan=null;const ganClick=()=>{const B=BD();if(!B||!B.LW||gan===B.LW.chart)ret
  gan.subscribeClick(p=>{if(!PL.chon||!p||p.time==null)return;const cs=(PL.F||BD().D).candles;let a=0,z=cs.length-1;while(a<z){const m=(a+z+1)>>1;if(cs[m][0]<=p.time)a=m;else z=m-1}batDau(a)})};
 CBCN.moc.push(()=>ganClick());
 document.addEventListener('click',e=>{if((PL.on||PL.chon)&&e.target.closest&&e.target.closest('.seg.tf button'))thoat(false)},true);
-document.addEventListener('change',e=>{if((PL.on||PL.chon)&&e.target&&e.target.id==='ma')thoat(false)},true);                 // đổi mã: thoát trước, trang tự tải mã mới   // đổi khung: thoát phát lại trước, trang tự tải khung mới
+document.addEventListener('change',e=>{if((PL.on||PL.chon)&&e.target&&e.target.id==='ma')thoat(false)},true);
+// đang phát lại: chặn các nút và phím hiện phân tích của giá HIỆN TẠI (nó sẽ vẽ phương án hôm nay lên đoạn nến cũ)
+const nhac=t=>{const g=TH.querySelector('.goi-tam')||TH.appendChild(Object.assign(document.createElement('span'),{className:'goi goi-tam'}));g.textContent=t;clearTimeout(nhac.h);nhac.h=setTimeout(()=>g.remove(),4000)};
+addEventListener('click',e=>{if(PL.on&&e.target.closest&&e.target.closest('#pt-btn,#an-pt,#trong-btn,#trong-hien,.vph,button.ve[data-i],.dvv')){e.preventDefault();e.stopImmediatePropagation();
+ nhac('Đang phát lại: phân tích của hệ thống tính trên giá hiện tại nên tạm tắt. Bấm Thoát để dùng lại.')}},true);                 // đổi mã: thoát trước, trang tự tải mã mới   // đổi khung: thoát phát lại trước, trang tự tải khung mới
 document.addEventListener('keydown',e=>{if(!PL.on&&!PL.chon)return;if(e.key==='Escape'&&document.querySelector('.cbcn-nen:not([hidden])'))return;   // nghe ở document: hộp thoại (nghe ở window, chặn lan) đóng trước, Esc không thoát phát lại
 if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')&&e.key!=='Escape')return;let ok=1;
  if(e.key==='Escape')thoat(PL.on?true:false);else if(!PL.on)ok=0;
  else if(e.shiftKey&&e.key==='ArrowRight')tien();else if(e.shiftKey&&e.key==='ArrowLeft')lui();else if(e.key===' '&&!e.ctrlKey)choi();
  else if(e.shiftKey&&(e.key==='B'||e.key==='b'))vao(1);else if(e.shiftKey&&(e.key==='S'||e.key==='s'))vao(0);
- else if(e.shiftKey&&(e.key==='C'||e.key==='c')){if(PL.lenh){const c=PL.F.candles[PL.k];dong(c[4],c[0],'Tay');ve(0)}}else ok=0;
+ else if(e.shiftKey&&(e.key==='C'||e.key==='c')){if(PL.lenh){const c=PL.F.candles[PL.k];dong(c[4],c[0],'Tay');ve(0)}}
+ else if(!e.shiftKey&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&/^[aAbB]$/.test(e.key))nhac('Đang phát lại: phím A và B (phân tích, biểu đồ trống) tạm tắt. Bấm Thoát để dùng lại.');else ok=0;
  if(ok){e.preventDefault();e.stopPropagation()}},true);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'&&PL.hen)dung()});
 const nut=document.createElement('button');nut.type='button';nut.className='ghost nho';nut.textContent='Phát lại';nut.setAttribute('aria-pressed','false');

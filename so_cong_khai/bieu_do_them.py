@@ -33,7 +33,7 @@ const PH=[['Phiên Á','Asia/Tokyo',9,18,'79,140,255'],['Phiên Âu','Europe/Lon
 function phien(t){const k=Math.floor(t/3600);if(GIO[k]!=null)return GIO[k];let m=0;
  PH.forEach((p,j)=>{const ps=FM[j].formatToParts(new Date(k*3600000)),h=+ps.find(x=>x.type==='hour').value,w=ps.find(x=>x.type==='weekday').value;
   if(w!=='Sat'&&w!=='Sun'&&h>=p[2]&&h<p[3])m|=1<<j});return GIO[k]=m}
-function vePhien(t){const B=BD();if(!ON.phien||!B||!B.LW||!B.D||!B.D.candles)return;const tf=B.D.tf||'';if(tf==='H4'||tf==='D1')return;
+function vePhien(t){const B=BD();if(!ON.phien||!B||!B.LW||!B.D||!B.D.candles)return;const tf=B.D.tf||'';if(['H4','D1','W1','MN1'].includes(tf))return;   // từ H4 trở lên: một nến dài hơn một phiên
  const cs=B.D.candles,ts=B.LW.chart.timeScale(),r=ts.getVisibleLogicalRange();if(!r||!cs.length)return;const bs=ts.options().barSpacing||6,
   i0=Math.max(0,Math.floor(r.from)-1),i1=Math.min(cs.length-1,Math.ceil(r.to)+1),bg=(getComputedStyle(document.body).backgroundColor.match(/\d+/g)||[0,0,0]).map(Number),toi=bg[0]+bg[1]+bg[2]<384;
  t.useMediaCoordinateSpace(({context:c,mediaSize:m})=>{c.save();c.font='11px Tahoma, Segoe UI, sans-serif';

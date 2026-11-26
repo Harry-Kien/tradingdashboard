@@ -13,10 +13,10 @@ import math
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import ai_hoi, gia_su
+from . import ai_hoi, gia, gia_su
 
 LOAI = 'doc_chi_bao'
-KHUNG = ('M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1')
+KHUNG = tuple(gia.KHUNG)                                  # mọi khung của biểu đồ, kể cả khung chỉ để xem (M2…MN1)
 TOI_DA_CB, TOI_DA_NEN = 25, 80
 MIEN_TRU = {'vi': 'Đây là cách đọc của một mô hình AI trên các chỉ báo bạn chọn, chưa được kiểm chứng bằng số liệu, không phải lời khuyên đầu tư. Trang này không đặt lệnh.',
             'en': 'This is an AI model reading the indicators you chose. It has not been validated with data and is not investment advice. This page never places orders.'}
