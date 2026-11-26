@@ -314,6 +314,14 @@ def cham_lich_su(ls: list[dict] | None, ma: str, chieu: str, now: datetime, tien
                        'noi': 'Bỏ bớt kiểu lệnh đang thua là cách thực tế nhất để nâng tỷ lệ thắng. Xem lại lý do vào, hoặc chờ điều kiện bạn hay thắng hơn.'},
                 'en': {'tieu': f'This kind of trade is losing you money: {so_en}',
                        'noi': 'Cutting the kind of trades that lose is the most practical way to raise your win rate. Review your entry reason or wait for conditions that work better for you.'}}
+    tot_nhat = max((x.get('rong') or 0) for x in g)
+    if tong <= 0 or tong - tot_nhat <= 0:
+        # hòa vốn, hoặc lãi chỉ nhờ một lệnh thắng lớn (bỏ lệnh đó thì không còn lãi): chưa đủ cơ sở để nói kiểu lệnh này tốt
+        return {'k': 'lich_su', 'muc': 'tin',
+                'vi': {'tieu': f'Kiểu lệnh này chưa cho thấy lợi thế rõ: {so_vi}',
+                       'noi': 'Lãi lỗ quanh mức hòa vốn, hoặc chỉ nhờ một lệnh thắng lớn. Cần thêm lệnh mới biết kiểu lệnh này có hợp với bạn không.'},
+                'en': {'tieu': f'No clear edge in this kind of trade yet: {so_en}',
+                       'noi': 'Results are near breakeven or rely on one big winner. More trades are needed to tell whether this kind of trade suits you.'}}
     return {'k': 'lich_su', 'muc': 'tot',
             'vi': {'tieu': f'Kiểu lệnh bạn đang làm tốt: {so_vi}', 'noi': 'Kết quả quá khứ không bảo đảm lệnh này thắng; vẫn giữ đúng mức rủi ro.'},
             'en': {'tieu': f'A kind of trade that works for you: {so_en}', 'noi': 'Past results do not guarantee this trade wins; keep your risk level.'}}

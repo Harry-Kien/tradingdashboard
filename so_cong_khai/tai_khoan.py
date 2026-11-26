@@ -82,7 +82,8 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30) -> dict:
                 khong_sl += 1
             out['lenh'].append({'ma': p.symbol, 'huong': 'MUA' if mua else 'BAN', 'lot': _r(p.volume), 'vao': _r(p.price_open, d), 'gia': _r(p.price_current, d),
                                 'sl': _r(p.sl, d) if p.sl else None, 'tp': _r(p.tp, d) if p.tp else None, 'lai': _r(p.profit), 'swap': _r(p.swap), 'so_le': d,
-                                'mo': _gio(p.time), 'nguon': _ea(cfg, int(p.magic)), 'rui_ro': _r(rr) if rr is not None else None})
+                                'mo': _gio(p.time), 'nguon': _ea(cfg, int(p.magic)), 'rui_ro': _r(rr) if rr is not None else None,
+                                've': int(getattr(p, 'ticket', 0) or 0)})              # số vé: phân biệt các lệnh cùng mã mở cùng giây
         out['rui_ro'] = {'tong': _r(rui_ro), 'pct': _r(rui_ro / a.equity * 100, 2) if a.equity else None, 'khong_sl': khong_sl, 'khong_tinh': khong_tinh}
         for o in mt5.orders_get() or []:
             s = ma(o.symbol)

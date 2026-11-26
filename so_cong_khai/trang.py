@@ -1016,7 +1016,8 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
 
 
 # Dải cảnh báo rủi ro (giam_sat.py) dưới thanh điều hướng của mọi trang: hỏi /api/giam-sat mỗi 30 giây khi tab đang mở, theo quy tắc người dùng
-# đặt ở trang Kiểm tra lệnh (localStorage kl-qt). Mỗi cảnh báo tắt được tới hết ngày (localStorage gs-an). Không có API (bản demo) thì im lặng.
+# đặt ở trang Kiểm tra lệnh (localStorage kl-qt). Mỗi cảnh báo tắt được tới hết ngày theo giờ Việt Nam (localStorage gs-an; hàm ngay() cộng 7 giờ
+# để hết hạn lúc nửa đêm VN chứ không phải 07:00). Không có API (bản demo) thì im lặng.
 GIAM_SAT = r"""<div id="gs-dai" class="gs" hidden aria-live="polite"></div><style>
 .gs{max-width:1240px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
 .gs-m{display:grid;grid-template-columns:26px minmax(0,1fr) 32px;gap:10px;align-items:start;border-radius:12px;padding:10px 12px;border:1px solid var(--line);background:var(--card)}
@@ -1027,7 +1028,7 @@ GIAM_SAT = r"""<div id="gs-dai" class="gs" hidden aria-live="polite"></div><styl
 .gs-m b{display:block;font-size:13.5px}.gs-m span{display:block;color:var(--ink2);font-size:12.5px;margin-top:2px;line-height:1.45}
 .gs-m button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink2);font-size:18px;cursor:pointer}
 .gs-m button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
-</style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date().toISOString().slice(0,10);
+</style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const an=()=>{try{const o=JSON.parse(localStorage.getItem('gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
 function ve(ds){const el=document.getElementById('gs-dai');if(!el)return;const o=an(),con=ds.filter(a=>!o[a.id]);
