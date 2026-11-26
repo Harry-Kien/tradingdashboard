@@ -187,8 +187,8 @@ def _so_do_lenh(huong: int, loai: str) -> str:
     mau = {'mua': 'var(--gain)', 'ban': 'var(--loss)', 'sl': 'var(--loss)', 'tp': 'var(--gain)', 'thi': 'var(--series)'}[loai]
     y = 36 if huong == 0 else (14 if huong > 0 else 58)
     ten = {'mua': 'Lệnh mua', 'ban': 'Lệnh bán', 'sl': 'Dừng lỗ', 'tp': 'Chốt lời', 'thi': 'Khớp ngay'}[loai]
-    return (f'<svg viewBox="0 0 150 72" class="sdl" aria-hidden="true"><line x1="6" y1="36" x2="144" y2="36" stroke="var(--mute)" stroke-dasharray="4 3"/>'
-            f'<text x="8" y="32" font-size="10" fill="var(--mute)">Giá hiện tại</text>'
+    return ('<svg viewBox="0 0 150 72" class="sdl" aria-hidden="true"><line x1="6" y1="36" x2="144" y2="36" stroke="var(--mute)" stroke-dasharray="4 3"/>'
+            '<text x="8" y="32" font-size="10" fill="var(--mute)">Giá hiện tại</text>'
             + (f'<line x1="6" y1="{y}" x2="144" y2="{y}" stroke="{mau}" stroke-width="2"/><text x="8" y="{y - 4 if huong > 0 else y + 12}" font-size="10" fill="{mau}">{ten}</text>'
                if huong else f'<circle cx="110" cy="36" r="5" fill="{mau}"/><text x="88" y="54" font-size="10" fill="{mau}">{ten}</text>') + '</svg>')
 
@@ -226,6 +226,17 @@ CSS = r"""
 .qt div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 46px;position:relative}
 .qt div::before{counter-increment:q;content:counter(q);position:absolute;left:14px;top:12px;width:22px;height:22px;border-radius:50%;background:color-mix(in srgb,var(--series) 18%,transparent);color:var(--series);font-weight:700;font-size:12px;display:grid;place-items:center}
 .qt b{display:block;font-size:13.5px}.qt span{font-size:12.5px;color:var(--ink2)}
+.gs{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+.gs>*{min-width:0}.gs .hang{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.gs select{min-height:36px;max-width:100%;flex:1 1 260px}
+.gs .log{display:grid;gap:8px;max-height:560px;overflow:auto;padding:2px}.gs .log:empty{display:none}
+.gs .m{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.gs .m.ai{background:var(--card2)}.gs .m.ban{border-color:color-mix(in srgb,var(--series) 45%,var(--line));margin-left:auto;max-width:88%}
+.gs .m pre{margin:6px 0;padding:8px 10px;background:var(--bg);border-radius:8px;overflow-x:auto;white-space:pre;font-size:12.5px;line-height:1.35}
+.gs textarea{width:100%;min-height:72px;resize:vertical;padding:8px 10px;font:inherit;box-sizing:border-box}
+.gs .lenh button{min-height:30px;font-size:12.5px}.gs .tt{font-size:12.5px;color:var(--mute)}.gs .bao{font-size:13px;color:var(--warn);min-height:1em}
+.gs .gsl summary{cursor:pointer;font-size:13px;color:var(--ink2)}.gs .gsl .b{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;display:grid;gap:4px}
+.gs .gsl .b pre{margin:0;font-size:11.5px;line-height:1.3;overflow-x:auto}.gs .gsl .b small{color:var(--mute)}
+.pc .gsb{font-size:12px;color:var(--series);background:none;border:1px solid color-mix(in srgb,var(--series) 40%,var(--line));border-radius:8px;padding:3px 8px;cursor:pointer}.gsb,.gs .hang button,#gs-bd{min-height:30px}
 """
 
 JS = r"""
@@ -249,6 +260,36 @@ function chon(){if(Object.keys(tl).length<4){$('#kqz').innerHTML='<p class="smal
  $('#kqz').innerHTML='<div class="kqz">'+kq.map((k,i)=>`<a href="#pc-${k.p.id}" data-id="${k.p.id}"><em>Hợp ${['nhất','thứ hai','thứ ba'][i]}</em><b>${esc(k.p.ten)}</b><small>${esc(k.ly.slice(0,2).join(', ')||'cân bằng với các lựa chọn của bạn')}. Khung ${esc(k.p.khung)}, giữ ${esc(k.p.giu.toLowerCase())}.</small></a>`).join('')+'</div><p class="small">Gợi ý theo câu trả lời, không phải lời khuyên. Thử phong cách nào cũng nên bắt đầu bằng tài khoản demo và ghi sổ.</p>';
  $('#kqz').querySelectorAll('a[data-id]').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.pc.hl').forEach(x=>x.classList.remove('hl'));const c=document.getElementById('pc-'+a.dataset.id);if(c)c.classList.add('hl')}))}
 chon();T.batDau(120)})();
+
+// ---- gia sư (kỹ năng socratic-tutor của Jane Street, giấy phép MIT)
+(()=>{const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const box=$('#gs');if(!box)return;let phien=null,dang=false;const sel=$('#gs-cd'),log=$('#gs-log'),o=$('#gs-o'),bao=$('#gs-bao');
+const nho=v=>{try{v?localStorage.setItem('gs_phien',JSON.stringify(v)):localStorage.removeItem('gs_phien')}catch(_){}},doc=()=>{try{return JSON.parse(localStorage.getItem('gs_phien')||'null')}catch(_){return null}};
+const ve=t=>e(t).replace(/```[a-z]*\n?([\s\S]*?)```/g,(m,c)=>'<pre>'+c.replace(/\n$/,'')+'</pre>').replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>');
+const them=(ai,t)=>{const d=document.createElement('div');d.className='m '+(ai?'ai':'ban');d.innerHTML=ai?ve(t):e(t);log.appendChild(d);log.scrollTop=log.scrollHeight};
+const usd=x=>String((+x||0).toFixed(2)).replace('.',',');
+const ds=b=>{const w=$('#gs-ds-w');if(!b||!b.length){w.hidden=true;return}w.hidden=false;$('#gs-ds').innerHTML=b.map(x=>`<div class="b"><b>${e(x.ten)}</b><small>${x.luot} lượt · ${usd(x.usd)} USD · ${x.luc?new Date(x.luc).toLocaleString('vi-VN'):''}</small>${x.ban_do?'<pre>'+e(x.ban_do)+'</pre>':''}<div><button type="button" class="ghost" data-tiep="${e(x.phien)}">Học tiếp</button></div></div>`).join('');w.querySelectorAll('[data-tiep]').forEach(b=>b.onclick=()=>tiep(b.dataset.tiep))};
+const tiep=id=>fetch('/api/gia-su?phien='+encodeURIComponent(id),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(b=>{if(!b||!b.hien){bao.textContent='Không mở được buổi học này.';return}phien=b.phien;sel.value=b.chu_de;log.innerHTML='';b.hien.forEach(m=>them(m.ai,m.chu_gs));nho({phien,chu_de:b.chu_de});bao.textContent='Đang học tiếp: '+b.ten+'.';box.scrollIntoView({block:'start'})});
+const tt=s=>{if(s&&s.buoi)ds(s.buoi);$('#gs-tt').textContent=s?`Hôm nay đã dùng ${s.hom_nay}/${s.moi_ngay} lượt · đã tiêu ${String(s.da_tieu_usd.toFixed(2)).replace('.',',')}/${String(s.ngan_sach_usd.toFixed(2)).replace('.',',')} USD`+(s.chan&&s.chan.length?' · '+s.chan.join(' '):''):''};
+fetch('/api/gia-su',{cache:'no-store'}).then(r=>r.json()).then(s=>{const g={};for(const c of s.chu_de)(g[c.nhom]=g[c.nhom]||[]).push(c);
+ sel.innerHTML=Object.entries(g).map(([n,l])=>`<optgroup label="${e(n)}">`+l.map(c=>`<option value="${e(c.id)}">${e(c.ten)}</option>`).join('')+'</optgroup>').join('');tt(s);const c=doc();if(c&&c.phien&&(s.buoi||[]).some(x=>x.phien===c.phien))tiep(c.phien)}).catch(()=>{bao.textContent='Không đọc được trạng thái gia sư.'});
+const gui=cau=>{if(dang)return;dang=true;bao.textContent='Gia sư đang soạn câu hỏi…';box.querySelectorAll('button').forEach(b=>b.disabled=true);
+ let song=null,chu='';const xong=j=>{if(j.phien){phien=j.phien;nho({phien,chu_de:sel.value})}if(j.trang_thai)tt(j.trang_thai);if(!j.ok){if(song)song.remove();bao.textContent=j.ly_do||'Chưa hỏi được.';return}bao.textContent='';if(song)song.innerHTML=ve(j.tra_loi);else them(true,j.tra_loi);o.focus()};
+ fetch('/api/gia-su',{method:'POST',headers:{'Content-Type':'application/json','X-So-Cong-Khai':'1'},body:JSON.stringify({phien,chu_de:sel.value,cau,luong:1})})
+ .then(async r=>{if(!r.body||!(r.headers.get('content-type')||'').includes('event-stream')){xong(await r.json());return}
+  const rd=r.body.getReader(),td=new TextDecoder();let dem='',ket=null;
+  for(;;){const{value,done}=await rd.read();if(done)break;dem+=td.decode(value,{stream:true});let i;
+   while((i=dem.indexOf('\n\n'))>=0){const dong=dem.slice(0,i);dem=dem.slice(i+2);if(!dong.startsWith('data: '))continue;const ev=JSON.parse(dong.slice(6));
+    if(ev.xong){ket=ev;continue}chu+=ev.chu||'';if(!song){song=document.createElement('div');song.className='m ai';log.appendChild(song);bao.textContent=''}
+    song.innerHTML=ve(chu);log.scrollTop=log.scrollHeight}}
+  xong(ket||{ok:false,ly_do:'Mất kết nối giữa chừng; gửi lại câu trả lời.'})})
+ .catch(()=>{if(song)song.remove();bao.textContent='Không nối được với webapp.'}).finally(()=>{dang=false;box.querySelectorAll('button').forEach(b=>b.disabled=false)})};
+$('#gs-bd').onclick=()=>{phien=null;log.innerHTML='';gui('')};
+$('#gs-gui').onclick=()=>{const t=o.value.trim();if(!t)return;if(!phien){bao.textContent='Bấm "Bắt đầu học" trước.';return}them(false,t);o.value='';gui(t)};
+o.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ev.preventDefault();$('#gs-gui').click()}});
+box.querySelectorAll('[data-lenh]').forEach(b=>b.onclick=()=>{if(!phien){bao.textContent='Bấm "Bắt đầu học" trước.';return}them(false,b.dataset.lenh);gui(b.dataset.lenh)});
+document.querySelectorAll('.gsb[data-cd]').forEach(b=>b.onclick=()=>{sel.value=b.dataset.cd;box.scrollIntoView({behavior:'smooth',block:'start'});bao.textContent='Đã chọn chủ đề; bấm "Bắt đầu học".'});
+})();
 """
 
 
@@ -265,7 +306,8 @@ def trang_hoc(ten: str) -> str:
         f'<b>Thời gian cần</b><span>{_cham(p["tg"])}</span><b>Rủi ro</b><span>{_cham(p["rr"])}</span><b>Hợp với</b><span>{escape(p["hop"])}</span></div>'
         '<ol>' + ''.join(f'<li>{escape(c)}</li>' for c in p['cach']) + '</ol>'
         f'<p class="loi"><b>Lỗi hay gặp:</b> {escape(p["loi"])}</p>'
-        '<div class="cc">' + ''.join(f'<a href="{h}">{escape(n)}</a>' for n, h in p['cc']) + '</div></article>' for p in PHONG_CACH)
+        '<div class="cc">' + ''.join(f'<a href="{h}">{escape(n)}</a>' for n, h in p['cc'])
+        + f'<button type="button" class="gsb" data-cd="{p["id"]}">Học với gia sư</button></div></article>' for p in PHONG_CACH)
     q = [('tg', 'Mỗi ngày bạn có bao nhiêu thời gian nhìn thị trường?', [('it', 'Dưới 1 giờ'), ('vua', '1–3 giờ'), ('nhieu', 'Trên 3 giờ')]),
          ('giu', 'Bạn muốn giữ một lệnh trong bao lâu?', [('phut', 'Vài phút'), ('ngay', 'Trong ngày'), ('tuan', 'Vài ngày'), ('thang', 'Vài tuần trở lên')]),
          ('rr', 'Bạn chịu được biến động và chuỗi thua tới đâu?', [('thap', 'Muốn an toàn'), ('vua', 'Vừa phải'), ('cao', 'Chịu được biến động lớn')]),
@@ -275,7 +317,20 @@ def trang_hoc(ten: str) -> str:
     qt = ''.join(f'<div><b>{escape(t)}</b><span>{escape(n)}</span></div>' for t, n in QUY_TAC)
     data = json.dumps([{k: p[k] for k in ('id', 'ten', 'khung', 'giu', 'tg', 'rr', 'muc')} | {'canh_bao': bool(p.get('canh_bao'))} for p in PHONG_CACH],
                       ensure_ascii=False).replace('</', '<\\/')
-    muc = ''.join(f'<a href="#{k}">{n}</a>' for k, n in (('lop', 'Các lớp tài sản'), ('khai-niem', 'Khái niệm cốt lõi'), ('lenh', 'Các loại lệnh'),
+    gs = ('<section id="gia-su"><h2>Gia sư giao dịch</h2><p class="sub">Chọn một chủ đề; gia sư hỏi từng câu để biết bạn đang ở đâu, rồi dạy bằng câu hỏi '
+          'cho tới khi bạn tự làm được. Trả lời sai thì gia sư không đọc đáp án mà hỏi hẹp lại. Gia sư chỉ dạy kiến thức, không đưa tín hiệu hay lời khuyên đầu tư.</p>'
+          '<div class="gs" id="gs"><div class="hang"><select id="gs-cd" aria-label="Chủ đề"></select><button type="button" id="gs-bd">Bắt đầu học</button></div>'
+          '<div class="log" id="gs-log" aria-live="polite"></div>'
+          '<textarea id="gs-o" placeholder="Câu trả lời của bạn (Ctrl+Enter để gửi)" maxlength="1500" aria-label="Câu trả lời"></textarea>'
+          '<div class="hang lenh"><button type="button" id="gs-gui">Gửi</button>'
+          '<button type="button" class="ghost" data-lenh="xem tiến độ">Xem tiến độ</button><button type="button" class="ghost" data-lenh="khó hơn">Khó hơn</button>'
+          '<button type="button" class="ghost" data-lenh="dễ hơn">Dễ hơn</button><button type="button" class="ghost" data-lenh="nói luôn đáp án">Nói luôn đáp án</button>'
+          '</div>'
+          '<div class="bao" id="gs-bao" role="status"></div><div class="tt" id="gs-tt"></div>'
+          '<div class="tt">Cách dạy theo kỹ năng socratic-tutor của Jane Street (giấy phép MIT). Mỗi câu trả lời dùng khóa API Anthropic của máy này và tốn '
+          'vài xu. Buổi học được tự lưu trên máy này: tắt webapp rồi mở lại vẫn học tiếp được.</div>'
+          '<details class="gsl" id="gs-ds-w" hidden><summary>Các buổi học gần đây</summary><div id="gs-ds"></div></details></div></section>')
+    muc = ''.join(f'<a href="#{k}">{n}</a>' for k, n in (('gia-su', 'Gia sư'), ('lop', 'Các lớp tài sản'), ('khai-niem', 'Khái niệm cốt lõi'), ('lenh', 'Các loại lệnh'),
                                                          ('chon', 'Chọn phong cách'), ('phong-cach', '16 phong cách giao dịch'), ('rui-ro', 'Quản lý rủi ro')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
@@ -286,6 +341,7 @@ def trang_hoc(ten: str) -> str:
         f'<nav class="hg-nav">{muc}</nav>',
         '<p class="note"><b>Rủi ro:</b> CFD và Forex dùng đòn bẩy nên có thể mất tiền rất nhanh; phần lớn tài khoản cá nhân giao dịch CFD bị lỗ. '
         'Trang này là kiến thức chung, không phải lời khuyên đầu tư. Hãy luyện trên tài khoản demo trước.</p>',
+        gs,
         f'<section id="lop"><h2>Các lớp tài sản</h2><p class="sub">Số liệu dưới mỗi thẻ lấy trực tiếp từ sàn trong MT5 của bạn.</p><div class="hg-g">{lop}</div></section>',
         f'<section id="khai-niem" class="kn"><h2>Khái niệm cốt lõi</h2><p class="sub">Bấm từng mục để mở.</p>{kn}</section>',
         f'<section id="lenh"><h2>Các loại lệnh trong MT5</h2><p class="sub">Lệnh chờ đặt trên hay dưới giá hiện tại quyết định nó là Limit hay Stop.</p><div class="hg-g">{lenh}</div></section>',

@@ -93,7 +93,7 @@ def _ba_khung(g: dict, m1: pd.DataFrame, fr: dict, sp: float, tin: list) -> dict
 
 
 def _dinh_day(g: dict, m1: pd.DataFrame, fr: dict, sp: float, tin: list) -> dict:
-    from ai import config as C, rule_fade as RF, scorer as SC, snapshot as SN, validator as VA   # noqa: PLC0415
+    from ai import config as C, rule_fade as RF, scorer as SC, snapshot as SN, validator as VA   # noqa: PLC0415, F401 - SN: nạp để chắc mã của EA đủ bộ
     from ai.schema import Market                                           # noqa: PLC0415
     from tinhieu import rules as R                                         # noqa: PLC0415
     m15 = fr['M15']

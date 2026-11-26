@@ -599,7 +599,7 @@ def ban_do_ict(m15: pd.DataFrame, h1: pd.DataFrame, bid: float, now: datetime, s
                 fvg.append({'t': T[i - 2], 'duoi': r(h[i]), 'tren': r(l[i - 2]), 'huong': 'giam', 'da_cham': bool(sau >= h[i])})
     fvg = sorted(fvg, key=lambda z: abs((z['duoi'] + z['tren']) / 2 - bid))[:6]
     # --- các lần quét thanh khoản gần đây (cùng định nghĩa với phương pháp ict)
-    hs, ls, cs = pd.Series(h), pd.Series(l), pd.Series(c)
+    hs, ls = pd.Series(h), pd.Series(l)
     dt, dd = hs.rolling(N_QUET).max().shift(1).to_numpy(), ls.rolling(N_QUET).min().shift(1).to_numpy()
     quet_ds = []
     for i in range(max(N_QUET + 1, n - 48), n):

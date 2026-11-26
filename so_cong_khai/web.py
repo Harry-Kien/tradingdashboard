@@ -19,7 +19,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
-from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, tin_phan_ung
+from . import do_lai
+from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, sao_luu, telegram_nhom, tin_phan_ung
 from .__main__ import HERE, xay
 
 
@@ -312,6 +313,25 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                 if path == '/cac-tai-khoan':                               # mọi tài khoản MT5 đã nối, demo và tiền thật (chỉ đọc)
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     return self._gui(200, 'text/html; charset=utf-8', nhieu_tai_khoan.trang_cac_tai_khoan(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/telegram':                                    # nhóm Telegram cố định: tín hiệu, kết quả, tin sắp ra
+                    return self._gui(200, 'text/html; charset=utf-8', telegram_nhom.trang_telegram(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/api/do-lai':                                  # kiểm trên dữ liệu mới: kết luận theo luật đã đăng ký
+                    from . import phuong_phap as _PP                           # noqa: PLC0415
+                    tm = do_lai.tom_tat(ten_ma={v['ten']: k for k, v in _PP.DS.items()})
+                    return self._gui(200, LOAI['.json'], json.dumps(tm, ensure_ascii=False).encode('utf-8'))
+                if path.startswith('/telegram/anh/'):                      # ảnh biểu đồ kèm tin (xem trước ở trang /telegram)
+                    ten = unquote(path[len('/telegram/anh/'):])
+                    f = telegram_nhom.thu_muc_anh() / ten
+                    if re.fullmatch(r'lenh-\d+\.png', ten) and f.is_file():
+                        return self._gui(200, LOAI['.png'], f.read_bytes())
+                    return self._gui(404, 'text/plain; charset=utf-8', 'Không có ảnh này.'.encode('utf-8'))
+                if path == '/api/telegram':
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(telegram_nhom.xem(cfg), ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/sao-luu':                                     # sao lưu toàn bộ hệ thống mỗi ngày
+                    return self._gui(200, 'text/html; charset=utf-8', sao_luu.trang_sao_luu(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/api/sao-luu':
+                    return self._gui(200, LOAI['.json'], json.dumps(sao_luu.xem(), ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/api/cac-tai-khoan':
                     return self._gui(200, LOAI['.json'], json.dumps(nhieu_tai_khoan.xem(), ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/tai-khoan':
@@ -405,6 +425,14 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     tt = vong.trang_thai() if vong is not None else {'dang_chay': False, 'ly_do': 'Cảnh báo đang tắt trong cấu hình.'}
                     body = {'ds': canh_bao.doc(_out(cfg), 30), **tt}
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
+                if path == '/api/gia-su':                                      # gia sư giao dịch: lượt còn lại, ngân sách, danh sách chủ đề
+                    from . import gia_su                                       # noqa: PLC0415
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    pq = parse_qs(url.query)
+                    if pq.get('phien'):                                        # học tiếp: hội thoại đã lưu của một buổi
+                        b = gia_su.doc_buoi(pq['phien'][0])
+                        return self._gui(200 if b else 404, LOAI['.json'], json.dumps(b or {'ok': False}, ensure_ascii=False).encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(gia_su.trang_thai(cfg, _out(cfg)), ensure_ascii=False).encode('utf-8'))
                 if path == '/api/ai':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     st = ai_hoi.trang_thai(cfg, _out(cfg))
@@ -462,6 +490,12 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
             # Ba việc được phép qua POST: hỏi AI, thêm/bỏ/đọc lại tài khoản đã nối, và lưu cài đặt. Mọi lệnh đều phải đến từ chính trang
             # của webapp trên máy này (tiêu đề riêng, Host, Origin): trang web khác không gửi hộ được, kể cả qua DNS rebinding.
             if not self._cung_may():
+                try:                                                # đọc bỏ phần thân trước khi từ chối: trả lời khi máy khách còn đang gửi thì
+                    n = min(int(self.headers.get('Content-Length') or 0), 65536)   # Windows cắt ngang kết nối (WinError 10053) thay vì giao mã 403
+                    if n > 0:
+                        self.rfile.read(n)
+                except (ValueError, OSError):
+                    pass
                 return self._gui(403, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': 'Chỉ trang của webapp trên chính máy này mới được gửi lệnh.'},
                                                                 ensure_ascii=False).encode('utf-8'))
             try:
@@ -498,6 +532,77 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     else:
                         ok, nhan = False, 'Yêu cầu không hợp lệ.'
                     return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/do-lai' and self.headers.get('X-So-Cong-Khai') == '1':     # nút "Đo lại ngay"
+                    bd = do_lai.chay_nen()
+                    return self._gui(200, LOAI['.json'], json.dumps({'ok': bd, 'ly_do': 'Đang đo lại ở nền, khoảng một phút.' if bd else ('Đang đo rồi.' if do_lai.TT['dang'] else 'Máy này không có công cụ đo lại.')}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/telegram' and self.headers.get('X-So-Cong-Khai') == '1':
+                    n = min(int(self.headers.get('Content-Length') or 0), 8192)
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    viec, ds = yc.get('viec'), None
+                    if viec == 'luu':
+                        ok, nhan = telegram_nhom.luu_cai(yc)
+                    elif viec == 'che_do':
+                        ok, nhan = telegram_nhom.doi_che_do(str(yc.get('che_do', '')))
+                    elif viec == 'thu':
+                        c = telegram_nhom.cai()
+                        if c['che_do'] != 'gui':
+                            ok, nhan = False, 'Chỉ gửi tin thử khi đang ở chế độ Gửi thật.'
+                        else:
+                            kq = telegram_nhom.gui('🔔 Tin thử từ webapp: nhóm đã nối. Từ giờ tín hiệu, kết quả từng lệnh, tin USD mạnh sắp ra và tổng kết '
+                                                   'ngày sẽ được gửi vào đây.\n<i>' + telegram_nhom.MIEN + '</i>', 'thu', c)
+                            ok, nhan = kq['ok'], ('Đã gửi tin thử; mở nhóm để xem.' if kq['ok'] else f'Chưa gửi được: {kq["loi"]}')
+                    elif viec == 'phan_tich':                                   # đăng (hoặc soạn xem trước) một bài phân tích vàng ngay
+                        kq = telegram_nhom.dang_phan_tich(json.loads(Path(cau_hinh).read_text(encoding='utf-8')))
+                        ok, nhan = kq['ok'], kq['ly_do']
+                    elif viec == 'tim_nhom':
+                        ok, ds = telegram_nhom.tim_nhom()
+                        nhan, ds = (None, ds) if ok else (ds, None)
+                    else:
+                        ok, nhan = False, 'Yêu cầu không hợp lệ.'
+                    return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan, 'ds': ds}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/sao-luu' and self.headers.get('X-So-Cong-Khai') == '1':
+                    n = min(int(self.headers.get('Content-Length') or 0), 4096)
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    if yc.get('viec') == 'chay':
+                        ok = sao_luu.chay_nen()
+                        nhan = 'Đang sao lưu; xong sau vài giây.' if ok else 'Đang có một lần sao lưu chạy.'
+                    elif yc.get('viec') == 'dat_noi':
+                        ok, nhan = sao_luu.dat_noi(str(yc.get('noi', '')))
+                        if ok:
+                            sao_luu.chay_nen()
+                            nhan += ' Đang tạo bản đầu tiên ở đó.'
+                    else:
+                        ok, nhan = False, 'Yêu cầu không hợp lệ.'
+                    return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/gia-su' and self.headers.get('X-So-Cong-Khai') == '1':   # một lượt của buổi học
+                    from . import gia_su                                       # noqa: PLC0415
+                    n = min(int(self.headers.get('Content-Length') or 0), 16384)
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    lang_gs = dich.ngon_ngu(self.headers.get('Cookie'))
+                    if not yc.get('luong'):
+                        kq = gia_su.hoi(cfg, _out(cfg), yc.get('phien'), str(yc.get('chu_de') or ''), str(yc.get('cau') or ''), lang=lang_gs)
+                        return self._gui(200 if kq['ok'] else 400, LOAI['.json'], json.dumps(kq, ensure_ascii=False, default=str).encode('utf-8'))
+                    self.send_response(200)                                    # luồng: chữ của gia sư hiện dần, sự kiện cuối là kết quả đầy đủ
+                    self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+                    self.send_header('Cache-Control', 'no-store')
+                    self.send_header('X-Content-Type-Options', 'nosniff')
+                    self._tieu_de_bao_ve()
+                    self.end_headers()
+                    con = {'mo': True}
+
+                    def day(obj: dict) -> None:
+                        if not con['mo']:
+                            return
+                        try:
+                            self.wfile.write(('data: ' + json.dumps(obj, ensure_ascii=False, default=str) + '\n\n').encode('utf-8'))
+                            self.wfile.flush()
+                        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                            con['mo'] = False                                  # trang đã đóng: gia sư vẫn viết xong và lưu buổi học
+                    kq = gia_su.hoi(cfg, _out(cfg), yc.get('phien'), str(yc.get('chu_de') or ''), str(yc.get('cau') or ''), lang=lang_gs,
+                                    khi_chu=lambda t: day({'chu': t}))
+                    day({'xong': True, **kq})
+                    return
                 if urlparse(self.path).path != '/api/ai' or self.headers.get('X-So-Cong-Khai') != '1':
                     return self._gui(404, 'text/plain; charset=utf-8', 'Không có trang này.'.encode('utf-8'))
                 cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
@@ -527,6 +632,9 @@ def main(argv=None) -> int:
         vong.start()
     nhieu_tai_khoan.VONG = nhieu_tai_khoan.VongTaiKhoan()                # đọc các tài khoản đã nối (mỗi cái một tiến trình riêng, chỉ đọc)
     nhieu_tai_khoan.VONG.start()
+    telegram_nhom.VongTelegram(lambda: json.loads(Path(a.cau_hinh).read_text(encoding='utf-8')), dia_chi=f'http://127.0.0.1:{a.port}').start()   # nhóm Telegram (mặc định chỉ xem trước)
+    sao_luu.VongSaoLuu().start()                                     # mỗi ngày một bản sao toàn bộ hệ thống
+    do_lai.VongDoLai().start()                                       # đo lại trên dữ liệu mới, mỗi tháng một lần
     if bang is not None:                                           # bảng giá trực tiếp cho trang Thị trường và Công cụ
         bang.start()
     nk = (json.loads(Path(a.cau_hinh).read_text(encoding='utf-8')).get('nhat_ky') or {})
@@ -547,6 +655,9 @@ def main(argv=None) -> int:
     threading.Thread(target=lam_nong, name='lam-nong', daemon=True).start()
     sys.stdout.reconfigure(encoding='utf-8')
     print(f'Sổ công khai đang chạy tại http://127.0.0.1:{srv.server_address[1]}  (nhấn Ctrl+C để dừng)', flush=True)
+    if cfg0.get('giu_may_thuc'):                                   # máy không tự ngủ trong lúc webapp chạy (luồng chính sống suốt đời webapp)
+        from . import giu_thuc                                     # noqa: PLC0415
+        print('Giữ máy thức: ' + ('đã bật' if giu_thuc.bat() else f'không bật được ({giu_thuc.TT["loi"]})'), flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -171,7 +171,7 @@ def _o(id_: str, nhan: str, mac_dinh: str = '', goi_y: str = '', kieu: str = 'nu
 
 
 def _sg(ten: str, ds: list[tuple[str, str]], mac_dinh: str, id_: str = '') -> str:
-    return (f'<div class="sg"' + (f' data-ch="{ten}"' if ten else '') + (f' id="{id_}"' if id_ else '') + '>'
+    return ('<div class="sg"' + (f' data-ch="{ten}"' if ten else '') + (f' id="{id_}"' if id_ else '') + '>'
             + ''.join(f'<button type="button" data-v="{k}" aria-pressed="{"true" if k == mac_dinh else "false"}">{n}</button>' for k, n in ds) + '</div>')
 
 
@@ -211,7 +211,7 @@ def trang_cong_cu(ten: str) -> str:
         '<div class="tt-top"><div><h1>Công cụ giao dịch</h1><p>Tính khối lượng, rủi ro, ký quỹ và các mức giá cho bất kỳ cặp tiền hay CFD nào của sàn, '
         'theo thông số hợp đồng và giá trực tiếp.</p></div><span id="song" class="song-pill"><i></i>Đang nối…</span></div>',
         '<div class="cc-dau"><label>Mã<select id="cc-ma" aria-label="Chọn mã"></select></label>'
-        f'<label>Vốn tài khoản<input id="von" type="number" inputmode="decimal" step="any" value="1000" style="width:140px"></label>'
+        '<label>Vốn tài khoản<input id="von" type="number" inputmode="decimal" step="any" value="1000" style="width:140px"></label>'
         '<div class="cc-q"><div><span id="cc-ten">—</span></div><div><span>Bid</span><b id="cc-bid">—</b></div><div><span>Ask</span><b id="cc-ask">—</b></div>'
         '<div><span>Spread</span><b id="cc-sp">—</b></div><div><span>Hôm nay</span><b id="cc-doi">—</b></div></div></div>',
         f'<div class="cc-g">{cards}</div>',

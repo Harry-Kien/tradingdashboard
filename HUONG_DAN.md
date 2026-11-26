@@ -50,6 +50,17 @@ Mở `cau-hinh.json` bằng Notepad. Sửa xong thì tắt rồi mở lại weba
 | `tin_tuc.bat`, `lich_mang.bat`, `cot.bat` | Bật/tắt phần tin tức, lịch tin kinh tế lấy từ Internet, vị thế COT của CFTC. Đây là những chỗ duy nhất webapp gọi ra Internet. | `true` |
 | `ten` | Tên hiện ở góc trái trang. | |
 
+## Tính năng tùy chọn
+
+Webapp chạy đầy đủ mà không cần các phần dưới đây; mỗi phần chỉ bật thêm một tính năng.
+
+- **Hỏi AI và Học với gia sư** cần khóa API Anthropic của chính bạn. Đặt một lần: mở PowerShell, gõ
+  `setx ANTHROPIC_API_KEY "khóa-của-bạn"`, rồi tắt webapp và mở lại bằng `BAT_DAU.bat` (cửa sổ đã mở trước khi đặt khóa không thấy khóa mới).
+  Mỗi câu trả lời tốn vài xu; webapp tự giới hạn số lượt và số tiền mỗi ngày. Khóa chỉ nằm trên máy bạn, chỉ được gửi tới Anthropic.
+- **Ảnh biểu đồ kèm tin Telegram** cần Playwright: `python -m pip install playwright` rồi `python -m playwright install chromium`. Sau đó bật ô
+  "Kèm ảnh biểu đồ của lệnh" ở trang Nhóm Telegram. Không cài thì tin vẫn được gửi bằng chữ.
+- **Dò lỗi mã** (chỉ khi bạn sửa mã): `python -m pip install ruff`, rồi `python -m ruff check so_cong_khai`.
+
 ## Gặp sự cố
 
 Ô trạng thái ở đầu trang **Thị trường** ("Trực tiếp · … mã" hoặc "Chưa có giá trực tiếp · lý do") và dòng nguồn giá trên trang
@@ -64,6 +75,7 @@ Mở `cau-hinh.json` bằng Notepad. Sửa xong thì tắt rồi mở lại weba
 | Giờ trên biểu đồ lệch vài tiếng | Ghi `gia.mt5.lech_gio_san` theo giờ máy chủ của sàn (MT5 → Market Watch, góc trên có giờ máy chủ). |
 | Cửa sổ đen báo "Chưa cài đủ thư viện" | Bấm đúp lại `BAT_DAU.bat` (tự cài lại thư viện). |
 | Trình duyệt không mở | Tự mở http://127.0.0.1:8765 |
+| "Nút Hỏi AI đang khóa" | Đặt khóa API như mục **Tính năng tùy chọn**, rồi mở lại webapp bằng `BAT_DAU.bat`. |
 
 ## An toàn
 

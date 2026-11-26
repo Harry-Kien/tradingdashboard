@@ -8,6 +8,9 @@ so đã được làm, nên một số biến thể qua cổng có thể chỉ n
 
 Các hàm muc_cho và muc_sl ở đây cũng là hàm mà cong-cu/diem_vao.py dùng để đo, nên mức giá trên phiếu trùng với mức đã đo. Trạng thái lúc sống (đang
 chờ, đã khớp, đã hủy) xét trên nến M15 đã đóng và giá hiện tại, thô hơn phép đo (đi bằng nến 1 phút). Hàm thuần: không đọc MT5, không đặt lệnh.
+Bộ lọc L6 (D1, H4, H1 cùng chiều lệnh) đo thêm ngày 25/11/2026 bằng cong-cu/loc_xu_huong.py (đăng ký trước ở cong-cu/CHUAN_HOA_DANG_KY.md, phần
+"Lọc theo xu hướng nhiều khung"; 16 phép so nữa): qua cổng ở Phá vỡ, ICT quét thanh khoản, Wyckoff và Hồi về EMA, cải thiện ở cả hai phần dữ liệu,
+nhưng không phương pháp nào thành có lãi trên 2015–2021.
 Đây là kết quả của một công thức đã đo, không phải lời khuyên đầu tư."""
 from __future__ import annotations
 
@@ -24,20 +27,27 @@ THI_TRUONG = ('pha_vo', 'elliott', 'wyckoff', 'price_action', 'ema_hoi')       #
 NGAY_DO = '24/11/2026'
 # Công thức đã qua cổng. vao: kiểu vào; sl: cách đặt dừng lỗ; tp: cách chốt (T0 = chốt hết ở 2R); loc: các bộ lọc bối cảnh được giữ.
 CONG_THUC = {
-    'pha_vo': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L4',)},
-    'ict': {'vao': 'V3', 'sl': 'S2', 'tp': 'T0', 'loc': ('L2', 'L4')},
+    'pha_vo': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L4', 'L6')},
+    'ict': {'vao': 'V3', 'sl': 'S2', 'tp': 'T0', 'loc': ('L2', 'L4', 'L6')},
     'ict_fvg': {'vao': 'V3', 'sl': 'S0', 'tp': 'T0', 'loc': ('L2', 'L4')},
     'elliott': {'vao': 'V0', 'sl': 'S2', 'tp': 'T0', 'loc': ()},
-    'wyckoff': {'vao': 'V2', 'sl': 'S1', 'tp': 'T0', 'loc': ('L4',)},
+    'wyckoff': {'vao': 'V2', 'sl': 'S1', 'tp': 'T0', 'loc': ('L4', 'L6')},
     'price_action': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L1',)},
     'fib': {'vao': 'V1', 'sl': 'S0', 'tp': 'T0', 'loc': ('L2',)},
-    'ema_hoi': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ()},
+    'ema_hoi': {'vao': 'V2', 'sl': 'S3', 'tp': 'T0', 'loc': ('L6',)},
 }
 TEN_LOAI = {'tt': 'Vào ngay theo giá thị trường', 'gh': 'Lệnh chờ giới hạn', 'dung': 'Lệnh chờ dừng'}
 TEN_SL = {'S0': 'mức của phương pháp', 'S1': 'cách giá vào 1,5 ATR', 'S2': 'mức của phương pháp lùi thêm đúng spread', 'S3': 'mức của phương pháp lùi thêm 0,5 ATR'}
 TEN_LOC = {'L1': 'Không nằm trong 60 phút quanh tin USD mức cao', 'L2': 'Spread không quá 2 lần mức thường',
-           'L3': 'Còn ít nhất 1R trước đỉnh/đáy 24 giờ', 'L4': 'Thuận xu hướng H4 (EMA20 so với EMA50)'}
+           'L3': 'Còn ít nhất 1R trước đỉnh/đáy 24 giờ', 'L4': 'Thuận xu hướng H4 (EMA20 so với EMA50)',
+           'L6': 'D1, H4 và H1 cùng chiều lệnh (EMA20 so với EMA50)'}
+DIEU_KIEN = ('L1', 'L2', 'L3', 'L4', 'L6')
 _nho: dict = {}
+
+
+def _thuong_dau(c: str) -> str:
+    """Viết thường chữ đầu để ghép vào giữa câu, trừ khi đó là tên khung hay viết tắt (D1, H4, EMA)."""
+    return c if len(c) > 1 and (c[1].isupper() or c[1].isdigit()) else c[:1].lower() + c[1:]
 
 
 def nhom(ma: str) -> str:
@@ -91,9 +101,22 @@ def so_do(ma: str, tep: Path | None = None) -> dict | None:
         if _nho.get('key') != key:
             _nho.update(key=key, kq=json.loads(tep.read_text(encoding='utf-8')))
         x = _nho['kq']['pp'][ma]
-        return {'goc': x['A']['moi'], 'phieu': x['cuoi'], 'so_phep_so': _nho['kq'].get('so_phep_so'), 'cat_nam': _nho['kq'].get('cat_nam')}
+        out = {'goc': x['A']['moi'], 'phieu': x['cuoi'], 'so_phep_so': _nho['kq'].get('so_phep_so'), 'cat_nam': _nho['kq'].get('cat_nam')}
     except (OSError, ValueError, KeyError):
         return None
+    # Bộ lọc xu hướng nhiều khung (cong-cu/loc_xu_huong.py, cùng thư mục): khi nó qua cổng, số đo của phiếu là của bản có bộ lọc đó.
+    lx = tep.with_name('loc-xu-huong.json')
+    try:
+        key = (str(lx), lx.stat().st_mtime_ns)
+        if _nho.get('lx_key') != key:
+            _nho.update(lx_key=key, lx=json.loads(lx.read_text(encoding='utf-8')))
+        y = _nho['lx']['pp'][ma]
+        out['so_phep_so'] = (out['so_phep_so'] or 0) + int(_nho['lx'].get('so_phep_so') or 0)
+        if y['giu'] != 'nen' and y['giu'] in CONG_THUC[ma]['loc']:
+            out['phieu'] = y['bang'][y['giu']]
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return out
 
 
 BOT_KHOANG = (10.0, 35.0)        # khoảng rủi ro (giá) được nhận khi đo điểm vào của luật bot (cong-cu/diem_vao_bot.py)
@@ -171,9 +194,21 @@ def lap_bot(pa: dict, nen: datetime, nen_h: float, nen_l: float, khung: str, bid
             'so_do': sd, 'ngay_do': NGAY_DO}
 
 
-def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: float, spread_thuong: float) -> dict:
-    """{'L1'…'L4': True nếu điều kiện ĐẠT (tín hiệu không bị bộ lọc đó bỏ)}. L2 lúc sống so spread hiện tại với mức thường của cấu hình (phép đo
-    dùng trung vị 1.440 nến 1 phút trước đó)."""
+def xu(khung: pd.DataFrame | None, dai: timedelta, t: pd.Timestamp) -> float:
+    """Dấu của EMA20 − EMA50 trên giá đóng theo nến ĐÃ ĐÓNG tới lúc `t` (nến mở lúc x đóng lúc x + `dai`); thiếu dữ liệu thì 0. Cùng cách với
+    cong-cu/loc_xu_huong.py."""
+    if khung is None or not len(khung):
+        return 0.0
+    d = np.sign(PP._ema(khung['close'].astype(float), 20) - PP._ema(khung['close'].astype(float), 50)).fillna(0.0)
+    d.index = d.index + dai
+    truoc = d[d.index <= t]
+    return float(truoc.iloc[-1]) if len(truoc) else 0.0
+
+
+def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: float, spread_thuong: float, h1: pd.DataFrame | None = None,
+              d1: pd.DataFrame | None = None) -> dict:
+    """{'L1'…'L4', 'L6': True nếu điều kiện ĐẠT (tín hiệu không bị bộ lọc đó bỏ)}. L2 lúc sống so spread hiện tại với mức thường của cấu hình (phép đo
+    dùng trung vị 1.440 nến 1 phút trước đó). L6 cần nến H1 và D1; thiếu thì coi là chưa đạt."""
     mua = s['huong'] == 'MUA'
     t = pd.Timestamp(s['t'])
     gan = any(abs((t - pd.Timestamp(x)).total_seconds()) <= 3600 for x in tin) if tin else False
@@ -183,11 +218,13 @@ def dieu_kien(s: dict, m15: pd.DataFrame, h4: pd.DataFrame, tin: list, spread: f
     d4.index = d4.index + timedelta(hours=4)
     truoc = d4[d4.index <= t]
     xu4 = float(truoc.iloc[-1]) if len(truoc) else 0.0
-    return {'L1': not gan, 'L2': not (spread > 2 * spread_thuong), 'L3': not (cho < abs(s['vao'] - s['sl'])), 'L4': not (xu4 * (1 if mua else -1) < 0)}
+    c = 1 if mua else -1
+    l6 = xu(d1, timedelta(days=1), t) * c > 0 and xu4 * c > 0 and xu(h1, timedelta(hours=1), t) * c > 0
+    return {'L1': not gan, 'L2': not (spread > 2 * spread_thuong), 'L3': not (cho < abs(s['vao'] - s['sl'])), 'L4': not (xu4 * c < 0), 'L6': bool(l6)}
 
 
 def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: float, ask: float, now: datetime, tin: list, spread_thuong: float,
-        so_le: int = 2) -> dict | None:
+        so_le: int = 2, d1: pd.DataFrame | None = None) -> dict | None:
     """Phiếu vào lệnh của tín hiệu gần nhất (trong 4 giờ) của phương pháp `ma`, hoặc None khi không có tín hiệu nào. Trường 'trang_thai':
     'con_hieu_luc' (đặt được lúc này), 'bi_loc' (bộ lọc đã qua cổng loại tín hiệu), 'da_khop', 'da_huy', 'het_han', 'qua_tre', 'da_qua', 'rui_ro'.
     'vao_luc': 'hien_tai' (giá vào là giá lúc này) hoặc 'tin_hieu' (phiếu vào ngay đã quá hạn: giá vào là giá lúc tín hiệu đến, chỉ để xem lại);
@@ -258,7 +295,7 @@ def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: flo
     lo, hi =(PP.RUI_RO_ATR[0] * (0.6 if loai == 'tt' else 1.0), PP.RUI_RO_ATR[1] * (1.3 if loai == 'tt' else 1.0))    # vào ngay: nới như phương án gốc, vì giá đã chạy từ lúc nến đóng
     if tt == 'con_hieu_luc' and not (rui > 0 and lo * s['atr'] <= rui <= hi * s['atr']):
         tt = 'rui_ro'
-    dk = dieu_kien(s, m, h4, tin, sp, spread_thuong)
+    dk = dieu_kien(s, m, h4, tin, sp, spread_thuong, h1, d1)
     hong = [k for k in ct['loc'] if not dk[k]]
     if tt == 'con_hieu_luc' and hong:
         tt = 'bi_loc'
@@ -271,12 +308,12 @@ def lap(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, h4: pd.DataFrame, bid: flo
     if ct['sl'] != 'S0':
         khac.append('dừng lỗ: ' + TEN_SL[ct['sl']])
     if ct['loc']:
-        khac.append('thêm bộ lọc: ' + '; '.join(TEN_LOC[k].lower() for k in ct['loc']))
+        khac.append('thêm bộ lọc: ' + '; '.join(_thuong_dau(TEN_LOC[k]) for k in ct['loc']))
     huy = {'tt': 'Vào ngay sau khi nến tín hiệu đóng; quá ' + str(PP.TRE_PHUT) + ' phút thì bỏ.',
            'gh': 'Hủy nếu giá chạm dừng lỗ trước khi khớp, hoặc sau 4 giờ chưa khớp.',
            'dung': 'Hủy nếu giá chạm dừng lỗ trước khi lệnh được kích hoạt, hoặc sau 4 giờ chưa kích hoạt.'}[loai]
     return {'ma': ma, 'ten': PP.DS[ma]['ten'], 'huong': s['huong'], 'loai': loai, 'ten_loai': TEN_LOAI[loai], 'trang_thai': tt, 'vao': r(gia_vao), 'sl': r(sl),
             'tp': [r(gia_vao + dau * rui), r(gia_vao + dau * PP.TP_R * rui)], 'rr': [1.0, PP.TP_R], 'rui_ro_gia': r(abs(rui)), 'vung': [r(v) for v in s['vung']] if s.get('vung') else None,
             'con_phut': con if tt == 'con_hieu_luc' else None, 'tuoi_phut': int(tuoi), 'vao_luc': vao_luc, 'ket_cuc': ket, 'huy': huy, 'nen': s['t'].isoformat(), 'ly_do': s['ly_do'],
-            'dieu_kien': [{'ma': k, 'ten': TEN_LOC[k], 'dat': bool(dk[k]), 'bat_buoc': k in ct['loc']} for k in ('L1', 'L2', 'L3', 'L4')],
+            'dieu_kien': [{'ma': k, 'ten': TEN_LOC[k], 'dat': bool(dk[k]), 'bat_buoc': k in ct['loc']} for k in DIEU_KIEN],
             'loc_hong': [TEN_LOC[k] for k in hong], 'khac_luat_goc': khac, 'cong_thuc': dict(ct, loc=list(ct['loc'])), 'so_do': so_do(ma), 'ngay_do': NGAY_DO}

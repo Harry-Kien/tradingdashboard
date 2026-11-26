@@ -10,12 +10,10 @@ Kèm theo là bối cảnh (xu hướng, vùng giá gần nhất, tin sắp tớ
 Đây là kết quả của các luật, không phải lời khuyên đầu tư."""
 from __future__ import annotations
 
-import os
 import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from . import gia, phieu, phuong_phap, song
+from . import gia, giu_lenh, phieu, phuong_phap, song
 
 THONG_KE = {
     'bot': 'MUA cần H1 và H4 cùng tăng, BÁN cần H1, H4 và D1 cùng giảm (từ đêm 24/11/2026); tối đa 6 lệnh mở cùng lúc (từ sáng 25/11/2026, trước là 3). Bot tự đo 2024–26: 1.249 lệnh, +4,38 giá mỗi lệnh, sụt giảm 621 giá; phần tăng chủ yếu do nhiều lệnh cùng chiều mở chồng lên nhau. Webapp đo độc lập với chi phí thật, trên nến đã sửa lệch giờ (3.522 lệnh): −0,002R mỗi lệnh ở 2015–2021, +0,174R ở 2022–2026. Vàng tăng gần suốt 2015–2026 nên phép đo ưu ái lệnh MUA, và cấu hình chọn khi đã nhìn dữ liệu nên con số lạc quan.',
@@ -145,7 +143,7 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
             return _khong(ma, 'Luật bot tín hiệu', kieu, f'Luật có điều kiện trên {tf} nhưng dừng lỗ theo vùng hỗ trợ/kháng cự nằm ngoài khoảng {R.SL_MIN:g}–{R.SL_MAX:g} giá, nên luật không ra lệnh.')
         return _phuong_an(ma, 'Luật bot tín hiệu', kieu, sig.side, sig.entry, sig.sl, list(sig.tps), f'{sig.reason} Khung {tf}.'.strip(),
                           vung=(sig.zone_low, sig.zone_high), ghi_chu=['Thang TP theo R: ' + ' · '.join(f'{x:g}R'.replace('.', ',') for x in LV.TP_R) + '.' if LV.TP_R else 'Thang TP cố định.',
-                                                                       'Bot giữ lệnh tối đa 24 giờ.'])
+                                                                       'Bot giữ lệnh tối đa 24 giờ.'] + ([giu_lenh.cau()] if giu_lenh.cau() else []))
 
     xu_luat = R.trend_rule_text() if hasattr(R, 'trend_rule_text') else 'H1, H4 và D1 phải cùng chiều'      # lọc xu hướng của bot đang chạy
 
@@ -221,7 +219,7 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
         p = thu(phuong_phap.DS[ma]['ten'], lambda ma=ma: phuong_phap.phuong_an(ma, m15, fr['H1'], bid, ask, now, chung))
         if p:
             # phiếu vào lệnh theo công thức đã đo (so_cong_khai/phieu.py); không thay phương án gốc ở trên
-            p['phieu'] = thu('Phiếu vào lệnh', lambda ma=ma: phieu.lap(ma, m15, fr['H1'], fr['H4'], bid, ask, now, tin_gan, float(g.get('spread', 0.17))))
+            p['phieu'] = thu('Phiếu vào lệnh', lambda ma=ma: phieu.lap(ma, m15, fr['H1'], fr['H4'], bid, ask, now, tin_gan, float(g.get('spread', 0.17)), d1=fr.get('D1')))
             if p['phieu'] and chung and p['phieu']['trang_thai'] == 'con_hieu_luc':
                 p['phieu']['trang_thai'], p['phieu']['loc_hong'] = 'bi_loc', list(chung)      # giá cũ hoặc đang né tin: mọi phương án chỉ để tham khảo
             out['phuong_phap'].append(p)

@@ -8,6 +8,7 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -104,6 +105,140 @@ def _nap_ma(g: dict):
 
 
 _TIN: dict = {}
+LICH_MANG = Path(__file__).resolve().parent.parent / 'du-lieu' / 'lich-tin-mang.json'   # lịch ForexFactory do lich_mang.py tải mỗi giờ
+NGUON_TIN: dict = {}                                       # lần gọi gần nhất: tệp EA phủ tới đâu, lịch mạng bù bao nhiêu tin
+_MANG: dict = {}
+_CAO: dict = {}
+
+# Tên tin trên ForexFactory → tên của CÙNG tin đó trong lịch MT5. Chỉ ghép cặp đúng một tin: PMI sơ bộ (Flash) không có trong lịch MT5 nên không ghép.
+FF_MT5 = {'Non-Farm Employment Change': 'Nonfarm Payrolls', 'ADP Non-Farm Employment Change': 'ADP Nonfarm Employment Change',
+          'Federal Funds Rate': 'Fed Interest Rate Decision', 'FOMC Press Conference': 'FOMC Press Conference',
+          'Prelim GDP q/q': 'GDP q/q', 'Advance GDP q/q': 'GDP q/q', 'Final GDP q/q': 'GDP q/q',
+          'ISM Services PMI': 'ISM Non-Manufacturing PMI', 'ISM Services Prices': 'ISM Non-Manufacturing Prices Paid',
+          'ISM Manufacturing Prices': 'ISM Manufacturing Prices Paid', 'Unemployment Claims': 'Initial Jobless Claims',
+          'CB Consumer Confidence': 'CB Consumer Confidence Index', 'Crude Oil Inventories': 'EIA Crude Oil Stocks Change',
+          'Philly Fed Manufacturing Index': 'Philadelphia Fed Manufacturing Index', 'Chicago PMI': 'MNI Chicago Business Barometer',
+          'Final Manufacturing PMI': 'S&P Global Manufacturing PMI', 'Final Services PMI': 'S&P Global Services PMI',
+          '10-y Bond Auction': '10-Year Note Auction', '30-y Bond Auction': '30-Year Bond Auction'}
+# Các tin MT5 xếp mức cao (importance 3) từ 25/11/2024 tới 25/11/2026, đọc từ tệp lịch của EA; dùng khi không đọc được tệp đó.
+CAO_MT5_SAN = frozenset({
+    '10-Year Note Auction',
+    '30-Year Bond Auction',
+    'ADP Nonfarm Employment Change',
+    'Average Hourly Earnings m/m',
+    'CB Consumer Confidence Index',
+    'CPI',
+    'CPI m/m',
+    'CPI y/y',
+    'Core CPI m/m',
+    'Core CPI n.s.a. m/m',
+    'Core PCE Price Index m/m',
+    'Core PCE Price Index y/y',
+    'Core Retail Sales m/m',
+    'Durable Goods Orders m/m',
+    'EIA Crude Oil Stocks Change',
+    'Existing Home Sales',
+    'FOMC Press Conference',
+    'Fed Chair Powell Speech',
+    'Fed Chair Powell Testimony',
+    'Fed Interest Rate Decision',
+    'GDP Sales q/q',
+    'GDP q/q',
+    'ISM Manufacturing PMI',
+    'ISM Manufacturing Prices Paid',
+    'ISM Non-Manufacturing PMI',
+    'ISM Non-Manufacturing Prices Paid',
+    'Initial Jobless Claims',
+    'JOLTS Job Openings',
+    'MNI Chicago Business Barometer',
+    'New Home Sales',
+    'Nonfarm Payrolls',
+    'PPI m/m',
+    'Philadelphia Fed Manufacturing Index',
+    'Retail Sales m/m',
+    'S&P Global Manufacturing PMI',
+    'S&P Global Services PMI',
+    'Unemployment Rate',
+})
+
+
+def ten_cao_mt5(path: str | None = None) -> frozenset:
+    """Tên các tin USD mà MT5 xếp mức cao trong 2 năm cuối của tệp lịch EA (ít nhất 2 lần, và ít nhất một nửa số lần tin đó ra).
+
+    MT5 xếp mức theo loại tin, gần như không đổi (2 năm tới 25/11/2026: 37 loại, loại nào cũng 100% số lần), nên học từ lịch sử của chính tệp
+    là cách giữ cho lịch mạng né đúng những tin EA Promax né. Không đọc được tệp thì dùng danh sách CAO_MT5_SAN."""
+    try:
+        p = _p(path)
+        key = (p, os.path.getmtime(p), os.path.getsize(p))
+    except (OSError, TypeError):
+        return CAO_MT5_SAN
+    if _CAO.get('key') != key:
+        import csv                                         # noqa: PLC0415
+        rows = []
+        try:
+            with open(p, encoding='utf-8-sig', newline='') as f:
+                for r in csv.DictReader(f):
+                    if (r.get('currency') or '').strip().upper() == 'USD':
+                        rows.append(((r.get('time') or '').strip(), (r.get('event') or '').strip(), (r.get('importance') or '').strip()))
+        except (OSError, UnicodeDecodeError, csv.Error):
+            rows = []
+        ten = frozenset()
+        if rows:
+            cuoi = max(t for t, _, _ in rows)                  # giờ dạng 2026.11.25 13:30: so chuỗi là so thời gian
+            moc = f'{int(cuoi[:4]) - 2}{cuoi[4:]}' if cuoi[:4].isdigit() else ''
+            dem, cao = {}, {}
+            for t, e, i in rows:
+                if t >= moc and e:
+                    dem[e] = dem.get(e, 0) + 1
+                    cao[e] = cao.get(e, 0) + (i in ('3', '3.0'))
+            ten = frozenset(e for e in dem if cao[e] >= 2 and 2 * cao[e] >= dem[e])
+        _CAO.update(key=key, ten=ten or CAO_MT5_SAN)
+    return _CAO['ten']
+
+
+def la_tin_cao(ten: str, muc, cao: frozenset) -> bool:
+    """Một tin USD trên lịch mạng có phải tin cần né không: ForexFactory xếp High, HOẶC đó là loại tin MT5 xếp mức cao."""
+    try:
+        if int(muc or 0) >= 3:
+            return True
+    except (TypeError, ValueError):
+        pass
+    if FF_MT5.get(ten, ten) in cao:
+        return True
+    m = re.fullmatch(r'Fed Chair \S+ (Speaks|Testifies)', ten or '')     # chủ tịch Fed đổi người thì tên tin đổi theo
+    duoi = {'Speaks': ' Speech', 'Testifies': ' Testimony'}[m.group(1)] if m else ''
+    return bool(m) and any(x.startswith('Fed Chair ') and x.endswith(duoi) for x in cao)
+
+
+def tin_mang_usd(sau: datetime | None, p: Path | None = None, cao: frozenset | None = None) -> tuple[list[tuple[datetime, str]], datetime | None]:
+    """Tin USD cần né trong lịch mạng, giờ SAU mốc `sau`; kèm mốc muộn nhất của lịch mạng.
+
+    Dùng để vá chỗ hổng khi tệp lịch của EA hết hạn: lịch mạng tự tải mỗi giờ nên không cần ai xuất tay. ForexFactory chỉ xếp High cho ít tin hơn
+    MT5 (tuần 23/11/2026: 2 so với 9), nên tin được tính là cần né khi ForexFactory xếp High HOẶC MT5 xếp loại tin đó mức cao (`cao`, mặc định là
+    danh sách học lần gần nhất từ tệp EA). Tuần 23/11/2026, cách này cho đúng các mốc giờ MT5 né: 24/11 15:00, 25/11 13:30, 15:00 và 15:30 UTC."""
+    p = p or LICH_MANG
+    cao = cao if cao is not None else (_CAO.get('ten') or CAO_MT5_SAN)
+    try:
+        st = p.stat()
+        key = (str(p), st.st_mtime_ns, st.st_size, cao)
+    except OSError:
+        return [], None
+    if _MANG.get('key') != key:
+        try:
+            ds = json.loads(p.read_text(encoding='utf-8')).get('ds') or []
+        except (OSError, ValueError, AttributeError):
+            ds = []
+        tin, het = [], None
+        for x in ds:
+            try:
+                t = datetime.fromisoformat(x['t']).astimezone(timezone.utc)
+            except (KeyError, TypeError, ValueError):
+                continue
+            het = t if het is None or t > het else het
+            if x.get('tien') == 'USD' and la_tin_cao(str(x.get('ten') or ''), x.get('muc'), cao):
+                tin.append((t, str(x.get('ten') or '')))
+        _MANG.update(key=key, tin=sorted(tin), het=het)
+    return [(t, ten) for t, ten in _MANG['tin'] if sau is None or t > sau], _MANG['het']
 
 
 def tin_usd(g: dict) -> tuple[list, object]:
@@ -119,6 +254,10 @@ def tin_usd(g: dict) -> tuple[list, object]:
         kq = _nap_ma(g)[3].load_high_usd_news(p)
         _TIN.update(key=key, kq=(list(kq[0]), kq[1]))
     news, covered = _TIN['kq']
+    bu, het_mang = tin_mang_usd(covered, cao=ten_cao_mt5(g.get('lich_tin')))   # tệp EA hết hạn (hoặc thiếu): lịch mạng bù phần sau đó
+    NGUON_TIN.update(ea_phu=covered, mang_phu=het_mang, so_bu=len(bu))
+    if het_mang is not None and (covered is None or het_mang > covered):
+        return sorted(list(news) + [t for t, _ in bu]), het_mang
     return list(news), covered
 
 
@@ -217,12 +356,17 @@ def luat(fr: dict, g: dict, now: datetime) -> dict:
 _lenh_nho: dict = {'luc': 0.0, 'key': None, 'ds': []}
 
 
+def _con(t: datetime, now: datetime) -> str:
+    m = max(0, int((t - now).total_seconds() // 60))
+    return f'còn {m} phút' if m < 90 else f'còn {m // 60} giờ' if m < 48 * 60 else f'còn {m // 1440} ngày'
+
+
 def tin_sap_toi(cfg: dict, now: datetime | None = None, n: int = 5) -> list[dict]:
     """Các tin USD mức cao sắp tới trong lịch (giờ trong tệp là UTC): [{'luc': ISO, 'ten': tên sự kiện}], gần trước xa sau."""
     path = (cfg.get('gia') or {}).get('lich_tin')
-    if not path or not os.path.exists(_p(path)):
-        return []
     now = now or datetime.now(timezone.utc)
+    if not path or not os.path.exists(_p(path)):                 # không có tệp của EA: chỉ còn lịch mạng
+        return [{'luc': t.isoformat(), 'ten': ten, 'con': _con(t, now)} for t, ten in tin_mang_usd(now, cao=ten_cao_mt5(path))[0]][:n] if path else []
     key = ('tin', _p(path), os.path.getmtime(_p(path)))
     if _nho_tin.get('key') != key:
         import csv                                         # noqa: PLC0415
@@ -239,9 +383,11 @@ def tin_sap_toi(cfg: dict, now: datetime | None = None, n: int = 5) -> list[dict
         rows.sort()
         _nho_tin.update(key=key, rows=rows)
     def con(t):
-        m = max(0, int((t - now).total_seconds() // 60))
-        return f'còn {m} phút' if m < 90 else f'còn {m // 60} giờ' if m < 48 * 60 else f'còn {m // 1440} ngày'
-    return [{'luc': t.isoformat(), 'ten': ten, 'con': con(t)} for t, ten in _nho_tin['rows'] if t > now][:n]
+        return _con(t, now)
+    rows = _nho_tin['rows']
+    if rows:                                               # sau chỗ tệp EA còn phủ: lấy thêm từ lịch mạng
+        rows = rows + tin_mang_usd(rows[-1][0], cao=ten_cao_mt5(path))[0]
+    return [{'luc': t.isoformat(), 'ten': ten, 'con': con(t)} for t, ten in rows if t > now][:n]
 
 
 _nho_tin: dict = {}
@@ -257,7 +403,7 @@ def lenh_dang_mo(cfg: dict) -> list[dict]:
     try:
         for r in doc_so.doc_bot(cfg['bot_db']) if cfg.get('bot_db') else []:
             if not r['closed']:
-                ds.append({'nhan': f'Bot {r["call"]} {"MUA" if r["side"] == "BUY" else "BÁN"}', 'huong': r['side'], 'vao': _so(r['entry']),
+                ds.append({'nhan': f'Bot {r["call"]} {"MUA" if r["side"] == "BUY" else "BÁN"}', 'ten': f'Bot {r["call"]}', 'huong': r['side'], 'vao': _so(r['entry']),
                            'sl': _so(r['sl']), 'tp': [_so(x) for x in r['tps'][r['tps_hit']:]], 'loai': 'tin_hieu'})
     except Exception:                                                         # noqa: BLE001 - thiếu sổ bot thì bỏ qua phần này
         pass
@@ -268,7 +414,9 @@ def lenh_dang_mo(cfg: dict) -> list[dict]:
             except Exception:                                                 # noqa: BLE001
                 continue
             if o:
-                ds.append({'nhan': f'{e["ten"]} {"MUA" if o["side"] == "BUY" else "BÁN"} {o["lots"]:g}', 'huong': o['side'], 'vao': _so(o['entry']),
+                # 'ten' và 'lot' riêng để trang ghép nhãn với chữ Mua/Bán của chính nó: bản tiếng Anh dịch được mà không cần khóa riêng cho từng tên EA
+                ds.append({'nhan': f'{e["ten"]} {"MUA" if o["side"] == "BUY" else "BÁN"} {o["lots"]:g}', 'ten': e['ten'], 'lot': o['lots'],
+                           'huong': o['side'], 'vao': _so(o['entry']),
                            'sl': _so(o['sl']) if o['sl'] else None, 'tp': [_so(o['tp'])] if o['tp'] else [], 'loai': 'demo'})
     _lenh_nho.update(luc=now, key=key, ds=ds)
     return ds

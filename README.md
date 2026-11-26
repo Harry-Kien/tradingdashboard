@@ -7,7 +7,8 @@
 **Tiếng Việt** · [English](#english)
 
 Bảng điều khiển giao dịch Forex và CFD chạy ngay trên máy tính của bạn, lấy **giá trực tiếp từ MetaTrader 5** của chính bạn, song ngữ Việt / Anh.
-Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, không gửi dữ liệu của bạn đi đâu.
+Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5. Dữ liệu của bạn chỉ rời máy khi bạn tự bật một tính năng gửi đi (nhóm Telegram,
+Hỏi AI, gia sư), xem mục Dữ liệu và quyền riêng tư.
 
 **▶ Xem demo trực tuyến (không cần cài):** [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Kỷ luật giao dịch](https://harry-kien.github.io/tradingdashboard/ky-luat.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/)
 
@@ -28,6 +29,9 @@ Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, khôn
 | **Kỷ luật giao dịch** 📋 | Chấm lại từng lệnh **đã đóng** trong MT5 (7/30/90 ngày, lọc theo đặt tay hoặc từng EA) theo cùng bộ quy tắc: không có dừng lỗ, **rủi ro vượt mức mỗi lệnh**, vào gấp hoặc tăng khối lượng sau lệnh thua, vẫn vào khi đã chạm giới hạn lỗ ngày, quá số lệnh mỗi ngày, vào sát tin mạnh. Tách **lãi lỗ của lệnh đúng quy tắc và lệnh phạm quy tắc**, điểm kỷ luật, rủi ro trung bình mỗi lệnh, chuỗi thua dài nhất, để thấy thói quen nào đang tốn tiền. |
 | **Sổ giao dịch** | Nhật ký điểm vào chấm bằng giá thật; tài khoản MT5 (vốn, lệnh mở, lãi lỗ theo ngày, số tài khoản được che). |
 | **Học** | CFD/Forex cơ bản, các loại lệnh, 16 phong cách giao dịch, bài chọn phong cách, quản lý rủi ro; giải thích từng chỉ báo. |
+| **Gia sư giao dịch** 🎓 | Chọn một trong 20 chủ đề (rủi ro và khối lượng lệnh, tỷ lệ thắng và kỳ vọng, các loại lệnh, 16 phong cách…): gia sư AI hỏi từng câu để biết bạn đang ở đâu, rồi **dạy bằng câu hỏi** tới khi bạn tự làm được. Trả lời sai thì không đọc đáp án mà hỏi hẹp lại; có bản đồ kỹ năng 0–5, ôn lại bất ngờ, bài kiểm tra cuối. Chữ hiện dần khi gia sư viết; buổi học tự lưu, học tiếp được sau khi tắt máy. Theo kỹ năng [socratic-tutor của Jane Street](https://github.com/janestreet/agent_skills) (MIT). Cần khóa API Anthropic của bạn; tự giới hạn lượt và tiền mỗi ngày; chỉ dạy kiến thức, không đưa tín hiệu. |
+| **Nhóm Telegram** 📣 | Tự đăng vào nhóm hoặc kênh Telegram của bạn (bằng bot của bạn): tín hiệu mới kèm ảnh biểu đồ đã vẽ vùng vào, dừng lỗ, chốt lời; **kết quả từng lệnh, kể cả lệnh thua**; nhắc trước tin USD mạnh; bài phân tích vàng theo giờ chọn; tổng kết ngày. Thành tích chỉ tính lệnh đã thật sự lên nhóm. Mặc định chỉ xem trước, không gửi gì. Nút **Kênh Telegram** trên mọi trang mở kênh [HARRY GOLD RESEARCH](https://t.me/harrygold368). |
+| **Sao lưu** 💾 | Mỗi ngày tự nén toàn bộ dữ liệu của bạn thành một bản sao (giữ 14 bản), chọn được USB hoặc thư mục Google Drive; bỏ mọi tệp mã bot, khóa, mật khẩu. |
 
 Tìm nhanh mã hoặc trang bằng **Ctrl+K**. Nền sáng/tối, giao diện điện thoại, nút **EN / VI** đổi ngôn ngữ.
 
@@ -53,6 +57,9 @@ Chi tiết cấu hình và cách xử lý sự cố: [HUONG_DAN.md](HUONG_DAN.md
 - Giá, nến, thông số hợp đồng, lịch sử lệnh đã đóng: MT5 trên máy bạn (chỉ đọc; mặc định chỉ nhận tài khoản demo). Trang chỉ nghe ở 127.0.0.1, máy khác không vào được.
 - Chỉ tải về từ Internet (không gửi gì đi): lịch kinh tế tuần (ForexFactory), RSS tin tức, báo cáo COT (cftc.gov), Fear & Greed (alternative.me).
   Tắt từng phần trong `cau-hinh.json`.
+- Chỉ gửi đi khi bạn tự bật: **nhóm Telegram** gửi tín hiệu, kết quả và bài phân tích tới nhóm của bạn qua bot của bạn (mã bot nằm trong
+  `du-lieu/telegram-token.txt`, không bao giờ hiện ra hay vào bản sao lưu); **Hỏi AI** và **gia sư** gửi câu hỏi tới Anthropic bằng khóa API của bạn,
+  chỉ khi bạn bấm.
 
 ## Lưu ý
 
@@ -60,13 +67,15 @@ Mọi con số là số liệu mô tả thị trường và kết quả đo lạ
 chưa được chứng minh là có lãi. CFD và Forex dùng đòn bẩy, rủi ro mất vốn cao.
 
 Mã nguồn mở của bên thứ ba: TradingView Lightweight Charts™ (Apache-2.0), phông Be Vietnam Pro (SIL OFL 1.1). Xem [tinh/NGUON.md](tinh/NGUON.md).
+Kỹ năng socratic-tutor của Jane Street (MIT), chép nguyên văn kèm giấy phép ở [so_cong_khai/ky_nang_jane_street/](so_cong_khai/ky_nang_jane_street/).
 
 ---
 
 ## English
 
 A Forex & CFD trading dashboard that runs on your own computer, streaming **live prices from your MetaTrader 5**, in Vietnamese and English
-(switch with the **EN / VI** button). It is **read-only**: it never places orders, never changes anything in MT5 and never sends your data anywhere.
+(switch with the **EN / VI** button). It is **read-only**: it never places orders and never changes anything in MT5. Your data only leaves your computer
+when you turn on a sending feature yourself (Telegram group, Ask AI, the tutor).
 
 **Features:** tick-by-tick price board for every MT5 symbol with price alerts; technical ratings (19 indicators × 4 timeframes) with a screener;
 currency strength, heatmap, correlation matrix, hourly volatility, trading sessions and a 9-currency economic calendar; contract specs (pip value,
@@ -88,6 +97,20 @@ straight into a post. A sample-data mode lets you preview the page.
 
 **New: Trading discipline** (`/ky-luat`). Re-checks every closed MT5 trade (7/30/90 days, by manual or EA source) against the same rules: no stop loss, risk above the per-trade limit, quick re-entry or bigger size after a loss, trading after the daily loss limit, too many trades per day, entering near high-impact news. It splits the profit and loss of rule-following and rule-breaking trades and shows a discipline score, average risk per trade and the longest losing streak, so you can see which habits cost money.
 
+**New: Trading tutor** (on `/hoc-giao-dich`). Pick one of 20 topics (risk and position sizing, win rate and expectancy, order types, 16 trading styles…):
+an AI tutor asks one question at a time to find your level, then **teaches through questions** until you can do it yourself. Wrong answers get a
+narrower question, not the answer; you get a 0–5 skill map, surprise reviews and a final test. Replies stream as they are written, and sessions are
+saved so you can continue later. Based on [Jane Street's socratic-tutor skill](https://github.com/janestreet/agent_skills) (MIT). Needs your own
+Anthropic API key, with daily turn and spending limits; it teaches knowledge only and gives no signals.
+
+**New: Telegram group** (`/telegram`). Posts to your own Telegram group or channel through your own bot: new signals with a chart image showing entry,
+stop and targets; **the result of every trade, losses included**; reminders before high-impact USD news; gold analysis posts at chosen hours; a daily
+summary. The track record only counts trades actually posted. Preview-only by default. The **Telegram channel** button on every page opens
+[HARRY GOLD RESEARCH](https://t.me/harrygold368).
+
+**New: Backups** (`/sao-luu`). A daily compressed copy of all your data (14 kept), to a USB drive or a Google Drive folder, leaving out bot tokens,
+keys and passwords.
+
 **▶ Live demo (no install):** [Money and trade plan](https://harry-kien.github.io/tradingdashboard/en/ke-hoach.html) · [Trading discipline](https://harry-kien.github.io/tradingdashboard/en/ky-luat.html) · [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
 
 **Install (Windows):** only MetaTrader 5 logged in to a **demo** account is needed. Open MT5 and double-click `BAT_DAU.bat`: on first run it
@@ -97,6 +120,8 @@ see [HUONG_DAN.md](HUONG_DAN.md) (Vietnamese) for details.
 
 **Data:** prices from your local MT5 (read-only, demo accounts only by default; the server listens on 127.0.0.1 only). Download-only internet
 sources: ForexFactory weekly calendar, news RSS, CFTC COT reports, alternative.me Fear & Greed — each can be turned off in the config.
+Sent out only when you turn it on: the Telegram group (through your bot; the token stays in `du-lieu/telegram-token.txt` and is never shown or
+backed up), and Ask AI / the tutor (questions go to Anthropic with your API key, only when you click).
 
 **Disclaimer:** figures describe the market and re-measurements on past data; they are **not investment advice**. No signal or method here has
 been proven profitable. CFDs and Forex are leveraged and carry a high risk of losing money.

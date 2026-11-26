@@ -49,7 +49,7 @@ def trang_thai(cfg: dict, out: Path, now: datetime | None = None) -> dict:
     if not a.get('bat'):
         chan.append('Phần AI đang tắt trong cấu hình.')
     if not co_khoa():
-        chan.append('Chưa có khóa API của Anthropic trên máy này (đặt biến ANTHROPIC_API_KEY như hướng dẫn trong VAN_HANH_NHANH.md).')
+        chan.append('Chưa có khóa API của Anthropic trên máy này (đặt biến ANTHROPIC_API_KEY như hướng dẫn trong HUONG_DAN.md, mục Tính năng tùy chọn).')
     if song.ly_do() is not None:
         chan.append(f'Chưa có giá trực tiếp từ MT5: {song.ly_do()}.')
     if hom_nay >= toi_da:

@@ -7,7 +7,6 @@ không báo nhầm. Chỉ đọc; không sửa gì."""
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -17,6 +16,18 @@ from .doc_so import VN
 CHAM_EA_GIO = 6            # nhật ký EA cũ hơn giá gần nhất chừng này giờ thì coi là đứng
 CHAM_KHO_PHUT = 120        # kho nến chậm hơn giá trực tiếp chừng này phút thì coi là đứng
 LICH_CON_NGAY = 7          # lịch tin còn phủ ít hơn chừng này ngày thì nhắc
+
+
+def cho_tuan_moi(phu: datetime, now: datetime) -> bool:
+    """Lịch mạng ForexFactory chỉ có tuần hiện tại (tệp tuần sau không có), nên từ tin cuối của tuần (thường tối thứ Sáu) tới khi lịch tuần mới
+    lên có một khoảng trống rơi vào lúc thị trường vàng nghỉ. Đúng khi `phu` rơi vào thứ Sáu tới Chủ nhật và `now` chưa qua 06:00 UTC thứ Hai
+    kế tiếp (13 giờ Việt Nam)."""
+    if phu.weekday() < 4:
+        return False
+    thu_hai = datetime.combine(phu.astimezone(timezone.utc).date() + timedelta(days=7 - phu.astimezone(timezone.utc).weekday()), datetime.min.time(),
+                               tzinfo=timezone.utc) + timedelta(hours=6)
+    return now < thu_hai
+TEP_DU_LIEU_MOI = Path(__file__).resolve().parent.parent / 'out' / 'du-lieu-moi.json'   # kết quả đo lại trên dữ liệu mới (bài kiểm thay bằng tệp tạm)
 COT_CU_NGAY = 17           # báo cáo COT mới nhất cũ hơn chừng này ngày thì nhắc (bình thường tối đa khoảng 11 ngày)
 
 
@@ -135,21 +146,35 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
     # ---- lịch tin
     if g.get('lich_tin'):
         try:
-            from ai import snapshot as SN                                  # noqa: PLC0415
+            from ai import snapshot as SN                                  # noqa: PLC0415, F401 - chỉ để biết mã của EA nạp được
             tin, phu = gia.tin_usd(g)
             if phu is None:
                 them('Lịch tin USD', 'loi', 'Không đọc được tệp lịch tin.', 'Thiếu lịch tin thì trang không biết lúc nào cần né tin.')
             else:
                 con = (phu - now).total_seconds() / 86400
                 toi = sum(1 for t in tin if t > now)
-                if con < 0:
+                if con < 0 and gia.NGUON_TIN.get('mang_phu') == phu and cho_tuan_moi(phu, now):
+                    them('Lịch tin USD', 'chu_y', f'Lịch mạng tuần này hết lúc {_gio(phu)}. ForexFactory đăng lịch tuần mới vào cuối tuần và webapp tự tải mỗi giờ; '
+                         'thị trường vàng nghỉ từ tối thứ Sáu tới sáng thứ Hai nên lúc này chưa có tin nào cần né.',
+                         'Nếu tới 13 giờ thứ Hai (giờ Việt Nam) vẫn chưa có lịch tuần mới, xuất lại tệp lịch từ MT5.')
+                elif con < 0:
                     them('Lịch tin USD', 'loi', f'Lịch đã hết từ {_gio(phu)}. Trang đang không biết tin nào sắp ra.',
                          'Xuất lại tệp lịch từ MT5 theo hướng dẫn của dự án EA Promax. Cho tới lúc đó, phần "né tin" và cảnh báo trước tin không hoạt động.')
+                elif con < LICH_CON_NGAY and (gia.NGUON_TIN.get('ea_phu') or phu) < phu:      # tệp EA sắp hết, lịch mạng đang bù
+                    them('Lịch tin USD', 'chu_y', f'Tệp lịch của EA chỉ phủ tới {_gio(gia.NGUON_TIN["ea_phu"])}. Webapp tự bù bằng lịch mạng ForexFactory '
+                         f'(đang phủ tới {_gio(phu)}, tự tải tuần mới mỗi giờ), nên né tin, cảnh báo, tin sắp ra và nhóm Telegram vẫn chạy; {toi} tin USD mức cao sắp tới.',
+                         'Lịch mạng né đúng các loại tin MT5 xếp mức cao, nhưng EA Promax trong MT5 vẫn cần tệp mới: xuất lại tệp lịch từ MT5 khi tiện.')
                 elif con < LICH_CON_NGAY:
                     them('Lịch tin USD', 'chu_y', f'Lịch chỉ còn phủ tới {_gio(phu)} (còn {con:.0f} ngày), {toi} tin USD mức cao sắp tới.',
                          'Xuất lại tệp lịch từ MT5 trước ngày đó, nếu không phần "né tin" sẽ lặng lẽ ngừng hoạt động.')
                 else:
-                    them('Lịch tin USD', 'tot', f'Lịch phủ tới {_gio(phu)}, {toi} tin USD mức cao sắp tới.')
+                    ea = gia.NGUON_TIN.get('ea_phu')
+                    if ea is not None and ea < phu and (ea - now).total_seconds() / 86400 < LICH_CON_NGAY:
+                        them('Lịch tin USD', 'chu_y', f'Tệp lịch của EA chỉ phủ tới {_gio(ea)}. Webapp đang bù bằng lịch mạng ForexFactory tới {_gio(phu)} '
+                             f'(né tin, cảnh báo, tin sắp ra, nhóm Telegram vẫn chạy; {toi} tin USD mức cao sắp tới).',
+                             'Lịch mạng né đúng các loại tin MT5 xếp mức cao, nhưng EA Promax trong MT5 vẫn cần tệp mới: xuất lại tệp lịch từ MT5 khi tiện.')
+                    else:
+                        them('Lịch tin USD', 'tot', f'Lịch phủ tới {_gio(phu)}, {toi} tin USD mức cao sắp tới.')
         except Exception as e:                                             # noqa: BLE001
             them('Lịch tin USD', 'loi', f'{type(e).__name__}: {e}')
 
@@ -227,7 +252,7 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
     except Exception as e:                                                     # noqa: BLE001 - phần tự kiểm tra không được tự làm hỏng mình
         them('Nhật ký và mô hình', 'chu_y', f'Không đọc được trạng thái: {type(e).__name__}: {e}', '')
     try:                                                                       # đo lại trên dữ liệu mới: nhắc khi lâu chưa chạy hoặc có luật đang lỗ rõ
-        tep = Path(__file__).resolve().parent.parent / 'out' / 'du-lieu-moi.json'
+        tep = TEP_DU_LIEU_MOI
         if tep.exists():
             kq = json.loads(tep.read_text(encoding='utf-8'))
             tuoi = (now - datetime.fromisoformat(kq['luc'])).days
@@ -243,6 +268,25 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
             them('Đo lại trên dữ liệu mới', 'chu_y', 'Chưa chạy lần nào.', 'Chạy DO_LAI_DU_LIEU_MOI.bat khoảng mỗi tháng.')
     except Exception as e:                                                     # noqa: BLE001
         them('Đo lại trên dữ liệu mới', 'chu_y', f'Không đọc được kết quả: {type(e).__name__}: {e}')
+    try:                                                                       # nhóm Telegram
+        from . import telegram_nhom                                            # noqa: PLC0415
+        m = telegram_nhom.muc_suc_khoe()
+        them(m['ten'], m['muc'], m['chi_tiet'], m.get('lam', ''))
+    except Exception as e:                                                     # noqa: BLE001
+        them('Nhóm Telegram', 'chu_y', f'Không đọc được trạng thái: {type(e).__name__}: {e}')
+    try:                                                                       # sao lưu toàn bộ hệ thống
+        from . import sao_luu                                                  # noqa: PLC0415
+        m = sao_luu.muc_suc_khoe()
+        them(m['ten'], m['muc'], m['chi_tiet'], m.get('lam', ''))
+    except Exception as e:                                                     # noqa: BLE001
+        them('Sao lưu toàn bộ', 'chu_y', f'Không đọc được trạng thái: {type(e).__name__}: {e}')
+    try:                                                                       # giữ máy thức (kênh Telegram, nhật ký, sao lưu cần máy thức)
+        from . import giu_thuc                                                 # noqa: PLC0415
+        m = giu_thuc.muc_suc_khoe(cfg)
+        if m:
+            them(m['ten'], m['muc'], m['chi_tiet'], m.get('lam', ''))
+    except Exception as e:                                                     # noqa: BLE001
+        them('Giữ máy thức', 'chu_y', f'Không đọc được trạng thái: {type(e).__name__}: {e}')
     dem = {k: sum(m['muc'] == k for m in muc) for k in ('tot', 'chu_y', 'loi')}
     muc.sort(key=lambda m: {'loi': 0, 'chu_y': 1, 'tot': 2}[m['muc']])
     return {'luc': now.isoformat(), 'dem': dem, 'muc': muc}

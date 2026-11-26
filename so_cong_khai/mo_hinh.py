@@ -5,6 +5,10 @@ Mức đã kiểm được (cong-cu/huan_luyen.py; học 2015–2021, kiểm tr�
 bằng chung khoảng 0,1R mỗi lệnh ở cả năm năm, nhưng tính chung nhóm đó mới quanh hòa vốn. Vì vậy đây là một con số để tham khảo và để nhật ký
 điểm vào kiểm chứng bằng giá thật, KHÔNG phải tín hiệu vào lệnh. Mô hình chỉ học trên vàng nên chỉ chấm điểm cho vàng.
 
+Ngoài phép tách một lần ở trên, kiem_cheo() kiểm chéo 6 phần theo thời gian, bỏ khỏi phần học các tín hiệu có kết quả chồng lên phần kiểm và
+một vùng cấm sau nó (purged CV). Đo ngày 25/11/2026 trên 69.902 tín hiệu: nhóm 10% cao nhất tốt hơn mặt bằng ở 6/6 phần (−0,02R so với
+−0,15R mỗi lệnh) nhưng chỉ có lãi ở 1/6 phần, AUC 0,524; không loại chồng lấn thì gần như y hệt, tức mô hình không ăn nhờ rò rỉ.
+
 Huấn luyện cần scikit-learn (đã có sẵn trên máy); chấm điểm lúc chạy chỉ cần numpy. Chỉ đọc tệp nến; không nối MT5, không đặt lệnh.
 """
 from __future__ import annotations
@@ -21,11 +25,14 @@ import pandas as pd
 from . import gia, hoc, phuong_phap as PP
 from .__main__ import HERE
 
-PHIEN_BAN = 9                      # 9: nến nhiều năm sửa lệch giờ (25/11/2026)
+PHIEN_BAN = 10                     # 10: thêm kiểm chéo có loại chồng lấn (purged CV); 9: nến nhiều năm sửa lệch giờ (25/11/2026)
 NGUONG = 90                # điểm từ mức này trở lên là "nhóm 10% cao nhất" đã được kiểm ngoài mẫu
 TPS = (0.25, 0.5, 1.0, 1.5, 2.0, 3.0)       # các mức chốt lời được đo, tính theo bội số của khoản rủi ro
 HOC_TOI = 2021             # phép kiểm ngoài mẫu: mô hình chỉ học tới hết năm này, rồi được chấm trên các năm sau
 DAC = ['rui_atr', 'bien_do', 'gio_sin', 'gio_cos', 'thu', 'thuan_h1', 'thuan_d1', 'cach_ema50', 'rsi', 'vi_tri_24h', 'di_4h', 'than_nen', 'bien_nen', 'cho', 'dt_cung', 'dt_nguoc']
+CV_K = 6                   # số phần của phép kiểm chéo theo thời gian
+H_NHAN = pd.Timedelta(days=4)  # kết quả một tín hiệu biết được sau tối đa 4 giờ chờ khớp + 1.440 nến 1 phút (qua cuối tuần thì dài hơn 1 ngày)
+CAM_TY_LE = 0.01           # vùng cấm sau phần kiểm: 1% độ dài dữ liệu (ít nhất H_NHAN), vì đặc trưng dùng cửa sổ quá khứ dài (EMA200 D1, 24 giờ)
 _khoa = threading.Lock()
 _tt: dict = {'key': None, 'kq': None, 'dang': False, 'loi': None}
 
@@ -142,6 +149,53 @@ def _p(X: np.ndarray, tb, lech, he_so, chan) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-(((X - tb) / lech) @ he_so + chan)))
 
 
+def auc(y: np.ndarray, p: np.ndarray) -> float | None:
+    """Diện tích dưới đường ROC (0,5 là đoán bừa, 1 là xếp đúng hoàn toàn), tính bằng hạng (Mann–Whitney), không cần thư viện ngoài."""
+    y = np.asarray(y, dtype=bool)
+    n1, n0 = int(y.sum()), int((~y).sum())
+    if not n1 or not n0:
+        return None
+    h = pd.Series(np.asarray(p, dtype=float)).rank().to_numpy()
+    return float((h[y].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
+def kiem_cheo(d: pd.DataFrame, k: int = CV_K, loc: bool = True, hoc_fn=None) -> dict:
+    """Kiểm chéo k phần theo thời gian (López de Prado, Advances in Financial Machine Learning, 2018, chương 7).
+    Mỗi lượt lấy một quãng liền làm phần kiểm, học trên phần còn lại. `loc=True`: bỏ khỏi phần học (1) mọi tín hiệu có kết quả chồng lên quãng
+    kiểm (giờ tín hiệu trong [đầu − H_NHAN, cuối]) và (2) vùng cấm ngay sau quãng kiểm; `loc=False` là kiểm chéo thường, để so mức rò rỉ.
+    Mỗi lượt đo: AUC, và nhóm 10% điểm cao nhất (ngưỡng lấy từ phần học) so với mọi tín hiệu của phần kiểm, chốt ở 2R."""
+    hoc_fn = hoc_fn or _hoc
+    d = d.sort_values('t', kind='stable').reset_index(drop=True)
+    t = pd.DatetimeIndex(d['t'])
+    X, r2 = d[cot()].to_numpy(dtype=float), d['r2'].to_numpy(dtype=float)
+    cam = max(H_NHAN, (t[-1] - t[0]) * CAM_TY_LE)
+    bien = np.array_split(np.arange(len(d)), k)
+    gap = []
+    for idx in bien:
+        a, b = t[idx[0]], t[idx[-1]]
+        kiem = np.zeros(len(d), dtype=bool)
+        kiem[idx] = True
+        hoc_ = ~kiem
+        if loc:
+            hoc_ &= ~((t >= a - H_NHAN) & (t <= b)) & ~((t > b) & (t <= b + cam))
+        th = hoc_fn(d[hoc_])
+        p_k, p_h = _p(X[kiem], *th), _p(X[hoc_], *th)
+        top = p_k >= np.quantile(p_h, 0.9)
+        rk = r2[kiem]
+        a_ = auc(rk > 0, p_k)
+        gap.append({'tu': a.date().isoformat(), 'den': b.date().isoformat(), 'n_hoc': int(hoc_.sum()), 'n_bo': int((~kiem).sum() - hoc_.sum()),
+                    'n': int(kiem.sum()), 'auc': None if a_ is None else round(a_, 3), 'r_tb': round(float(rk.mean()), 3),
+                    'n_top': int(top.sum()), 'top_r_tb': round(float(rk[top].mean()), 3) if top.any() else None,
+                    'top_ty_le': round(float((rk[top] > 0).mean() * 100), 1) if top.any() else None})
+    co = [g for g in gap if g['top_r_tb'] is not None]
+    nt = sum(g['n_top'] for g in co)
+    return {'k': k, 'loc': loc, 'ngay_chong': H_NHAN.days, 'ngay_cam': round(cam.total_seconds() / 86400, 1), 'gap': gap,
+            'auc_tb': round(float(np.mean([g['auc'] for g in gap if g['auc'] is not None])), 3),
+            'top_r_tb': round(sum(g['top_r_tb'] * g['n_top'] for g in co) / nt, 3) if nt else None,
+            'r_tb': round(float(r2.mean()), 3), 'so_phan_hon': sum(g['top_r_tb'] > g['r_tb'] for g in co),
+            'so_phan_lai': sum(g['top_r_tb'] > 0 for g in co)}
+
+
 def huan(cfg: dict) -> dict:
     """Huấn luyện và tự kiểm ngoài mẫu. Trả tham số mô hình (dạng số thuần, lưu được thành JSON) cùng kết quả kiểm."""
     d = du_lieu(cfg)
@@ -158,12 +212,14 @@ def huan(cfg: dict) -> dict:
     nhom = lambda x: [int(len(x)), round(float((x['r2'] > 0).mean() * 100), 1), round(float(x['r2'].mean()), 3)]      # noqa: E731
     dong_thuan = {'cung': [nhom(d[d['dt_cung'] == 0]), nhom(d[d['dt_cung'] == 1]), nhom(d[d['dt_cung'] >= 2])],
                   'nguoc': [nhom(d[d['dt_nguoc'] == 0]), nhom(d[d['dt_nguoc'] >= 1])], 'phut': DT_PHUT}
+    cv = {'loc': kiem_cheo(d, loc=True), 'thuong': kiem_cheo(d, loc=False)}
     tb, lech, he_so, chan = _hoc(d)                                # mô hình dùng thật: học trên toàn bộ dữ liệu
     p = _p(d[cot()].to_numpy(dtype=float), tb, lech, he_so, chan)
     return {'phien_ban': PHIEN_BAN, 'tinh_luc': datetime.now(timezone.utc).isoformat(), 'n': int(len(d)), 'tu_nam': int(d['nam'].min()), 'cot': cot(),
             'tb': tb.tolist(), 'lech': lech.tolist(), 'he_so': he_so.tolist(), 'chan': chan, 'phan_vi': np.quantile(p, np.linspace(0, 1, 101)).tolist(),
             'ngoai_mau': {'hoc_toi': HOC_TOI, 'tu': HOC_TOI + 1, 'den': int(d['nam'].max()), 'tat_ca': so(ngoai), 'top10': so(chon),
-                          'bac': {'tat_ca': thang(ngoai), 'top10': thang(chon)}, 'theo_nam': theo_nam}, 'bac_thang': bac, 'nguong': NGUONG, 'dong_thuan': dong_thuan}
+                          'bac': {'tat_ca': thang(ngoai), 'top10': thang(chon)}, 'theo_nam': theo_nam}, 'bac_thang': bac, 'nguong': NGUONG, 'dong_thuan': dong_thuan,
+            'kiem_cheo': cv}
 
 
 def diem(mh: dict, x: dict) -> dict | None:
@@ -260,7 +316,8 @@ def gan(cfg: dict, fr: dict, plans: list[dict]) -> dict | None:
             pa['dong_thuan'] = {'cung': int(x['dt_cung']), 'nguoc': int(x['dt_nguoc'])} if x else None
         except Exception:                                                      # noqa: BLE001 - thiếu đặc trưng thì bỏ điểm, không làm hỏng phương án
             pa['mo_hinh'] = None
-    return {'san_sang': True, 'n': mh['n'], 'tu_nam': mh['tu_nam'], 'ngoai_mau': mh['ngoai_mau'], 'bac_thang': mh.get('bac_thang') or {}, 'nguong': mh.get('nguong', NGUONG), 'dong_thuan': mh.get('dong_thuan')}
+    return {'san_sang': True, 'n': mh['n'], 'tu_nam': mh['tu_nam'], 'ngoai_mau': mh['ngoai_mau'], 'bac_thang': mh.get('bac_thang') or {}, 'nguong': mh.get('nguong', NGUONG), 'dong_thuan': mh.get('dong_thuan'),
+            'kiem_cheo': mh.get('kiem_cheo')}
 
 
 if __name__ == '__main__':                                                     # python -X utf8 -m so_cong_khai.mo_hinh

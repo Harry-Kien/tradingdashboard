@@ -18,9 +18,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import gia, kiem_chung, phuong_phap
+from . import gia, kiem_chung, phuong_phap, qua_khop
 
-PHIEN_BAN = 15                    # 15: nến nhiều năm sửa lệch giờ (so_cong_khai/sua_gio.py, 25/11/2026)
+PHIEN_BAN = 19                    # 19: lãi lỗ theo năm (số năm có lãi); 18: mô phỏng lại chuỗi lệnh (khoảng tin cậy, sụt giảm xấu); 17: thêm lãi/lỗ trung bình và tỷ lệ thắng hòa vốn; 16: điểm khớp quá khứ (PBO, DSR — qua_khop.py)
+#                                 15: nến nhiều năm sửa lệch giờ (so_cong_khai/sua_gio.py, 25/11/2026)
 PHIEN = (('Á', 0, 7), ('Âu', 7, 12), ('Mỹ', 12, 20), ('cuối ngày', 20, 24))        # theo giờ UTC của lúc vào lệnh
 MUC = (0.8, 1.25)                                  # ATR14 H1 so với trung vị 720 nến H1: dưới 0,8 là thấp, trên 1,25 là cao
 TOI_THIEU = 30                                     # số lệnh ít nhất ở mỗi nửa để dám nhận xét
@@ -105,7 +106,116 @@ def _so(ls: list[dict]) -> dict:
     if not n:
         return {'n': 0}
     usd = [x['usd'] for x in ls]
-    return {'n': n, 'ty_le': round(sum(u > 0 for u in usd) / n * 100, 1), 'usd_tb': round(sum(usd) / n, 2), 'tong': round(sum(usd), 2)}
+    return {'n': n, 'ty_le': round(sum(u > 0 for u in usd) / n * 100, 1), 'usd_tb': round(sum(usd) / n, 2), 'tong': round(sum(usd), 2), **hoa_von(usd),
+            **sut_giam(usd)}
+
+
+def sut_giam(usd: list[float]) -> dict:
+    """Sụt giảm lớn nhất của đường lãi lỗ cộng dồn (từ đỉnh xuống đáy sau nó, USD dương) và chuỗi lệnh không thắng liền nhau dài nhất.
+    Theo đúng thứ tự lệnh; đây là con số người dùng phải chịu được nếu làm theo phương pháp, dù cuối cùng có lãi."""
+    dinh = cong = sut = 0.0
+    chuoi = dai = 0
+    for u in usd:
+        cong += u
+        dinh = max(dinh, cong)
+        sut = max(sut, dinh - cong)
+        chuoi = chuoi + 1 if u <= 0 else 0
+        dai = max(dai, chuoi)
+    return {'sut_max': round(sut, 2), 'chuoi_thua': dai}
+
+
+MP_LAN = 2000                                      # số lần mô phỏng lại chuỗi lệnh
+
+
+def mo_phong(usd: list[float], lan: int = MP_LAN, seed: int = 7) -> dict | None:
+    """Mô phỏng lại chuỗi lệnh bằng lấy mẫu lại theo khối (moving block bootstrap, Künsch 1989): ghép các đoạn lệnh liền nhau dài
+    `khoi` lệnh, chọn ngẫu nhiên có lặp, đến đủ số lệnh thật. Giữ theo khối để các chuỗi thua liền nhau trong thực tế không bị xáo tan.
+    Trả: 'tb_ci' khoảng 95% của lãi lỗ trung bình mỗi lệnh, 'xs_lai' tỷ lệ lần mô phỏng có tổng dương, 'sut_p50'/'sut_p95' sụt giảm lớn
+    nhất ở lần mô phỏng trung vị và ở mức xấu 5%. Cùng `seed` thì ra cùng số. None khi dưới 30 lệnh (quá ít để mô phỏng có nghĩa)."""
+    import numpy as np                                                     # noqa: PLC0415
+    x = np.asarray(usd, dtype=float)
+    n = len(x)
+    if n < TOI_THIEU:
+        return None
+    khoi = max(5, round(n ** (1 / 3)))
+    m = -(-n // khoi)
+    rng = np.random.default_rng(seed)
+    tb, sut = np.empty(lan), np.empty(lan)
+    buoc = max(1, 2_000_000 // (m * khoi))                                  # chia lượt để bộ nhớ không quá vài chục MB
+    for a in range(0, lan, buoc):
+        b = min(lan, a + buoc)
+        dau = rng.integers(0, n - khoi + 1, size=(b - a, m))
+        idx = (dau[:, :, None] + np.arange(khoi)).reshape(b - a, -1)[:, :n]
+        c = np.cumsum(x[idx], axis=1)
+        tb[a:b] = c[:, -1] / n
+        sut[a:b] = (np.maximum(np.maximum.accumulate(c, axis=1), 0) - c).max(axis=1)
+    lo, hi = np.percentile(tb, [2.5, 97.5])
+    return {'lan': lan, 'khoi': int(khoi), 'tb_ci': [round(float(lo), 2), round(float(hi), 2)], 'xs_lai': round(float((tb > 0).mean()), 3),
+            'sut_p50': round(float(np.median(sut)), 2), 'sut_p95': round(float(np.percentile(sut, 95)), 2)}
+
+
+KY_TOI_THIEU = 10                                  # một năm (tháng) cần ít nhất chừng này lệnh mới được tính vào số kỳ có lãi
+
+
+def theo_ky(ls: list[dict], ky: str = 'nam') -> dict | None:
+    """Lãi lỗ theo từng năm (ky='nam') hoặc từng tháng (ky='thang'): 'ds' = [[kỳ, số lệnh, % thắng, USD mỗi lệnh, tổng]] theo thứ tự thời gian;
+    'so_ky' = số kỳ có ít nhất KY_TOI_THIEU lệnh, 'ky_lai' = trong số đó bao nhiêu kỳ tổng dương. Trả lời câu hỏi: lãi đến đều qua các kỳ, hay chỉ
+    nhờ một hai kỳ may. None khi chưa có lệnh nào."""
+    nhom: dict = {}
+    for x in ls:
+        t = pd.Timestamp(x['t'])
+        nhom.setdefault(t.year if ky == 'nam' else f'{t.year}-{t.month:02d}', []).append(x)
+    if not nhom:
+        return None
+    ds = []
+    for k in sorted(nhom):
+        s = _so(nhom[k])
+        ds.append([k, s['n'], s['ty_le'], s['usd_tb'], s['tong']])
+    du = [r for r in ds if r[1] >= KY_TOI_THIEU]
+    return {'ky': ky, 'ds': ds, 'so_ky': len(du), 'ky_lai': sum(r[4] > 0 for r in du)}
+
+
+def _them_mo_phong(r: dict, ls: list[dict], ky: str = 'nam') -> dict:
+    """Gắn kết quả mô phỏng và lãi lỗ theo kỳ vào số đo 'tat_ca' của một luật hoặc phương pháp (chỉ ở cấp này: các nhóm bối cảnh quá nhỏ
+    và quá nhiều). `ky`: 'nam' cho dữ liệu nhiều năm, 'thang' cho dữ liệu chưa đầy năm."""
+    if not r.get('tat_ca', {}).get('n'):
+        return r
+    mp = mo_phong([x['usd'] for x in ls])
+    if mp:
+        r['tat_ca']['mo_phong'] = mp
+    tk = theo_ky(ls, ky)
+    if tk:
+        r['tat_ca']['theo_ky'] = tk
+    return r
+
+
+def _vn(x: float) -> str:
+    return f'{x:g}'.replace('.', ',')
+
+
+def hoa_hong(cfg: dict) -> float:
+    """Hoa hồng của sàn người dùng ghi trong Cài đặt: USD cho mỗi 1 lot, tính cả mở và đóng (0 nếu chưa ghi)."""
+    try:
+        v = float((cfg.get('hoc') or {}).get('hoa_hong_lot') or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return v if 0 < v <= 100 else 0.0
+
+
+def hoa_von(usd: list[float]) -> dict:
+    """Lãi trung bình mỗi lệnh thắng (W), lỗ trung bình mỗi lệnh không thắng (L, tính cả lệnh hòa) và tỷ lệ thắng hòa vốn L / (W + L).
+    Kỳ vọng mỗi lệnh = p·W − (1 − p)·L với p là tỷ lệ thắng, nên phương pháp có lãi khi và chỉ khi tỷ lệ thắng thực tế vượt tỷ lệ hòa vốn."""
+    w = [u for u in usd if u > 0]
+    lo = [-u for u in usd if u <= 0]
+    W = sum(w) / len(w) if w else None
+    L = sum(lo) / len(lo) if lo else None
+    if not lo:
+        hv = 0.0
+    elif not w:
+        hv = 100.0                                                                  # không có lệnh thắng nào: không thể hòa vốn
+    else:
+        hv = L / (W + L) * 100
+    return {'lai_tb': None if W is None else round(W, 2), 'lo_tb': None if L is None else round(L, 2), 'hoa_von': round(hv, 1)}
 
 
 def nhan_xet(hoc: dict, kiem: dict) -> tuple[str, str]:
@@ -203,9 +313,11 @@ def chay(cfg: dict) -> dict:
     m1 = _m1_dai(g, tu_nam)
     fr = _khung(m1, g)
     sp = float(g.get('spread', 0.17))
+    hh = hoa_hong(cfg)
+    phi = phuong_phap.PHI + hh / 100                                       # vàng: 0,01 lot = 1 oz, nên 1 USD giá = 1 USD lãi lỗ
     tu, den = m1.index[0], fr['het']
     cat = tu + (pd.Timestamp(den) - tu) * TY_LE_HOC
-    out.update(tu=tu.isoformat(), den=den.isoformat(), cat=cat.isoformat(), so_ngay=int((pd.Timestamp(den) - tu).days), spread=sp,
+    out.update(tu=tu.isoformat(), den=den.isoformat(), cat=cat.isoformat(), so_ngay=int((pd.Timestamp(den) - tu).days), spread=sp, hoa_hong_lot=hh,
                gia_dau=round(float(m1['open'].iloc[0]), 2), gia_cuoi=round(float(m1['close'].iloc[-1]), 2))
     tin: list = []
     tin_tat: list = []
@@ -224,7 +336,7 @@ def chay(cfg: dict) -> dict:
         try:
             r = fn()
             ls = sorted(r.pop('lenh'), key=lambda x: x['t'])
-            out['luat'][ma] = {'cach': r.get('cach', ''), 'tat_ca': _so(ls), 'theo': thong_ke(ls, ti, cat)}
+            out['luat'][ma] = _them_mo_phong({'cach': r.get('cach', ''), 'tat_ca': _so(ls), 'theo': thong_ke(ls, ti, cat)}, ls)
             ls_luat[ma] = ls
         except Exception as e:                                             # noqa: BLE001 - một luật hỏng không chặn luật khác
             out['loi'].append(f'{ma}: {type(e).__name__}: {e}')
@@ -270,20 +382,28 @@ def chay(cfg: dict) -> dict:
                     out['luat']['dinh_day']['dai'] = d
             except Exception as e:                                         # noqa: BLE001
                 out['loi'].append(f'dinh_day trên quãng dài: {type(e).__name__}: {e}')
+    lenh_pp: dict = {}
     for ma, tt in phuong_phap.DS.items():
         try:
             th = phuong_phap.quet(ma, frp['M15'], frp['H1'])
-            ls = phuong_phap.cham(th, m1p, sp)
-            ls2 = phuong_phap.cham(th, m1p, sp, theo_muc_tieu=True)
-            ls1 = phuong_phap.cham(th, m1p, sp, tp_r=1.0)
+            ls = phuong_phap.cham(th, m1p, sp, phi=phi)
+            ls2 = phuong_phap.cham(th, m1p, sp, phi=phi, theo_muc_tieu=True)
+            ls1 = phuong_phap.cham(th, m1p, sp, phi=phi, tp_r=1.0)
+            lenh_pp.update({ma: ls, f'{ma}·1R': ls1, f'{ma}·mục tiêu': ls2})
             out['luat'][ma] = {'cach': f'Chạy lại đúng quy tắc của phương pháp trên nến 1 phút: mỗi lúc một lệnh, chốt ở {phuong_phap.TP_R:g}R, '
-                                       f'giữ tối đa {phuong_phap.GIU_PHUT // 60} giờ, phí {phuong_phap.PHI:g} mỗi lệnh.'.replace('0.18', '0,18'),
+                                       f'giữ tối đa {phuong_phap.GIU_PHUT // 60} giờ, đã trừ spread {_vn(sp)}, phí ước tính {_vn(phuong_phap.PHI)} mỗi lệnh'
+                                       + (f' và hoa hồng {_vn(hh)} USD mỗi lot.' if hh else '.'),
                                'tu': tup.isoformat(), 'cat': catp.isoformat(), 'den': pd.Timestamp(den).isoformat(),
                                'tat_ca': _so(ls), 'theo': thong_ke(ls, tip, catp),
                                'theo_muc_tieu': {'tat_ca': _so(ls2), **{k: v for k, v in thong_ke(ls2, tip, catp).items() if '|' not in k}},
                                'r1': {'tat_ca': _so(ls1), **{k: v for k, v in thong_ke(ls1, tip, catp).items() if '|' not in k}}}
+            _them_mo_phong(out['luat'][ma], ls)
         except Exception as e:                                             # noqa: BLE001
             out['loi'].append(f'{ma}: {type(e).__name__}: {e}')
+    try:                                                                   # điểm khớp quá khứ: mọi cấu hình đã thử, cùng lúc
+        out['qua_khop'] = qua_khop.danh_gia(lenh_pp, ls_luat)
+    except Exception as e:                                                 # noqa: BLE001
+        out['loi'].append(f'Điểm khớp quá khứ: {type(e).__name__}: {e}')
     return out
 
 
@@ -292,7 +412,7 @@ def _key(cfg: dict) -> str:
     g = cfg['gia']
     goc = Path(os.path.expandvars(g.get('d1_goc') or 'x')).with_name('XAUUSDp_M1.csv')
     return json.dumps([PHIEN_BAN, int((cfg.get('hoc') or {}).get('tu_nam', 2024)), os.path.getmtime(goc) if goc.exists() else None,
-                       gia.khung(g)['het'].date().isoformat(), g.get('spread', 0.17)])
+                       gia.khung(g)['het'].date().isoformat(), g.get('spread', 0.17), hoa_hong(cfg)])
 
 
 def _tep(out: Path) -> Path:

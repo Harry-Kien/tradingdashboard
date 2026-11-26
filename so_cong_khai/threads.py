@@ -143,7 +143,7 @@ def anh_the(path: Path, loai: str, b: dict, start: datetime, lang: str, ten: str
     W, H, M = 1080, 1350, 80
     im = Image.new('RGB', (W, H), NEN)
     d = ImageDraw.Draw(im)
-    serif, serif_b = 'cambria.ttc', 'cambriab.ttf'
+    serif_b = 'cambriab.ttf'
     f_nhan, f_h1, f_phu = _font('seguisb.ttf', 26), _font(serif_b, 84), _font('segoeui.ttf', 30)
     f_so, f_nho, f_dong, f_chan = _font(serif_b, 92), _font('seguisb.ttf', 22), _font('segoeui.ttf', 32), _font('segoeui.ttf', 24)
     end = start + timedelta(days=6)

@@ -3,4 +3,6 @@ pandas>=2.2
 numpy>=1.26
 MetaTrader5>=5.0.45
 defusedxml>=0.7
-# Không bắt buộc: Pillow (ảnh bài đăng tuần), scikit-learn (mô hình xác suất của nhật ký, mặc định tắt)
+# Không bắt buộc: Pillow (ảnh bài đăng tuần), scikit-learn (mô hình xác suất của nhật ký, mặc định tắt),
+# playwright (ảnh biểu đồ kèm tin Telegram; sau khi cài chạy: python -m playwright install chromium), ruff (dò lỗi mã, chỉ khi sửa mã).
+# Hỏi AI và Học với gia sư không cần thêm thư viện, chỉ cần khóa API (xem HUONG_DAN.md, mục Tính năng tùy chọn).

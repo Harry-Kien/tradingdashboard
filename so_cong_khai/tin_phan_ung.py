@@ -14,6 +14,11 @@ from .__main__ import HERE
 _nho: dict = {}
 
 
+# Tên tin trong lịch ForexFactory (lịch mạng, dùng khi tệp lịch của EA hết hạn) → tên trong lịch MT5 mà số đo phản ứng giá dùng
+TEN_FF = {**gia.FF_MT5, 'Fed Chair Powell Speaks': 'Fed Chair Powell Speech',
+          'Flash Manufacturing PMI': 'S&P Global Manufacturing PMI', 'Flash Services PMI': 'S&P Global Services PMI'}
+
+
 def thong_ke(tep: Path | None = None) -> dict | None:
     tep = tep or HERE / 'out' / 'phan-ung-tin.json'
     try:
@@ -32,7 +37,7 @@ def tin_toi(cfg: dict, now: datetime | None = None, n: int = 3, tep: Path | None
     theo = {z['ten']: z for z in tk.get('loai', [])}
     ds = []
     for x in gia.tin_sap_toi(cfg, now, n):
-        z = theo.get(x['ten']) or {}
+        z = theo.get(x['ten']) or theo.get(TEN_FF.get(x['ten'], '')) or {}
         luc = datetime.fromisoformat(x['luc'])
         ds.append({'luc': x['luc'], 'ten': x['ten'], 'con_phut': int((luc - now).total_seconds() // 60), 'n': z.get('n'),
                    'd15_tv': z.get('gan_day_d15_tv') or z.get('d15_tv'), 'd15_p90': z.get('gan_day_d15_p90') or z.get('d15_p90'),   # số từ 2024 (mức giá gần với hiện nay)

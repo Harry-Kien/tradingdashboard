@@ -14,7 +14,7 @@ from pathlib import Path
 from .doc_so import VN
 
 from .logo import LOGO_NHO  # noqa: E402
-from .thuong_hieu import TEN  # noqa: E402
+from .thuong_hieu import KENH_TELEGRAM, TEN  # noqa: E402
 
 BIEU_TUONG = f'<link rel="icon" type="image/webp" href="{LOGO_NHO}">'               # logo nhúng sẵn (so_cong_khai/logo.py)
 MIEN_TRU_GOC = 'Đây là số liệu tín hiệu, tài khoản demo và chạy bóng, không phải kết quả tiền thật, lời hứa lợi nhuận hay lời khuyên đầu tư.'
@@ -894,7 +894,7 @@ def _khoi_hien_tai(h: dict, live: bool = False) -> str:
            f'<div><h3>Lệnh đang mở ({len(lenh)})</h3>']
     if lenh:
         out.append(_table(['Nguồn', 'Loại', 'Giá vào', 'SL', 'TP kế tiếp'],
-                          [[_nhan_lenh(o), 'demo' if o.get('loai') == 'demo' else 'tín hiệu', so(o['vao']) if o.get('vao') is not None else '—',
+                          [[_nhan_lenh(o),'demo' if o.get('loai') == 'demo' else 'tín hiệu', so(o['vao']) if o.get('vao') is not None else '—',
                             so(o['sl']) if o.get('sl') is not None else '—', so(o['tp'][0]) if o.get('tp') else '—'] for o in lenh], right={2, 3, 4}))
     else:
         out.append('<p class="small">Bot và các EA demo không có lệnh nào đang mở.</p>')
@@ -972,7 +972,9 @@ MENU = [
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
         ('cac-tai-khoan', 'Các tài khoản đã nối', '/cac-tai-khoan', 'Mọi MT5 bạn đã thêm, demo và tiền thật: vốn, lãi lỗ, thắng thua, rủi ro', 'tk'),
-        ('tong', 'Sổ công khai', '/', 'Kết quả bot, EA demo và chạy bóng', 'so')], 'nk'),
+        ('tong', 'Sổ công khai', '/', 'Kết quả bot, EA demo và chạy bóng', 'so'),
+        ('telegram', 'Nhóm Telegram', '/telegram', 'Tín hiệu, kết quả từng lệnh, tin sắp ra gửi vào một nhóm cố định', 'tin'),
+        ('sao-luu', 'Sao lưu', '/sao-luu', 'Mỗi ngày một bản sao mã, nhật ký, kết quả đo; chọn nơi cất', 'nk')], 'nk'),
     ('hoc', 'Học', None, [
         ('hoc', 'Học giao dịch', '/hoc-giao-dich', 'CFD, Forex, loại lệnh, 16 phong cách', 'hoc'),
         ('kien-thuc', 'Kiến thức', '/kien-thuc', 'Giải thích từng chỉ báo và luật trong hệ thống', 'kt2')], 'hoc'),
@@ -1010,6 +1012,7 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
     sub = f'<nav class="subnav" aria-label="Các phần của trang"><div>{muc}</div></nav>' if muc else ''
     return (f'<header class="nv" data-tim="{tim_js}"><div class="nv-in">{logo}<nav class="nv-chinh" aria-label="Điều hướng chính">{"".join(chinh)}</nav>'
             f'<div class="nv-phai"><button type="button" class="nv-tim-b" aria-label="Tìm mã hoặc trang (Ctrl+K)">{hinh("tim")}<span>Tìm mã, trang…</span><kbd>Ctrl K</kbd></button>'
+            f'<a class="nv-tg" href="{escape(KENH_TELEGRAM)}" target="_blank" rel="noopener" title="Kênh Telegram" aria-label="Kênh Telegram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.3 18.7 19.5c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-5 9.2-8.3c.4-.4-.1-.6-.6-.2L6.2 13.2l-4.9-1.5c-1-.3-1.1-1 .2-1.6L20.6 2.9c.9-.3 1.6.2 1.3 1.4z"/></svg><span>Kênh Telegram</span></a>'
             f'<button type="button" class="nv-lang" id="nv-lang" title="Đổi ngôn ngữ">EN</button>'
             f'{phai}<button type="button" class="nv-mb" aria-label="Mở menu" aria-expanded="false">{hinh("menu")}</button></div></div>{sub}'
             f'<nav class="nv-ngan" hidden aria-label="Menu">{"".join(ngan)}</nav></header>' + GIAM_SAT)
@@ -1236,6 +1239,9 @@ display:inline-flex;align-items:center;justify-content:center;box-shadow:none}
 .nv-phai #theme:hover,.nv-phai #refresh:hover{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 25%,var(--line))}
 .nv-lang{height:36px;min-width:40px;padding:0 9px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font:700 12px/1 inherit;font-family:inherit;
 letter-spacing:.06em;cursor:pointer}.nv-lang:hover{border-color:var(--series);color:var(--series)}
+.nv-tg{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border-radius:10px;background:#2aabee;color:#fff;font:700 12.5px/1 inherit;
+font-family:inherit;text-decoration:none;white-space:nowrap}.nv-tg:hover{background:#1f96d3}.nv-tg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.nv-tg svg{width:16px;height:16px;fill:currentColor;flex:none}
 .nv-mb{display:none;height:36px;width:36px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);cursor:pointer;align-items:center;justify-content:center}
 .nv-ngan{border-top:1px solid var(--line);padding:8px 12px 14px;max-height:calc(100vh - var(--nv-h));overflow:auto;background:var(--bg)}
 .nv-ngan[hidden]{display:none}
@@ -1247,7 +1253,7 @@ html.nv-khoa{overflow:hidden}
 .nv .subnav{border-top:1px solid var(--line);background:transparent}.nv .subnav>div{max-width:1520px;padding:0 20px}.nv .subnav a{display:inline-block;padding:8px 0;color:var(--mute);text-decoration:none}
 .nv .subnav a:hover{color:var(--ink)}
 .tt-tabs{top:var(--nv-h)}
-@media(max-width:1180px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd{display:none}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}
+@media(max-width:1180px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd,.nv-tg span{display:none}.nv-tg{padding:0 10px}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}
 @media(max-width:960px){.nv-chinh{display:none}.nv-mb{display:inline-flex}.nv-in{padding:0 12px}.nv .subnav>div{padding:0 12px}}
 @media(max-width:420px){.nv-tn b{font-size:13px}}
 /* điện thoại: vùng bấm tối thiểu 24 px cho liên kết trong bảng và ô đánh dấu (WCAG 2.5.8) */

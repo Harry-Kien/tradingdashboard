@@ -559,7 +559,7 @@ class BangGia:
         while time.monotonic() - t0 < het_giay:
             with self._dk:
                 if v >= 0:
-                    self._dk.wait_for(lambda: self.phien != v, timeout=cho)
+                    self._dk.wait_for(lambda: self.phien != v, timeout=cho)   # noqa: B023 - wait_for gọi hàm ngay trong khối khóa, v chưa đổi
                 if self.phien == v:
                     goi = None
                 else:

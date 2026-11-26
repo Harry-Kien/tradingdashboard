@@ -9,10 +9,8 @@ và mức chốt lời của chúng là con số của vàng. Áp cho mã khác 
 Các hàm chỉ báo dùng lại của dự án (EMA, ATR, đỉnh/đáy 2 giờ, vùng giá) đều tính theo tỷ lệ nên dùng được cho mọi mã."""
 from __future__ import annotations
 
-import os
 import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import pandas as pd
 

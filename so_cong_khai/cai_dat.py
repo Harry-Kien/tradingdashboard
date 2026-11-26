@@ -23,6 +23,8 @@ TRUONG: dict = {
     'gia.ma_vang': ('ma', ''),
     'gia.mt5.chi_demo': ('bat', True),
     'gia.mt5.lech_gio_san': ('lech', None),
+    'gia.spread': ('so', 0.17, 0.0, 5.0),
+    'hoc.hoa_hong_lot': ('so', 0.0, 0.0, 100.0),
     'thi_truong.bat': ('bat', True),
     'thi_truong.chu_ky_giay': ('so', 0.05, 0.02, 2.0),
     'tin_tuc.bat': ('bat', True),
@@ -203,6 +205,10 @@ function ve(){const v=S.gia_tri,mo=S.mt5_dang_mo||[],tu=v['gia.mt5.terminal']||'
  <div class="hang"><label for="ma">Mã vàng<small>${S.chia_se?'tên mã vàng trên sàn của bạn':'máy này dùng mã vàng theo cấu hình EA Promax'}</small></label><div><select id="ma" data-k="gia.ma_vang"${S.chia_se?'':' disabled'}>${optMa.join('')}</select></div></div>
  <div class="hang"><label for="lech">Giờ máy chủ của sàn<small>để trống là tự đo từ tick; chỉ ghi khi giờ trên biểu đồ bị lệch</small></label><div><input type="number" id="lech" data-k="gia.mt5.lech_gio_san" step="0.5" min="-14" max="14" placeholder="tự đo" value="${lech??''}" style="max-width:140px"> giờ so với UTC</div></div>
  <div class="hang"><label></label><div><button type="button" class="phu" id="noi">Nối lại MT5 ngay</button></div></div>
+</section>
+<section class="card"><h2>Chi phí giao dịch khi đo phương pháp</h2><p class="sub">Mọi số đo quá khứ (tỷ lệ thắng, hòa vốn, lãi lỗ mỗi lệnh, DSR) đã trừ các chi phí này. Ghi đúng theo sàn của bạn để số đo sát với lệnh thật; đổi xong, phần đo tự tính lại sau vài phút.</p>
+ <div class="hang"><label for="sp">Spread vàng<small>chênh lệch Bid/Ask thường gặp, tính bằng USD giá (0,17 là 17 cent)</small></label><div><input type="number" id="sp" data-k="gia.spread" step="0.01" min="0" max="5" value="${v['gia.spread']}" style="max-width:140px"> USD</div></div>
+ <div class="hang"><label for="hh">Hoa hồng của sàn<small>USD cho mỗi 1 lot, tính cả mở và đóng (ví dụ 7); tài khoản không hoa hồng thì để 0</small></label><div><input type="number" id="hh" data-k="hoc.hoa_hong_lot" step="0.5" min="0" max="100" value="${v['hoc.hoa_hong_lot']}" style="max-width:140px"> USD mỗi lot</div></div>
 </section>
 <section class="card"><h2>Bảng giá và dữ liệu</h2><p class="sub">Các mục dưới đây là những chỗ duy nhất webapp gọi ra Internet (tin tức, lịch kinh tế, COT).</p>
  ${cb('thi_truong.bat','Bảng giá Thị trường','Đọc giá mọi mã trong MT5 cho trang Thị trường và Công cụ. Cần khởi động lại webapp khi bật/tắt.')}

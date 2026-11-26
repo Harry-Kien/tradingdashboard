@@ -46,7 +46,7 @@ def tu_dien(lang: str) -> dict:
     return d
 
 
-_TU_KHONG_DAU = re.compile(r'(?<![A-Za-z])(mua|theo|sau|xem|khi|vao|nao|cho)(?![A-Za-z])', re.I)   # từ tiếng Việt không dấu hay gặp
+_TU_KHONG_DAU = re.compile(r'(?<![A-Za-z])(mua|theo|sau|xem|khi|vao|nao|cho|khung|thua)(?![A-Za-z])', re.I)   # từ tiếng Việt không dấu hay gặp
 
 
 _DINH_DANH = re.compile(r'[#.]?[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)+|[#.][A-Za-z0-9_-]+|[A-Z0-9_]+')   # tên trong mã: #pl-vao, tn-xem, cho_khop, MUA
@@ -308,7 +308,8 @@ def dich_js(s: str, d: dict, thu: set | None = None) -> str:
 
 
 # --------------------------------------------------------------------------- JSON
-_KHOA_GIU = {'link', 'url', 'id', 'ma', 'goc', 'sym', 'ma_nguon', 'k', 'h', 'h2', 'i', 'lop', 'huong', 'nguon_id'}       # mã, đường dẫn: không dịch
+_KHOA_GIU = {'link', 'url', 'id', 'ma', 'goc', 'sym', 'ma_nguon', 'k', 'h', 'h2', 'i', 'lop', 'huong', 'nguon_id',
+             'tra_loi', 'chu_gs', 'ban_do'}                         # lời của gia sư (đã đúng ngôn ngữ của buổi học) và lời người học       # mã, đường dẫn: không dịch
 
 
 def dich_json(x, d: dict, thu: set | None = None, khoa_cha: str = ''):

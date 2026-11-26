@@ -5,7 +5,8 @@ Cùng quy tắc và cùng cách thống kê với hoc.py (chia 70% học, 30% ki
 
 - MT5 chỉ giữ chừng 100.000 nến mỗi khung, nên nến 1 phút chỉ có khoảng 69 ngày. Vì vậy lệnh được chấm bằng nến 5 phút: thô hơn nến 1 phút,
   và khi một nến chạm cả dừng lỗ lẫn chốt lời thì vẫn tính dừng lỗ.
-- Spread lấy trung vị của chính dữ liệu (cột spread của MT5). Phí hoa hồng của sàn không có trong dữ liệu nên CHƯA được trừ.
+- Spread lấy trung vị của chính dữ liệu (cột spread của MT5). Phí hoa hồng của sàn không có trong dữ liệu: trừ theo mức người dùng ghi trong
+  Cài đặt (USD mỗi lot, cả mở và đóng); chưa ghi thì chưa trừ.
 - Lãi lỗ quy ra USD ở 0,01 lot theo giá trị một bước giá mà MT5 đang báo cho mã đó.
 
 Chỉ đọc nến của mã đang hiện trong Market Watch; không chọn mã, không đặt lệnh.
@@ -22,7 +23,7 @@ import pandas as pd
 
 from . import da_ma, gia, hoc, phuong_phap, song
 
-PHIEN_BAN = 1
+PHIEN_BAN = 5                                   # 5: lãi lỗ theo tháng; 4: mô phỏng lại chuỗi lệnh; 3: trừ hoa hồng theo Cài đặt; 2: thêm điểm khớp quá khứ (PBO, DSR)
 TOI_DA_M5 = 99_999         # MT5 từ chối lời đọc từ 100.000 nến trở lên
 BUOC = 5                   # số phút của nến dùng để chấm lệnh
 _khoa = threading.Lock()
@@ -64,6 +65,8 @@ def chay(cfg: dict, ma: str, now: datetime | None = None) -> dict:
     """Chạy lại mọi phương pháp tùy chọn trên nến của mã `ma` từ đầu năm. Cùng dạng kết quả với hoc.chay()."""
     now = now or datetime.now(timezone.utc)
     m5, sp, he_so, s = _doc(cfg, ma, now)
+    hh = hoc.hoa_hong(cfg) if he_so else 0.0                       # không quy được ra USD thì không trừ được hoa hồng tính bằng USD
+    phi = hh / 100 / he_so if hh else 0.0                          # hoa hồng ở 0,01 lot, đổi ra đơn vị giá: cham() nhân lại với he_so
     if len(m5) < 3000:
         raise ValueError(f'MT5 chỉ có {len(m5)} nến M5 của {ma} trong năm nay, chưa đủ để đo')
     d = int(s.digits)
@@ -77,25 +80,34 @@ def chay(cfg: dict, ma: str, now: datetime | None = None) -> dict:
     ti = hoc.ty_le_bien_do(fr['H1'])
     vn = lambda x: f'{x:,.{d}f}'.translate(str.maketrans(',.', '.,'))          # noqa: E731
     out: dict = {'phien_ban': PHIEN_BAN, 'ma': ma, 'tinh_luc': now.isoformat(), 'tu_nam': now.year, 'luat': {}, 'loi': [],
-                 'tu': tu.isoformat(), 'den': het.isoformat(), 'cat': cat.isoformat(), 'so_ngay': int((het - tu).days), 'spread': round(sp, d),
+                 'tu': tu.isoformat(), 'den': het.isoformat(), 'cat': cat.isoformat(), 'so_ngay': int((het - tu).days), 'spread': round(sp, d), 'hoa_hong_lot': hh,
                  'gia_dau': round(float(m5['open'].iloc[0]), d), 'gia_cuoi': round(float(m5['close'].iloc[-1]), d), 'so_nen': len(m5),
                  'don_vi': 'USD ở 0,01 lot' if he_so else 'đơn vị giá',
                  'ghi_chu': f'Đo trên chính {ma}, nến 5 phút đọc từ MT5 demo. Lệnh chấm bằng nến 5 phút (thô hơn nến 1 phút dùng cho vàng; nến chạm cả '
-                            f'dừng lỗ lẫn chốt lời thì tính dừng lỗ). Đã trừ spread {vn(sp)}; phí hoa hồng của sàn chưa được trừ. Chưa đầy một năm dữ liệu, '
+                            f'dừng lỗ lẫn chốt lời thì tính dừng lỗ). Đã trừ spread {vn(sp)}; ' + (f'đã trừ hoa hồng {hoc._vn(hh)} USD mỗi lot. ' if hh else 'phí hoa hồng của sàn chưa được trừ (ghi trong Cài đặt để trừ). ') + 'Chưa đầy một năm dữ liệu, '
                             'nên nửa kiểm chỉ dài khoảng ba tháng.'}
+    lenh_pp: dict = {}
     for pp in phuong_phap.DS:
         try:
             th = phuong_phap.quet(pp, fr['M15'], fr['H1'])
-            ls = phuong_phap.cham(th, m5, sp, phi=0.0, buoc=BUOC, he_so=he_so or 1.0)
-            ls2 = phuong_phap.cham(th, m5, sp, phi=0.0, buoc=BUOC, he_so=he_so or 1.0, theo_muc_tieu=True)
-            ls1 = phuong_phap.cham(th, m5, sp, phi=0.0, buoc=BUOC, he_so=he_so or 1.0, tp_r=1.0)
+            ls = phuong_phap.cham(th, m5, sp, phi=phi, buoc=BUOC, he_so=he_so or 1.0)
+            ls2 = phuong_phap.cham(th, m5, sp, phi=phi, buoc=BUOC, he_so=he_so or 1.0, theo_muc_tieu=True)
+            ls1 = phuong_phap.cham(th, m5, sp, phi=phi, buoc=BUOC, he_so=he_so or 1.0, tp_r=1.0)
+            lenh_pp.update({pp: ls, f'{pp}·1R': ls1, f'{pp}·mục tiêu': ls2})
             out['luat'][pp] = {'cach': f'Chạy lại đúng quy tắc của phương pháp trên nến 5 phút của {ma}: mỗi lúc một lệnh, chốt ở {phuong_phap.TP_R:g}R, '
-                                       f'giữ tối đa {phuong_phap.GIU_PHUT // 60} giờ, đã trừ spread, chưa trừ phí hoa hồng.',
+                                       f'giữ tối đa {phuong_phap.GIU_PHUT // 60} giờ, đã trừ spread, '
+                                       + (f'đã trừ hoa hồng {hoc._vn(hh)} USD mỗi lot.' if hh else 'chưa trừ phí hoa hồng.'),
                                'tat_ca': hoc._so(ls), 'theo': hoc.thong_ke(ls, ti, cat),
                                'theo_muc_tieu': {'tat_ca': hoc._so(ls2), **{k: v for k, v in hoc.thong_ke(ls2, ti, cat).items() if '|' not in k}},
                                'r1': {'tat_ca': hoc._so(ls1), **{k: v for k, v in hoc.thong_ke(ls1, ti, cat).items() if '|' not in k}}}
+            hoc._them_mo_phong(out['luat'][pp], ls, 'thang')                # chưa đầy một năm dữ liệu: xét theo tháng
         except Exception as e:                                             # noqa: BLE001 - một phương pháp hỏng không chặn phương pháp khác
             out['loi'].append(f'{pp}: {type(e).__name__}: {e}')
+    try:                                                                   # điểm khớp quá khứ (dữ liệu ngắn: tính theo tuần)
+        from . import qua_khop                                             # noqa: PLC0415
+        out['qua_khop'] = qua_khop.danh_gia(lenh_pp)
+    except Exception as e:                                                 # noqa: BLE001
+        out['loi'].append(f'Điểm khớp quá khứ: {type(e).__name__}: {e}')
     return out
 
 
@@ -106,7 +118,7 @@ def _tep(out: Path, ma: str) -> Path:
 def lay(cfg: dict, out: Path, ma: str, cho: bool = False, now: datetime | None = None) -> dict:
     """Kết quả của mã `ma` nếu đã có cho hôm nay (bộ nhớ hoặc out/hoc-<mã>.json); chưa có thì tính ở nền và trả {'san_sang': False}."""
     now = now or datetime.now(timezone.utc)
-    key = json.dumps([PHIEN_BAN, hoc.PHIEN_BAN, ma, now.date().isoformat()])
+    key = json.dumps([PHIEN_BAN, hoc.PHIEN_BAN, ma, now.date().isoformat(), hoc.hoa_hong(cfg)])
     with _khoa:
         tt = _tt.setdefault(ma, {'key': None, 'kq': None, 'dang': False, 'loi': None, 'bat_dau': None})
         if tt['key'] == key and tt['kq'] is not None:
