@@ -10,7 +10,7 @@ Bảng điều khiển giao dịch Forex và CFD chạy ngay trên máy tính c�
 Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5. Dữ liệu của bạn chỉ rời máy khi bạn tự bật một tính năng gửi đi (nhóm Telegram,
 Hỏi AI, gia sư), xem mục Dữ liệu và quyền riêng tư.
 
-**▶ Xem demo trực tuyến (không cần cài):** [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Kỷ luật giao dịch](https://harry-kien.github.io/tradingdashboard/ky-luat.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/)
+**▶ Xem demo trực tuyến (không cần cài):** [Trang giới thiệu](https://harry-kien.github.io/tradingdashboard/) · [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Kỷ luật giao dịch](https://harry-kien.github.io/tradingdashboard/ky-luat.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/hieu-suat.html) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/hieu-suat.html)
 
 ![Bảng giá trực tiếp](docs/bang-gia.jpg)
 
@@ -111,7 +111,7 @@ summary. The track record only counts trades actually posted. Preview-only by de
 **New: Backups** (`/sao-luu`). A daily compressed copy of all your data (14 kept), to a USB drive or a Google Drive folder, leaving out bot tokens,
 keys and passwords.
 
-**▶ Live demo (no install):** [Money and trade plan](https://harry-kien.github.io/tradingdashboard/en/ke-hoach.html) · [Trading discipline](https://harry-kien.github.io/tradingdashboard/en/ky-luat.html) · [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
+**▶ Live demo (no install):** [Home](https://harry-kien.github.io/tradingdashboard/en/) · [Money and trade plan](https://harry-kien.github.io/tradingdashboard/en/ke-hoach.html) · [Trading discipline](https://harry-kien.github.io/tradingdashboard/en/ky-luat.html) · [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/hieu-suat.html)
 
 **Install (Windows):** only MetaTrader 5 logged in to a **demo** account is needed. Open MT5 and double-click `BAT_DAU.bat`: on first run it
 installs Python if missing (asks first, via the built-in winget) and the libraries, creates a **Harry Gold Research** desktop shortcut and opens
