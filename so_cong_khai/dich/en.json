@@ -2730,6 +2730,7 @@
 "đang chạy. Luật như bảng Technical Ratings của TradingView: dao động chỉ báo mua khi ở vùng quá bán và đang quay lên, nên phần lớn là trung tính. Đây là tóm tắt trạng thái chỉ báo, chưa được kiểm chứng là có lợi thế; các luật đơn giản đo trong sổ của bạn phần lớn không có lãi.": "in progress. Rules follow TradingView’s Technical Ratings: an oscillator signals buy only when it is in the oversold zone and turning up, so most readings are neutral. This is a summary of indicator states, not verified to give an edge; most simple rules measured in your records are not profitable.",
 "đang chờ khớp hoặc đang mở": "pending fill or open",
 "đang chờ lần đọc đầu…": "waiting for the first read…",
+"đang khởi động": "starting",
 "đang lỗi": "failing",
 "đang mở": "open",
 "đang mở, đã đạt {0}/{1} TP": "open, {0}/{1} TPs hit",

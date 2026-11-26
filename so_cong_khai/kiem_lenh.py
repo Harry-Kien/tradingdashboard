@@ -249,7 +249,74 @@ def cham(lenh: dict, du: dict, quy_tac: dict | None = None) -> dict:
     elif kt:
         them('kt', 'tin', ('Không đi ngược tín hiệu kỹ thuật mạnh ở khung lớn', 'Tín hiệu kỹ thuật mô tả hiện trạng, không dự báo giá.'),
              ('Not against strong higher-timeframe signals', 'Technical signals describe the current state; they do not forecast price.'))
+    # 13. lịch sử của chính người dùng với kiểu lệnh này
+    m = cham_lich_su(du.get('lich_su'), lenh['ma'], lenh['chieu'], now, du.get('tien', 'USD'))
+    if m:
+        muc.append(m)
     return _ket(kq, muc)
+
+
+DU_MAU = 10                          # nhóm ít lệnh hơn thì không kết luận
+NGAY_LICH_SU = 180
+
+
+def _phien(t: datetime) -> str:
+    from .hieu_suat import PHIEN                                             # noqa: PLC0415
+    h = t.astimezone(timezone.utc).hour
+    return next(p for p, a, b in PHIEN if a <= h < b)
+
+
+def cham_lich_su(ls: list[dict] | None, ma: str, chieu: str, now: datetime, tien: str = 'USD') -> dict | None:
+    """So lệnh định vào với lệnh ĐÃ ĐÓNG của chính người dùng (hieu_suat: mỗi lệnh {ma, chieu, mo, rong, r}): chọn nhóm cụ thể nhất có từ DU_MAU
+    lệnh trở lên — cùng mã + chiều + phiên lúc này, rồi cùng mã + chiều, rồi cùng mã — và cho biết nhóm đó đang thắng hay thua.
+    Kỳ vọng âm (lãi ròng trung bình mỗi lệnh < 0): 'chu_y'; dương: 'tot'; chưa đủ lệnh: 'tin'. None nếu không có dữ liệu lịch sử."""
+    from .hieu_suat import NHOM_EN                                           # noqa: PLC0415
+    if ls is None:
+        return None
+    ph = _phien(now)
+    cv, ce = ('MUA', 'BUY') if chieu == 'MUA' else ('BÁN', 'SELL')
+    nhom = [
+        ([x for x in ls if x['ma'] == ma and x['chieu'] == chieu and _phien(datetime.fromisoformat(x['mo'])) == ph],
+         f'lệnh {cv} {ma} vào phiên {ph}', f'{ce} {ma} trades in the {NHOM_EN.get(ph, ph)} session'),
+        ([x for x in ls if x['ma'] == ma and x['chieu'] == chieu], f'lệnh {cv} {ma}', f'{ce} {ma} trades'),
+        ([x for x in ls if x['ma'] == ma], f'lệnh {ma}', f'{ma} trades'),
+    ]
+    chon = next((g for g in nhom if len(g[0]) >= DU_MAU), None)
+    if chon is None:
+        n = len(nhom[1][0])
+        return {'k': 'lich_su', 'muc': 'tin',
+                'vi': {'tieu': f'Chưa đủ lịch sử để so: {n} {nhom[1][1]} trong {NGAY_LICH_SU} ngày',
+                       'noi': f'Cần từ {DU_MAU} lệnh đã đóng trở lên mới đánh giá được kiểu lệnh này của bạn đang thắng hay thua.'},
+                'en': {'tieu': f'Not enough history to compare: {n} {nhom[1][2]} in {NGAY_LICH_SU} days',
+                       'noi': f'At least {DU_MAU} closed trades are needed to tell whether this kind of trade is working for you.'}}
+    g, ten_vi, ten_en = chon
+    n = len(g)
+    thang = sum(1 for x in g if (x.get('rong') or 0) > 0)
+    tong = sum(x.get('rong') or 0 for x in g)
+    rs = [x['r'] for x in g if x.get('r') is not None]
+    r_tb = sum(rs) / len(rs) if rs else None
+    tl = thang / n * 100
+    V, E = (lambda x, d=2: _so(x, d)), (lambda x, d=2: _so(x, d, True))
+    dau = lambda x, f: ('+' if x > 0 else '') + f(x)                         # noqa: E731
+    r_vi = f', trung bình {dau(r_tb, lambda v: V(v))}R mỗi lệnh' if r_tb is not None else ''
+    r_en = f', {dau(r_tb, lambda v: E(v))}R per trade on average' if r_tb is not None else ''
+    so_vi = f'{n} {ten_vi} của bạn trong {NGAY_LICH_SU} ngày: thắng {V(tl, 0)}%, tổng {dau(tong, V)} {tien}{r_vi}.'
+    so_en = f'Your {n} {ten_en} in the last {NGAY_LICH_SU} days: {E(tl, 0)}% winners, total {dau(tong, E)} {tien}{r_en}.'
+    if chon is nhom[2]:
+        # chưa đủ lệnh cùng chiều: chỉ cho xem kết quả chung của mã, không kết luận về chiều này (có thể toàn lệnh chiều ngược lại)
+        n1 = len(nhom[1][0])
+        return {'k': 'lich_su', 'muc': 'tin',
+                'vi': {'tieu': f'Chưa có đủ {nhom[1][1]} để so ({n1} lệnh)', 'noi': f'Kết quả chung với mã này: {so_vi}'},
+                'en': {'tieu': f'Not enough {nhom[1][2]} to compare ({n1})', 'noi': f'Overall with this symbol: {so_en}'}}
+    if tong < 0:
+        return {'k': 'lich_su', 'muc': 'chu_y',
+                'vi': {'tieu': f'Kiểu lệnh này đang làm bạn lỗ: {so_vi}',
+                       'noi': 'Bỏ bớt kiểu lệnh đang thua là cách thực tế nhất để nâng tỷ lệ thắng. Xem lại lý do vào, hoặc chờ điều kiện bạn hay thắng hơn.'},
+                'en': {'tieu': f'This kind of trade is losing you money: {so_en}',
+                       'noi': 'Cutting the kind of trades that lose is the most practical way to raise your win rate. Review your entry reason or wait for conditions that work better for you.'}}
+    return {'k': 'lich_su', 'muc': 'tot',
+            'vi': {'tieu': f'Kiểu lệnh bạn đang làm tốt: {so_vi}', 'noi': 'Kết quả quá khứ không bảo đảm lệnh này thắng; vẫn giữ đúng mức rủi ro.'},
+            'en': {'tieu': f'A kind of trade that works for you: {so_en}', 'noi': 'Past results do not guarantee this trade wins; keep your risk level.'}}
 
 
 def _ket(kq: dict, muc: list[dict]) -> dict:
@@ -320,6 +387,13 @@ def thu_thap(cfg: dict, bang, lenh: dict, now: datetime | None = None) -> dict:
             du['thua_gan_nhat'] = {'dong': dd[0]['luc'], 'lot': dd[0].get('lot')}
     else:
         thieu.append('chưa đọc được tài khoản: ' + str(tk.get('ly_do') or ''))
+    try:                                                                     # lệnh đã đóng của chính người dùng (trang Hiệu suất nhớ 20 giây)
+        from . import hieu_suat                                              # noqa: PLC0415
+        hs = hieu_suat.lay(cfg, NGAY_LICH_SU, now=now)
+        if hs.get('san_sang'):
+            du['lich_su'] = hs.get('lenh') or []
+    except Exception:                                                        # noqa: BLE001 - thiếu lịch sử thì bỏ mục này
+        pass
     try:
         lich = thi_truong.lich_tong(cfg, HERE, now)
         du['tin'] = [e for e in lich.get('ds', []) if e.get('muc') == 3]
