@@ -110,7 +110,7 @@ const st=dt.querySelector('[data-k=thang]'),sm=dt.querySelector('[data-k=ss]');s
 st.addEventListener('change',()=>{ON.thang=+st.value;luu();const B=BD();try{B.LW.chart.priceScale('right').applyOptions({mode:ON.thang})}catch(e){}ve()});
 sm.addEventListener('change',()=>{ON.ss=sm.value;luu();const B=BD();if(B&&B.LW&&!ON.ss)ssBo(B.LW.chart);ssKhoa='';ve()});
 const pop=dt.querySelector('.pop');dt.addEventListener('toggle',()=>{if(!dt.open)return;const dl=v=>{pop.style.setProperty('left',v,'important');pop.style.setProperty('right','auto','important')};dl('0px');const r=pop.getBoundingClientRect(),o=dt.getBoundingClientRect(),mx=document.documentElement.clientWidth-12;if(r.right>mx)dl(Math.max(12-o.left,mx-r.right)+'px')});   // dời sang trái cho vừa màn hình hẹp
-let dsNap=0;dt.addEventListener('toggle',async()=>{if(!dt.open||dsNap)return;dsNap=1;try{const j=await(await fetch('/api/ma',{cache:'no-store'})).json(),B=BD(),hien=B&&B.D&&B.D.khac_vang?B.D.ma:'';
+let dsNap=0;dt.addEventListener('toggle',async()=>{if(!dt.open||dsNap)return;dsNap=1;try{const j=await(await fetch('/api/ma?gon=1',{cache:'no-store'})).json(),B=BD(),hien=B&&B.D&&B.D.khac_vang?B.D.ma:'';
  sm.innerHTML='<option value="">Không so sánh</option>'+(j.ds||[]).filter(x=>x.ma!==hien).map(x=>`<option value="${esc(x.ma)}">${esc(x.ma)}</option>`).join('');sm.value=ON.ss||''}
  catch(e){dsNap=0}});
 if(ON.ss){const o=document.createElement('option');o.value=ON.ss;o.textContent=ON.ss;sm.append(o);sm.value=ON.ss}

@@ -130,7 +130,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 new MutationObserver(()=>{const M=mau();for(const o of O){o.chart.applyOptions({layout:{background:{type:'solid',color:M.bg},textColor:M.ink},rightPriceScale:{borderColor:M.vien},timeScale:{borderColor:M.vien}});
  o.nen.applyOptions({upColor:M.len,downColor:M.xuong,wickUpColor:M.len,wickDownColor:M.xuong})}}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(TT){TT.on((l,ds)=>{if(l==='gia'&&ds)apGia(ds);trangThai()});TT.batDau(60)}
-fetch('/api/ma',{cache:'no-store'}).then(r=>r.json()).then(j=>{DS=(j.ds||[]);const v=DS.find(s=>s.la_vang);VANG=v?v.ma:(DS[0]||{}).ma||'';
+fetch('/api/ma?gon=1',{cache:'no-store'}).then(r=>r.json()).then(j=>{DS=(j.ds||[]);const v=DS.find(s=>s.la_vang);VANG=v?v.ma:(DS[0]||{}).ma||'';
  for(const c of ST.o)if(c.ma&&!DS.some(s=>s.ma===c.ma))c.ma='';dung()}).catch(()=>{dung()});
 window.DK={O,ST}})();
 """

@@ -434,7 +434,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     return self._gui(200, LOAI['.json'], json.dumps(cot.lay(cfg), ensure_ascii=False).encode('utf-8'))
                 if path == '/api/ma':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
-                    return self._gui(200, LOAI['.json'], json.dumps(da_ma.danh_sach(cfg), ensure_ascii=False).encode('utf-8'))
+                    gon = parse_qs(url.query).get('gon', [''])[0] == '1'           # ô chọn mã chỉ cần tên: không tính xu hướng của từng mã
+                    return self._gui(200, LOAI['.json'], json.dumps(da_ma.ten_ma(cfg) if gon else da_ma.danh_sach(cfg), ensure_ascii=False).encode('utf-8'))
                 if path == '/api/kiem-chung':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(kiem_chung.lay(cfg, _out(cfg)), ensure_ascii=False).encode('utf-8'))

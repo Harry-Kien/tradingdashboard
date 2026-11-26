@@ -128,6 +128,20 @@ def danh_sach(cfg: dict, now: datetime | None = None) -> dict:
     return out
 
 
+def ten_ma(cfg: dict) -> dict:
+    """Chỉ tên các mã đang hiện trong Market Watch, cho các ô chọn mã (/api/ma?gon=1): một lần đọc MT5 (đo được 1 ms với 88 mã), cùng thứ tự với
+    danh_sach. Không tính xu hướng, ATR, RSI của từng mã như danh_sach (gần 0,5 giây, và trong lúc đó mọi yêu cầu khác của webapp chậm theo)."""
+    mt5 = _mt5(cfg['gia'])
+    if mt5 is None:
+        return {'san_sang': False, 'ly_do': song.ly_do() or 'chưa nối được MT5', 'ds': []}
+    vang = ma_vang(cfg)
+    with song._khoa:
+        hien = _hien(mt5)
+    ds = [{'ma': ten, 'ten': s.description, 'nhom': _nhom(s.path), 'so_le': int(s.digits), 'la_vang': ten == vang} for ten, s in hien.items()]
+    ds.sort(key=lambda r: (not r['la_vang'], r['nhom'], r['ma']))
+    return {'san_sang': True, 'ds': ds}
+
+
 def _doc(cfg: dict, ma: str, tfs) -> tuple:
     g = cfg['gia']
     mt5 = _mt5(g)
