@@ -965,6 +965,7 @@ MENU = [
     ('so', 'Sổ giao dịch', None, [
         ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
         ('kiem-lenh', 'Kiểm tra trước khi vào lệnh', '/kiem-lenh', 'Khối lượng theo % rủi ro, tin sắp ra, lỗ ngày, tổng rủi ro', 'tinh'),
+        ('ke-hoach', 'Kế hoạch vốn và lệnh', '/ke-hoach', 'Nhập vốn: khối lượng, dừng lỗ, chốt lời, khả năng cháy tài khoản', 'tinh'),
         ('ky-luat', 'Kỷ luật giao dịch', '/ky-luat', 'Chấm lại lệnh đã đóng: lỗi nào đang tốn tiền', 'so'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
@@ -985,7 +986,7 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
     logo = (f'<a class="nv-logo" href="/" aria-label="{escape(ten)} — Tổng quan"><span class="nv-mk"><img src="{LOGO_NHO}" alt="" width="36" height="36" decoding="async"></span>'
             f'<span class="nv-tn"><b>{escape(ten_a.strip() or ten)}</b>' + (f'<small>{escape(ten_b.strip())}</small>' if ten_b.strip() else '') + '</span></a>')
     chinh, ngan, tim = [], [], []
-    for k, n, h, con, ic in MENU:
+    for vt, (k, n, h, con, ic) in enumerate(MENU):
         if not con:
             on = k == trang_hien
             chinh.append(f'<a class="nv-a" href="{h}"' + (' aria-current="page"' if on else '') + f'>{escape(n)}</a>')
@@ -996,7 +997,9 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
         cur = lambda ck, ch: ck == trang_hien and '#' not in ch               # noqa: E731 - mục con là trang đang xem
         muc_con = ''.join(f'<a class="nv-i" href="{ch}"' + (' aria-current="page"' if cur(ck, ch) else '') + f'>{hinh(ci)}<span><b>{escape(cn)}</b><small>{escape(cm)}</small></span></a>'
                           for ck, cn, ch, cm, ci in con)
-        chinh.append(f'<div class="nv-g{" rong" if len(con) > 4 else ""}"><button type="button" class="nv-a{" on" if on else ""}" aria-expanded="false" aria-haspopup="true">'
+        # menu hai cột (rộng 560px) của nhóm ở nửa phải thanh điều hướng canh theo mép phải nút, không thì tràn khỏi màn hình 1024px
+        lop = (' rong' + (' phai' if vt >= len(MENU) / 2 else '')) if len(con) > 4 else ''
+        chinh.append(f'<div class="nv-g{lop}"><button type="button" class="nv-a{" on" if on else ""}" aria-expanded="false" aria-haspopup="true">'
                      f'{escape(n)}{hinh("xuong", "ic nv-x")}</button><div class="nv-m">{muc_con}</div></div>')
         ngan.append(f'<p class="nv-dh">{escape(n)}</p>' + ''.join(f'<a class="nv-d" href="{ch}"' + (' aria-current="page"' if cur(ck, ch) else '') + f'>{escape(cn)}{hinh(ci)}</a>'
                                                                for ck, cn, ch, _, ci in con))
@@ -1186,7 +1189,7 @@ font:500 13.5px/1 inherit;font-family:inherit;text-decoration:none;cursor:pointe
 .nv-g{position:relative}
 .nv-m{position:absolute;top:calc(100% + 10px);left:-8px;min-width:300px;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;
 box-shadow:0 18px 50px -12px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.12);display:grid;gap:2px;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .14s,transform .14s,visibility .14s}
-.nv-g.rong .nv-m{grid-template-columns:1fr 1fr;min-width:560px}
+.nv-g.rong .nv-m{grid-template-columns:1fr 1fr;min-width:560px}.nv-g.phai .nv-m{left:auto;right:-8px}
 .nv-g.mo .nv-m{opacity:1;visibility:visible;transform:none}
 .nv-m::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
 .nv-i{display:flex;gap:11px;align-items:flex-start;padding:9px 10px;border-radius:10px;color:var(--ink);text-decoration:none}

@@ -57,7 +57,9 @@ function datGia(){const x=giaMa();if(!x||!x.q)return;$('#kl-vao').value=(chieu==
 async function taiMa(){try{const r=await fetch('/api/thi-truong',{cache:'no-store'});const j=await r.json();DS=(j.ds||[]).filter(x=>x.q);
   const u=new URLSearchParams(location.search),chon=u.get('ma')||localStorage.getItem('kl-ma')||(DS.find(x=>/XAU/.test(x.ma))||DS[0]||{}).ma;
   $('#kl-ma').innerHTML=DS.map(x=>`<option value="${esc(x.ma)}"${x.ma===chon?' selected':''}>${esc(x.goc||x.ma)} · ${esc(x.ten||'')}</option>`).join('');
-  if(u.get('chieu')==='BAN'){chieu='BAN'}boChieu();if(!$('#kl-vao').value)datGia()}
+  if(u.get('chieu')==='BAN'){chieu='BAN'}boChieu();
+  for(const[k,id]of[['vao','#kl-vao'],['sl','#kl-sl'],['tp','#kl-tp'],['rui_ro','#kl-rr']]){const v=u.get(k);if(v&&isFinite(parseFloat(v))){$(id).value=v;if(k==='sl')daSl=true}}
+  if(!$('#kl-vao').value)datGia()}
  catch(e){$('#kl-kq').innerHTML=`<p class="kl-cho">Không đọc được danh sách mã: ${esc(e.message)}</p>`}}
 function boChieu(){document.querySelectorAll('#kl-ch button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===chieu))}
 if(LG==='en')document.querySelectorAll('#kl-ch button').forEach(b=>{b.textContent=b.dataset.v==='MUA'?'BUY':'SELL'});
