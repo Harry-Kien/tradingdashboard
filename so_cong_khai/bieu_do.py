@@ -143,10 +143,12 @@ try{kieu=localStorage.getItem('so-kieu3')||'toi';Object.assign(on,JSON.parse(loc
 const ANH=new URLSearchParams(location.search).get('anh')==='1';if(ANH){const q=new URLSearchParams(location.search).get('tf')||'';if(/^(M1|M5|M15|M30|H1|H4|D1)$/.test(q))tf=q;document.documentElement.classList.add('anh')}
 const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const defN=()=>Math.max(40,Math.min(160,Math.floor(((C.clientWidth||($('#lw')||C).clientWidth)-70)/7)));   // màn hình hẹp thì vẽ ít nến hơn để nến đủ rộng
-const f2=v=>v==null?'—':Number(v).toLocaleString('vi-VN',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fp=v=>v==null?'—':Number(v).toLocaleString('vi-VN',{minimumFractionDigits:dg,maximumFractionDigits:dg});   // giá, theo số chữ số của mã đang xem
-const vn=(t,day)=>new Date(t*1000).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',...(day?{}:{hour:'2-digit',minute:'2-digit'})});
-const vnN=(t,day)=>new Date(t*1000).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',...(day?{}:{hour:'2-digit',minute:'2-digit'})});
+const NFS={},nfs=d=>NFS[d]||(NFS[d]=new Intl.NumberFormat('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d}));   // dùng lại bộ định dạng: nhanh hơn toLocaleString nhiều lần
+const f2=v=>v==null?'—':nfs(2).format(Number(v));
+const fp=v=>v==null?'—':nfs(dg).format(Number(v));   // giá, theo số chữ số của mã đang xem
+const DTS={},dts=k=>DTS[k]||(DTS[k]=new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',...(k&2?{year:'numeric'}:{}),...(k&1?{}:{hour:'2-digit',minute:'2-digit'})}));
+const vn=(t,day)=>dts(day?1:0).format(new Date(t*1000));
+const vnN=(t,day)=>dts(2|(day?1:0)).format(new Date(t*1000));
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const kv=(k,v)=>`<div class="kv"><span>${k}</span><b>${v}</b></div>`;
 // Bảng màu biểu đồ. "mt5": nền đen, nến viền xanh lá, thân nến tăng đen và nến giảm trắng, lưới chấm xám, bid xám, ask đỏ.
@@ -211,10 +213,16 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
   grid:{vertLines:{color:P.grid,style:1},horzLines:{color:P.grid,style:1}}});
  LW.nen.applyOptions({upColor:P.bull,downColor:P.bear,wickUpColor:P.wick,wickDownColor:P.wickDn,borderUpColor:P.wick,borderDownColor:P.wickDn,priceLineColor:P.bid,
   priceFormat:{type:'price',precision:dg,minMove:Math.pow(10,-dg)}});
- LW.idx.clear();
- LW.nen.setData(cs.map((k,i)=>{LW.idx.set(k[0],i);const u=k[4]>=k[1],o={time:k[0],open:k[1],high:k[2],low:k[3],close:k[4]};
-  if(i===D.live){o.color=mo(u?P.bull:P.bear);o.wickColor=mo(u?P.wick:P.wickDn);o.borderColor=mo(u?P.wick:P.wickDn)}return o}));
- const duong=(s,arr,col,bat)=>{const co=!!bat&&!!arr;s.applyOptions({color:col,visible:co});if(co)s.setData(cs.map((k,i)=>arr[i]==null?{time:k[0]}:{time:k[0],value:arr[i]}))};
+ const giong=(a,b)=>!!a&&!!b&&a.time===b.time&&a.value===b.value&&a.open===b.open&&a.high===b.high&&a.low===b.low&&a.close===b.close&&a.color===b.color;
+ const datDuoi=(s,mk,dau)=>{const n=cs.length,t0=n?cs[0][0]:0,c=s.__c;let tu=-1;
+  if(!moi&&c&&c.t0===t0&&c.n>=2&&n>=c.n&&n-c.n<=5){tu=c.n-1;for(let j=Math.max(c.k0,c.n-4);j<c.n-1;j++)if(!giong(mk(j),c.d[j-c.k0])){tu=-1;break}}
+  let ok=false;if(tu>=0)try{for(let i=tu;i<n;i++)s.update(mk(i));ok=true}catch(e){}
+  if(!ok){if(dau)dau();s.setData(cs.map((k,i)=>mk(i)))}
+  const k0=Math.max(0,n-4);s.__c={t0,n,k0,d:Array.from({length:n-k0},(_,j)=>mk(k0+j))}};
+ const nenLW=i=>{const k=cs[i];LW.idx.set(k[0],i);const u=k[4]>=k[1],o={time:k[0],open:k[1],high:k[2],low:k[3],close:k[4]};
+  if(i===D.live){o.color=mo(u?P.bull:P.bear);o.wickColor=mo(u?P.wick:P.wickDn);o.borderColor=mo(u?P.wick:P.wickDn)}return o};
+ datDuoi(LW.nen,nenLW,()=>LW.idx.clear());
+ const duong=(s,arr,col,bat)=>{const co=!!bat&&!!arr;s.applyOptions({color:col,visible:co});if(co)datDuoi(s,i=>arr[i]==null?{time:cs[i][0]}:{time:cs[i][0],value:arr[i]});else s.__c=null};
   duong(LW.e20,D.ema20,P.ema20,on.ema20);duong(LW.e50,D.ema50,P.ema50,on.ema50);duong(LW.bbt,D.bb_tren,P.mute,on.bb);duong(LW.bbd,D.bb_duoi,P.mute,on.bb);
   duong(LW.e200,D.ema200,'#e040fb',on.ema200);
   const tach=(a,ch,dau)=>a&&ch?a.map((v,i)=>ch[i]===dau?v:null):null;          // SuperTrend: đoạn tăng và đoạn giảm là hai chuỗi, không nối qua chỗ đổi chiều
@@ -232,7 +240,7 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
     else if(k==='sto'){LW.sk=them(LWC.LineSeries,{lineWidth:2,color:'#2962ff',priceFormat:{type:'price',precision:1,minMove:.1}});LW.sd=them(LWC.LineSeries,{lineWidth:1,color:'#ff6d00',lastValueVisible:false});moc(LW.sk,[80,20])}
     else if(k==='atr')LW.atr=them(LWC.LineSeries,{lineWidth:2,color:'#7e57c2'})});
    const caoKhung=()=>{try{c.panes().forEach((pa,i)=>pa.setStretchFactor(i?(DAO.length>2?.2:.26):1))}catch(e){}};caoKhung()}   // đặt cao sau khi đủ khung: đặt từng khung lúc thêm thì khung sau ép khung trước
-  const ghi=(s,a,mau)=>{if(s&&a)s.setData(cs.map((k,i)=>a[i]==null?{time:k[0]}:{time:k[0],value:a[i],...(mau?{color:mau(a[i])}:{})}))};
+  const ghi=(s,a,mau)=>{if(s&&a)datDuoi(s,i=>a[i]==null?{time:cs[i][0]}:{time:cs[i][0],value:a[i],...(mau?{color:mau(a[i])}:{})})};
   if(LW.rsi){LW.rsi.applyOptions({color:P.rsi});ghi(LW.rsi,D.rsi)}
   if(DAO.includes('macd')){ghi(LW.mcot,D.macd_cot,v=>v>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)');ghi(LW.mline,D.macd);ghi(LW.mtin,D.macd_tin)}
   if(DAO.includes('sto')){ghi(LW.sk,D.stoch_k);ghi(LW.sd,D.stoch_d)}

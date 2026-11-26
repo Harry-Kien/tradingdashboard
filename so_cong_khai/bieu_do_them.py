@@ -3,7 +3,7 @@
 Menu "Công cụ" trên thanh biểu đồ:
 - Tô nền phiên Á (Tokyo 9–18 giờ), Âu (London 8–17 giờ), Mỹ (New York 8–17 giờ), theo giờ địa phương nên tự theo giờ mùa hè. Chỉ ở khung H1 trở xuống.
 - Hồ sơ khối lượng theo giá của đoạn đang xem (kiểu Volume Profile Visible Range), từ tick volume của MT5: cột xanh là nến tăng, đỏ là nến giảm,
-  vàng là mức nhiều khối lượng nhất (POC), phần đậm là vùng chứa 70% khối lượng. Tick volume chỉ có khi nối MT5, cho khoảng 900 nến gần nhất.
+  vàng là mức nhiều khối lượng nhất (POC), phần đậm là vùng chứa 70% khối lượng. Tick volume chỉ có khi nối MT5, cho các nến MT5 còn giữ (trang tải thêm tới 30.000 nến cũ qua /api/khoi-luong).
 - Thang giá thường, logarit, phần trăm.
 - So sánh với một mã khác trong Market Watch: % thay đổi trên thang trái (tính từ nến chung đầu tiên), kèm tương quan lợi suất 100 nến chung gần nhất.
 Nút "AI đọc chỉ báo": gửi số cuối của các chỉ báo bạn đang bật cho Claude (chung lượt và ngân sách với Hỏi AI), hiện cách đọc kèm kịch bản có điều kiện.
@@ -47,7 +47,7 @@ function veHoSo(t){const B=BD();if(!ON.hoso||!B||!B.LW||!B.D||!B.D.candles)retur
  if(!r||!s)return;const i0=Math.max(0,Math.floor(r.from)),i1=Math.min(cs.length-1,Math.ceil(r.to));let lo=1e18,hi=-1e18,co=0;
  for(let i=i0;i<=i1;i++){const v=VM[cs[i][0]];if(v==null)continue;co++;lo=Math.min(lo,cs[i][3]);hi=Math.max(hi,cs[i][2])}
  t.useMediaCoordinateSpace(({context:c,mediaSize:m})=>{c.save();c.font='11px Tahoma, Segoe UI, sans-serif';
-  if(co<5||!(hi>lo)){c.fillStyle='rgba(150,150,150,.9)';const s1='Hồ sơ khối lượng: đoạn này chưa có tick volume (chỉ có khi nối MT5, khoảng 900 nến gần nhất).';
+  if(co<5||!(hi>lo)){c.fillStyle='rgba(150,150,150,.9)';const s1='Hồ sơ khối lượng: đoạn này chưa có tick volume (chỉ có khi nối MT5, cho các nến MT5 còn giữ).';
    c.fillText(s1,Math.max(8,m.width-c.measureText(s1).width-10),m.height-10);c.restore();return}
   const R=32,b=(hi-lo)/R,up=new Float64Array(R),dn=new Float64Array(R);
   for(let i=i0;i<=i1;i++){const v=VM[cs[i][0]];if(v==null)continue;const a=Math.max(0,Math.min(R-1,Math.floor((cs[i][3]-lo)/b))),z=Math.max(0,Math.min(R-1,Math.floor((cs[i][2]-lo)/b))),
@@ -79,24 +79,32 @@ async function ssNap(B){const c=B.LW.chart,tf=B.D.tf||'M15',k=ON.ss+'|'+tf;if(!O
   c.applyOptions({leftPriceScale:{visible:true,borderVisible:false}})}
  const ds=[...m].sort((p,q)=>p[0]-q[0]),goc=ds[0][1];                 // % thay đổi so với nến chung đầu tiên, như "So sánh" của TradingView
  SS.applyOptions({title:ON.ss+' %'+(tq!=null?' · tương quan '+tq.toFixed(2):'')});SS.setData(ds.map(([t,v])=>({time:t,value:(v/goc-1)*100})))}
+// ---------------------------------------------------------------- tick volume của nến cũ: tải một lần mỗi mã và khung (tới 30.000 nến MT5 còn giữ), ghép theo giờ nến
+const KLM=new Map();let klDang='';
+async function napKL(B){if(!(ON.hoso||CBCN.dung('kld')||CBCN.dung('kldg'))||!B.D||B.D.nguon!=='mt5')return;const ma=B.D.khac_vang?B.D.ma:'',tf=B.D.tf||'',k=ma+'|'+tf,c=KLM.get(k);
+ if(c&&c.m){const v=B.D.vol||(B.D.vol={});if(B.D._kl!==k){for(const[t,x]of c.m)if(v[t]==null)v[t]=x;B.D._kl=k;CBCN.tinhLai();capNhat()}return}
+ if(klDang===k||(c&&Date.now()-c.luc<600000))return;klDang=k;
+ try{const j=await(await fetch('/api/khoi-luong?tf='+tf+'&n=30000'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'})).json();
+  KLM.set(k,{luc:Date.now(),m:j.t&&j.t.length?j.t.map((t,i)=>[t,j.v[i]]):null});while(KLM.size>6)KLM.delete(KLM.keys().next().value)}catch(e){KLM.set(k,{luc:Date.now(),m:null})}
+ klDang='';const B2=BD();if(B2)napKL(B2)}
 // ---------------------------------------------------------------- móc vào mỗi lần vẽ biểu đồ
 let mau=null;
 CBCN.moc.push(B=>{const s=B.LW.nen;if(s&&GAN!==s){try{if(GAN)GAN.detachPrimitive(PRIM)}catch(e){}try{s.attachPrimitive(PRIM);GAN=s}catch(e){console.warn('Primitive:',e)}}
  try{const ps=B.LW.chart.priceScale('right');if(ps.options().mode!==ON.thang)ps.applyOptions({mode:ON.thang})}catch(e){}
- const k=(B.D.khac_vang?B.D.ma:'')+'|'+(B.D.tf||'');if(mau!==k){if(mau!==null&&SS)ssBo(B.LW.chart);mau=k}ssNap(B);capNhat()});
+ const k=(B.D.khac_vang?B.D.ma:'')+'|'+(B.D.tf||'');if(mau!==k){if(mau!==null&&SS)ssBo(B.LW.chart);mau=k}ssNap(B);napKL(B);capNhat()});
 // ---------------------------------------------------------------- menu Công cụ
 const t2=document.querySelector('.tools.t2'),moc=document.querySelector('.cbcn-mo');if(!t2)return;
 const dt=document.createElement('details');dt.className='cbcn-them';
 dt.innerHTML='<summary class="ghost nho" title="Phiên giao dịch, hồ sơ khối lượng, thang giá, so sánh mã">Công cụ</summary><div class="pop">'
  +'<label><input type="checkbox" data-k="phien"> Tô nền phiên Á, Âu, Mỹ</label>'
  +'<label><input type="checkbox" data-k="hoso"> Hồ sơ khối lượng theo giá (đoạn đang xem)</label>'
- +'<small>Tính từ tick volume của MT5 (số lần giá đổi), không phải khối lượng giao dịch thật; chỉ có khi nối MT5, cho khoảng 900 nến gần nhất.</small>'
+ +'<small>Tính từ tick volume của MT5 (số lần giá đổi), không phải khối lượng giao dịch thật; chỉ có khi nối MT5, cho các nến MT5 còn giữ (tới 30.000 nến gần nhất).</small>'
  +'<label>Thang giá <select data-k="thang"><option value="0">Thường</option><option value="1">Logarit</option><option value="2">Phần trăm</option></select></label>'
  +'<label>So sánh với <select data-k="ss"><option value="">Không so sánh</option></select></label>'
  +'<small>Mã so sánh vẽ theo % thay đổi trên thang trái; số bên cạnh là tương quan lợi suất của 100 nến chung gần nhất (−1 đến 1).</small></div>';
 (moc||t2.lastChild).after(dt);
 const ve=()=>{const B=BD();if(window.CBCN)CBCN.ve();if(B&&B.LW){const s=B.LW.nen;if(s&&GAN!==s)CBCN.ve();if(B.D)ssNap(B)}capNhat()};
-dt.querySelectorAll('input[type=checkbox]').forEach(i=>{i.checked=!!ON[i.dataset.k];i.addEventListener('change',()=>{ON[i.dataset.k]=i.checked?1:0;luu();ve()})});
+dt.querySelectorAll('input[type=checkbox]').forEach(i=>{i.checked=!!ON[i.dataset.k];i.addEventListener('change',()=>{ON[i.dataset.k]=i.checked?1:0;luu();ve();const B=BD();if(B)napKL(B)})});
 const st=dt.querySelector('[data-k=thang]'),sm=dt.querySelector('[data-k=ss]');st.value=String(ON.thang||0);
 st.addEventListener('change',()=>{ON.thang=+st.value;luu();const B=BD();try{B.LW.chart.priceScale('right').applyOptions({mode:ON.thang})}catch(e){}ve()});
 sm.addEventListener('change',()=>{ON.ss=sm.value;luu();const B=BD();if(B&&B.LW&&!ON.ss)ssBo(B.LW.chart);ssKhoa='';ve()});

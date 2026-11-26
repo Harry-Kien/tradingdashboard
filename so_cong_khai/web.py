@@ -386,6 +386,22 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: khung {tf}'.encode('utf-8'))
                     ma = (q.get('ma', [''])[0] or '').strip()
                     return self._day_tick(cfg.get('gia') or {}, tf, None if not ma or ma == da_ma.ma_vang(cfg) else ma)
+                if path == '/api/khoi-luong':                              # tick volume của nến cũ (tới 60.000 nến MT5 còn giữ), cho chỉ báo khối lượng
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    q = parse_qs(url.query)
+                    tf, ma = q.get('tf', ['M15'])[0], (q.get('ma', [''])[0] or '').strip()
+                    if tf not in song.SO_NEN or not re.fullmatch(r'[A-Za-z0-9._#-]{0,24}', ma):
+                        return self._gui(400, 'text/plain; charset=utf-8', 'Yêu cầu không hợp lệ.'.encode('utf-8'))
+                    try:
+                        n = max(100, min(int(q.get('n', ['30000'])[0]), 60000))
+                    except ValueError:
+                        n = 30000
+                    if song.khung_song(cfg.get('gia') or {}) is None:
+                        kl, ly = None, song.ly_do() or 'chưa nối MT5'
+                    else:
+                        kl, ly = song.khoi_luong(tf, None if not ma or ma == da_ma.ma_vang(cfg) else ma, n), None
+                    t = sorted(kl) if kl else []
+                    return self._gui(200, LOAI['.json'], json.dumps({'tf': tf, 'ma': ma, 't': t, 'v': [kl[x] for x in t], 'ly_do': ly}, ensure_ascii=False).encode('utf-8'))
                 if path == '/api/gia-cu':                                   # nến lùi về đầu năm, nạp một lần cho mỗi mã và khung
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     q = parse_qs(url.query)

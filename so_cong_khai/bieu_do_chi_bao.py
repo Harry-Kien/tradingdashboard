@@ -174,7 +174,7 @@ const LIB={
  elder:{ten:'Elder Ray (sức bò, sức gấu)',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ EMA',13,1]],muc:[0],mo:'Đỉnh − EMA (sức bên mua) và đáy − EMA (sức bên bán).',
   tinh:(H,L,C,O,p)=>{const e=ema(C,p.n);return[L_('Sức mua',hop(H,e,(a,b)=>a-b),'cot'),L_('Sức bán',hop(L,e,(a,b)=>a-b),'cot')]}},
  kld:{ten:'Khối lượng đột biến (tick volume MT5)',nhom:'cd',khung:'rieng',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
-  mo:'Cột là tick volume chia trung bình 20 nến trước (dương: nến tăng, âm: nến giảm); mũi tên khi gấp từ 2 lần, thân nến từ 50% và thuận EMA50. Vàng CFD không có khối lượng thật: tick volume là số lần giá đổi, đo độ sôi động chứ không phải lệnh của cá mập. Chỉ có khi đang nối MT5 trực tiếp.',
+  mo:'Cột là tick volume chia trung bình 20 nến trước (dương: nến tăng, âm: nến giảm); mũi tên khi gấp từ 2 lần, thân nến từ 50% và thuận EMA50. Vàng CFD không có khối lượng thật: tick volume là số lần giá đổi, đo độ sôi động chứ không phải lệnh của cá mập. Đo trên vàng 2026 (M5, M15, H1): nến có mũi tên KHÔNG đi tiếp tốt hơn nến thường, nên đừng dùng làm tín hiệu vào lệnh. Chỉ có khi đang nối MT5 trực tiếp.',
   tinh:(H,L,C,O,p,V)=>{const[r,mk]=kldb(H,L,C,O,V,p.n,p.k,p.xu);return[[...L_('KL',r,'cot'),mk]]}},
  kldg:{ten:'Khối lượng đột biến: dấu trên nến',nhom:'cd',khung:'gia',ts:[['n','Số nến làm nền',20,1],['k','Ngưỡng (số lần trung bình)',2,.1],['xu','Chỉ báo thuận EMA50 (1 có, 0 không)',1,1]],
   mo:'Cùng định nghĩa với "Khối lượng đột biến", nhưng vẽ mũi tên ngay dưới hoặc trên cây nến đột biến. Chỉ có khi đang nối MT5 trực tiếp.',
@@ -295,7 +295,7 @@ let nut=null;const t2=document.querySelector('.tools.t2');if(t2){nut=document.cr
  const ch=document.createElement('label');ch.className='sel cbcn-kieu';ch.title='Dạng biểu đồ';
  ch.innerHTML='<select aria-label="Dạng biểu đồ">'+Object.entries(KIEU).map(([k,n])=>`<option value="${k}"${k===KBD?' selected':''}>${n}</option>`).join('')+'</select>';
  ch.querySelector('select').addEventListener('change',e=>{KBD=e.target.value;try{localStorage.setItem('so-kieu-bd',KBD)}catch(_){}ve()});nut.before(ch)}
-return{ve,mo,LIB,KIEU,moc:MOC,tomTat,_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
+return{ve,mo,LIB,KIEU,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
 """
 
 from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script

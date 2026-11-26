@@ -54,6 +54,12 @@ def _kiem_ds(ds) -> list:
     for h in ds:
         if not isinstance(h, dict) or not isinstance(h.get('id'), str) or not isinstance(h.get('k'), str):
             raise ValueError('hình vẽ thiếu mã hoặc loại')
+        # Hình vẽ giờ được nạp về mọi máy: mã, loại và màu đi vào HTML/CSS của trang (menu chuột phải, thanh công cụ), nên chỉ nhận đúng
+        # định dạng, kẻo một bản lưu có chèn thẻ HTML chạy được mã trên mọi trình duyệt mở trang (stored XSS).
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', h['id']) or not re.fullmatch(r'[a-z0-9_]{1,20}', h['k']):
+            raise ValueError('mã hoặc loại hình vẽ không hợp lệ')
+        if h.get('mau') not in (None, '') and not (isinstance(h['mau'], str) and re.fullmatch(r'#[0-9A-Fa-f]{3,8}', h['mau'])):
+            raise ValueError('màu hình vẽ không hợp lệ')
     if len(json.dumps(ds, ensure_ascii=False)) > TOI_DA_BYTE:
         raise ValueError('hình vẽ quá lớn')
     return ds

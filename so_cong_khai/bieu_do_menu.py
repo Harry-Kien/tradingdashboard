@@ -58,7 +58,9 @@ const IC={chep:'M6 6h8v9H6zM4 12V3h8',bao:'M9 2.5a4 4 0 0 0-4 4V10l-1.5 2.5h11L1
  khoa:'M5 8h8v7H5zM6.5 8V6a2.5 2.5 0 0 1 5 0v2',mo:'M5 8h8v7H5zM6.5 8V6a2.5 2.5 0 0 1 5 0',an:'M3 3l12 12M7.5 5.2A7 7 0 0 1 9 5c4.2 0 7 4 7 4a12 12 0 0 1-2.1 2.4M5 6.5C3.2 7.7 2 9 2 9s2.8 5 7 5a6.6 6.6 0 0 0 3-.7',
  len:'M9 15V4M5 8l4-4 4 4',xuong:'M9 3v11M5 10l4 4 4-4'};
 const svg=k=>`<svg viewBox="0 0 18 18" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[k]||''}"/></svg>`;
-const mi=(k,ic,chu,o={})=>`<button type="button" class="mi${o.xau?' xau':''}" role="menuitem" data-k="${k}"${o.v!=null?` data-v="${o.v}"`:''}${o.tat?' disabled':''}>${svg(ic)}<span>${chu}</span>${o.phim?`<kbd>${o.phim}</kbd>`:''}</button>`;
+// thoát ký tự cho mọi giá trị đưa vào HTML: hình vẽ đồng bộ từ máy chủ (hinh_ve.py) nên trường của hình không còn chỉ do chính người dùng gõ
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mi=(k,ic,chu,o={})=>`<button type="button" class="mi${o.xau?' xau':''}" role="menuitem" data-k="${k}"${o.v!=null?` data-v="${esc(o.v)}"`:''}${o.tat?' disabled':''}>${svg(ic)}<span>${esc(chu)}</span>${o.phim?`<kbd>${o.phim}</kbd>`:''}</button>`;
 const nhom=t=>`<div class="nhom" role="presentation">${t}</div>`,hr='<hr>';
 let MN=null,chuot=null,lpLuc=0,ctxLuc=0,dRef=null,kRef='',PL=[],plNen=null,lp=null;
 const giaNay=g=>{const D=g.D;if(!D)return null;if(D.bid!=null&&isFinite(D.bid))return +D.bid;const c=D.candles;return c&&c.length?c[c.length-1][4]:null};   // giá bid đang chạy
@@ -181,7 +183,7 @@ function lamBieuDo(k,v,q,c){const g=G(),VE=g.VE;
  else if(k==='fs'){const b=$('#fs-btn');if(b)b.click()}
  else if(k==='xoahet'&&VE.ds.length&&confirm('Xóa tất cả '+VE.ds.length+' hình đã vẽ trên '+g.tkMa()+'? Bấm Hoàn tác nếu đổi ý.')){window.HVD_DA_HOI=true;VE.ds=[];VE.chon=null;g.veLuu();g.veTb();g.lwPhu()}}   // đã hỏi: lớp đồng bộ hình (hinh_ve.py) không hỏi lần hai
 // --- menu khi bấm vào một hình đã vẽ
-function menuHinh(cx,cy,id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h)return;const ten=(g.VEC[h.k]||[h.k])[0],coGia=/^(ngang|tngang|nhan|cheo)$/.test(h.k),w=h.w||1.5,net=h.net||'';
+function menuHinh(cx,cy,id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h)return;const ten=esc((g.VEC[h.k]||[h.k])[0]),coGia=/^(ngang|tngang|nhan|cheo)$/.test(h.k),w=h.w||1.5,net=h.net||'';
  let s=`<div class="dau"><b>${ten}</b>`+(coGia?`<small>${g.fp(h.a.p)}</small>`:'')+(h.khoa?'<small>Đã khóa vị trí</small>':'')+'</div>';
  const coCbv=CBV()&&/^(ngang|tngang|xu|tia|mt|kenh|hop)$/.test(h.k);                    // hình có điều kiện cắt, vào, ra: hộp chọn của máy chủ
  if(coGia)s+=mi('chep','chep','Sao chép giá',{v:so(g,h.a.p)})+(coCbv?'':mi('bao','bao','Đặt cảnh báo tại đường này',{v:so(g,h.a.p)}));

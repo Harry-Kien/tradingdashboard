@@ -129,18 +129,18 @@ def khoi_luong(tf: str, sym: str | None = None, n: int = 1500) -> dict[int, int]
         if mt5 is None:
             return None
         sym = sym or _tt.get('sym')
-        k, now = (sym, tf), time.monotonic()
+        k, now, n = (sym, tf), time.monotonic(), int(n)
         nho = _tt.setdefault('kl', {})
-        if k in nho and now - nho[k][0] < 4:
+        if k in nho and nho[k][2] >= n and now - nho[k][0] < (4 if n <= 2000 else 60):   # đọc nhiều nến cũ: nhớ lâu hơn
             return nho[k][1]
         try:
-            r = mt5.copy_rates_from_pos(sym, getattr(mt5, 'TIMEFRAME_' + tf), 1, int(n))
+            r = mt5.copy_rates_from_pos(sym, getattr(mt5, 'TIMEFRAME_' + tf), 1, n)
         except Exception:                                        # noqa: BLE001 - thiếu khối lượng thì biểu đồ vẫn vẽ
             return None
         if r is None or not len(r) or 'tick_volume' not in (r.dtype.names or ()):
             return None
         out = {int(x['time']): int(x['tick_volume']) for x in r}
-        nho[k] = (now, out)
+        nho[k] = (now, out, n)
         return out
 
 
