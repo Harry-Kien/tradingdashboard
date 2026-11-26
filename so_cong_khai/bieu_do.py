@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import bieu_do_chi_bao, bieu_do_menu, canh_bao_ve, hinh_ve, trang
+from . import bieu_do_chi_bao, bieu_do_menu, canh_bao_ve, hinh_ve, mau_chi_bao, trang
 
 CSS = """
 .desk{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;margin-top:14px}
@@ -1230,4 +1230,4 @@ def trang_bieu_do(ten: str) -> str:
         '<footer><span id="chan-nguon">Giá đọc trực tiếp từ MT5 demo của bạn ở chế độ chỉ đọc; khi không nối được thì trang dùng kho nến 1 phút do hệ thống tự lưu. '
         'Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo và luật gọi thẳng các hàm trong mã của bạn '
         '(bot tín hiệu, luật ba khung, luật đỉnh/đáy), tính trên nến đã đóng. </span>' + escape(trang.MIEN_TRU) + '</footer></main>',
-        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{hinh_ve.JS}</script></body></html>'])
+        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{hinh_ve.JS}</script><script>{mau_chi_bao.JS}</script></body></html>'])

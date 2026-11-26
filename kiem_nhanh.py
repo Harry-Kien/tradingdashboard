@@ -23,7 +23,7 @@ sys.path.insert(0, str(GOC))
 TRANG = ['/', '/thi-truong', '/tin-tuc', '/bieu-do', '/cong-cu', '/hoc-giao-dich', '/kien-thuc', '/hieu-suat', '/cai-dat', '/cac-tai-khoan',
          '/nhat-ky', '/tai-khoan', '/kiem-lenh', '/ke-hoach', '/ky-luat', '/telegram', '/sao-luu', '/da-khung', '/bat-dau']
 API = ['/api/thi-truong', '/api/tin-tuc', '/api/tam-ly', '/api/hieu-suat?ngay=90&mau=1', '/api/hieu-suat.csv?ngay=90&mau=1', '/api/gia-su',
-       '/api/telegram', '/api/canh-bao-ve', '/api/hinh-ve?ma=XAU']
+       '/api/telegram', '/api/canh-bao-ve', '/api/hinh-ve?ma=XAU', '/api/mau-chi-bao']
 TEN = 'Harry · Gold Research'
 
 

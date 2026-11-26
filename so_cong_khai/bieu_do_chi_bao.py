@@ -296,7 +296,7 @@ let nut=null;const t2=document.querySelector('.tools.t2');if(t2){nut=document.cr
  const ch=document.createElement('label');ch.className='sel cbcn-kieu';ch.title='Dạng biểu đồ';
  ch.innerHTML='<select aria-label="Dạng biểu đồ">'+Object.entries(KIEU).map(([k,n])=>`<option value="${k}"${k===KBD?' selected':''}>${n}</option>`).join('')+'</select>';
  ch.querySelector('select').addEventListener('change',e=>{KBD=e.target.value;try{localStorage.setItem('so-kieu-bd',KBD)}catch(_){}ve()});nut.before(ch)}
-return{ve,mo,LIB,KIEU,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
+return{ve,mo,LIB,KIEU,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},dongBo:x=>{if(x&&x.mau&&typeof x.mau==='object'&&!Array.isArray(x.mau))S.mau=x.mau;if(x&&Array.isArray(x.sao))S.sao=x.sao.filter(k=>LIB[k]);luu();if(!NEN.hidden)veDs()},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
 """
 
 from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script

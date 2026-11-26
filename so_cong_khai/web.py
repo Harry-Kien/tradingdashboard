@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
 from . import ai_chi_bao, do_lai
-from . import canh_bao_ve, hinh_ve
+from . import canh_bao_ve, hinh_ve, mau_chi_bao
 from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, sao_luu, telegram_nhom, tin_phan_ung
 from .__main__ import HERE, xay
 
@@ -451,6 +451,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     tt = vong.trang_thai() if vong is not None else {'dang_chay': False, 'ly_do': 'Cảnh báo đang tắt trong cấu hình.'}
                     body = {'ds': canh_bao.doc(_out(cfg), 30), **tt}
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
+                if path == '/api/mau-chi-bao':                                  # mẫu chỉ báo và chỉ báo yêu thích, lưu trên máy chủ
+                    return self._gui(200, LOAI['.json'], json.dumps(mau_chi_bao.doc(), ensure_ascii=False).encode('utf-8'))
                 if path == '/api/hinh-ve':                                      # hình vẽ của một mã, lưu trên máy chủ
                     ma = (parse_qs(url.query).get('ma', [''])[0] or '').strip()
                     if not hinh_ve.ma_hop_le(ma):
@@ -578,6 +580,17 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     else:
                         ok, nhan = False, 'Yêu cầu không hợp lệ.'
                     return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/mau-chi-bao' and self.headers.get('X-So-Cong-Khai') == '1':   # lưu mẫu chỉ báo và yêu thích
+                    n = int(self.headers.get('Content-Length') or 0)
+                    if n > mau_chi_bao.TOI_DA_BYTE + 4000:
+                        self.rfile.read(min(n, 1_000_000))
+                        return self._gui(413, LOAI['.json'], json.dumps({'ok': False, 'ly_do': 'Mẫu quá lớn.'}, ensure_ascii=False).encode('utf-8'))
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    try:
+                        kq = {'ok': True, **mau_chi_bao.luu((yc or {}).get('mau'), (yc or {}).get('sao'))}
+                    except (ValueError, AttributeError) as e:
+                        kq = {'ok': False, 'ly_do': f'Chưa lưu: {e}.'}
+                    return self._gui(200 if kq['ok'] else 400, LOAI['.json'], json.dumps(kq, ensure_ascii=False).encode('utf-8'))
                 if urlparse(self.path).path == '/api/hinh-ve' and self.headers.get('X-So-Cong-Khai') == '1':   # lưu hình vẽ của một mã
                     n = int(self.headers.get('Content-Length') or 0)
                     if n > hinh_ve.TOI_DA_BYTE + 2000:
