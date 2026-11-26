@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 import sys
 import threading
 import types
@@ -569,8 +568,6 @@ section[id],nav[id]{scroll-margin-top:64px}
 .fresh{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0 0}
 .fresh div{background:var(--card);padding:9px 14px;font-size:12.5px;color:var(--mute)}.fresh b{display:block;color:var(--ink2);font-weight:600;font-size:13px}
 pre.bai{white-space:pre-wrap;word-break:break-word;font:14px/1.55 system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:8px 0;color:var(--ink)}
-.drafts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:8px}
-.draft img{width:100%;border:1px solid var(--line);border-radius:10px;display:block}.draft pre.bai{font-size:13px}
 .state{display:inline-block;font:700 11px/1 system-ui,sans-serif;letter-spacing:.06em;color:var(--warn);background:var(--warnbg);border:1px solid var(--warnline);border-radius:999px;padding:4px 9px;margin:8px 0 0}
 @media(max-width:640px){.bar>div{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none}.bar strong{display:none}
 .bar button{flex:none}.stamp{text-align:left}h1{font-size:28px}.card{padding:18px 14px 14px}}
@@ -843,38 +840,6 @@ def _bang_so(now: datetime, d: dict, live: bool = False) -> str:
             + ('<a class="ttl" id="tt-dong" href="#tinh-trang" hidden></a>' if live else ''))
 
 
-_DONG_TK = re.compile(r'^(.+?) \((.+), tài khoản DEMO\): (.+)$')
-
-
-def _bai_tung_dong(bai: str) -> str:
-    """Bài tổng kết tuần trong <pre>, mỗi dòng một <span> để bản tiếng Anh dịch được từng dòng (cả bài là một khóa thì đổi một dấu là mất bản
-    dịch). Dòng tài khoản tách riêng tên tài khoản và danh sách EA (dữ liệu của từng máy) khỏi phần chữ chung. textContent vẫn y nguyên bài."""
-    out = []
-    for dong in bai.split('\n'):
-        m = _DONG_TK.match(dong)
-        if m:
-            out.append(f'<span>{escape(m.group(1))}</span> (<span>{escape(m.group(2))}</span><span>, tài khoản DEMO): {escape(m.group(3))}</span>')
-        else:
-            out.append(f'<span>{escape(dong)}</span>' if dong else '')
-    return '\n'.join(out)
-
-
-def _khoi_tuan(tuan: dict) -> str:
-    out = [f'<section class="card" id="tuan"><h2>Tổng kết tuần {tuan["start"].isocalendar()[1]}</h2>'
-           '<p class="sub">Bài chữ để bạn đọc lại rồi tự đăng lên Telegram hoặc Facebook. Chương trình không tự đăng gì.</p>'
-           f'<pre class="bai" id="bai-tuan">{_bai_tung_dong(tuan["bai"])}</pre><button class="copy" type="button" data-for="bai-tuan">Chép bài</button>']
-    if tuan.get('threads'):
-        out.append('<h3>Bản nháp bài Threads</h3><div class="drafts">')
-        for i, t in enumerate(tuan['threads']):
-            state = 'ĐÃ DUYỆT' if t['approved'] else 'CHƯA DUYỆT · CHƯA ĐĂNG'
-            out.append(f'<div class="draft"><img src="{escape(t["img"])}" alt="Ảnh thẻ của bản nháp {escape(t["id"])}" loading="lazy">'
-                       f'<span class="state">{state}</span>'
-                       f'<pre class="bai" id="nhap-{i}">{escape(t["text"])}</pre>'
-                       f'<button class="copy" type="button" data-for="nhap-{i}">Chép chú thích</button></div>')
-        out.append('</div>')
-    return ''.join(out) + '</section>'
-
-
 def _nhan_lenh(o: dict) -> str:
     """Nhãn lệnh đang mở ("EA E BÁN 0.02", "Bot 12 MUA") ghép từ tên, chiều và lot: chiều là chữ "Mua"/"Bán" trong thẻ riêng, in hoa bằng CSS, nên bản
     tiếng Anh dịch được (Buy/Sell) với mọi tên EA ("MUA" không dấu thì bộ dịch coi là định danh, không dịch). Thiếu 'ten' thì dùng nguyên 'nhan'."""
@@ -968,6 +933,7 @@ MENU = [
     ('so', 'Sổ giao dịch', None, [
         ('hieu-suat', 'Phân tích hiệu suất', '/hieu-suat', 'Bạn thắng, thua ở đâu: chỉ số, đường vốn, nhận xét', 'hs'),
         ('kiem-lenh', 'Kiểm tra trước khi vào lệnh', '/kiem-lenh', 'Khối lượng theo % rủi ro, tin sắp ra, lỗ ngày, tổng rủi ro', 'tinh'),
+        ('kiem-tin-hieu', 'Kiểm chứng tín hiệu nhóm', '/kiem-tin-hieu', 'Dán tín hiệu từ Telegram: dò trên giá thật xem thắng thua thật', 'so'),
         ('ke-hoach', 'Kế hoạch vốn và lệnh', '/ke-hoach', 'Nhập vốn: khối lượng, dừng lỗ, chốt lời, khả năng cháy tài khoản', 'tinh'),
         ('ky-luat', 'Kỷ luật giao dịch', '/ky-luat', 'Chấm lại lệnh đã đóng: lỗi nào đang tốn tiền', 'so'),
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
@@ -1048,11 +1014,10 @@ setTimeout(hoi,1500);setInterval(hoi,30000);document.addEventListener('visibilit
 
 
 def trang_html(ten: str, now: datetime, d: dict, tuan: dict | None = None, live: bool = False, hien_tai: dict | None = None) -> str:
-    """`d`: số tổng hợp TOÀN BỘ sổ (không lọc theo tuần). `tuan`: {'start', 'bai', 'threads': [...]} cho khối tổng kết tuần.
+    """`d`: số tổng hợp TOÀN BỘ sổ (không lọc theo tuần). `tuan`: không còn hiển thị (khối tổng kết tuần đã bỏ ngày 26/11/2026), giữ tham số để nơi gọi khỏi đổi.
     `live`: trang do máy chủ cục bộ phục vụ (có nút làm mới và tự tải lại mỗi 2 phút)."""
     links = [(acc['id'], acc['ten'].replace('Tài khoản ', '').capitalize()) for acc in d.get('tai_khoan', []) if acc['tom']]
-    links += [(i, n) for i, n, ok in (('bot', 'Bot tín hiệu', d.get('bot') is not None), ('xu-huong', 'Chạy bóng', d.get('xu_huong') is not None),
-                                      ('tuan', 'Tuần này', tuan is not None)) if ok]
+    links += [(i, n) for i, n, ok in (('bot', 'Bot tín hiệu', d.get('bot') is not None), ('xu-huong', 'Chạy bóng', d.get('xu_huong') is not None)) if ok]
     if live:
         links.insert(0, ('ma-khac', 'Các mã CFD'))
         links.append(('tinh-trang', 'Tình trạng'))
@@ -1072,8 +1037,6 @@ def trang_html(ten: str, now: datetime, d: dict, tuan: dict | None = None, live:
     if d.get('bot') is not None:
         out.append(_khoi_bot(d['bot']))
     out.append(_khoi_bong(d.get('xu_huong'), d.get('dinh_day')))
-    if tuan is not None:
-        out.append(_khoi_tuan(tuan))
     if live:
         out.append(_KHOI_TINH_TRANG)
     for name, err in d.get('loi', []):

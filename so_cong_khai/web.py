@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from . import ai_hoi, bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_thuc, nen_cu, nhat_ky, nhat_ky_trang, phan_tich, song, suc_khoe, tai_khoan, thuong_hieu
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
 from . import ai_chi_bao, do_lai
-from . import canh_bao_ve, hinh_ve, mau_chi_bao
+from . import canh_bao_ve, hinh_ve, kiem_tin_hieu, kiem_tin_hieu_trang, mau_chi_bao
 from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, sao_luu, telegram_nhom, tin_phan_ung
 from .__main__ import HERE, xay
 
@@ -199,6 +199,8 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode('utf-8'))
                 if path == '/kiem-lenh':
                     return self._gui(200, 'text/html; charset=utf-8', kiem_lenh_trang.trang_kiem_lenh(thuong_hieu.TEN).encode('utf-8'))
+                if path == '/kiem-tin-hieu':                                    # kiểm chứng tín hiệu của các nhóm Telegram
+                    return self._gui(200, 'text/html; charset=utf-8', kiem_tin_hieu_trang.trang_kiem_tin_hieu(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/kiem-lenh':                                # kiểm tra trước khi vào lệnh: chỉ đọc MT5, không đặt lệnh
                     q = parse_qs(url.query)
                     lay = lambda k: (q.get(k, [''])[0] or '').strip().replace(',', '.')   # noqa: E731
@@ -580,6 +582,26 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     else:
                         ok, nhan = False, 'Yêu cầu không hợp lệ.'
                     return self._gui(200 if ok else 400, LOAI['.json'], json.dumps({'ok': ok, 'ly_do': nhan}, ensure_ascii=False).encode('utf-8'))
+                if urlparse(self.path).path == '/api/kiem-tin-hieu' and self.headers.get('X-So-Cong-Khai') == '1':   # dò tín hiệu dán vào trên giá thật
+                    n = int(self.headers.get('Content-Length') or 0)
+                    if n > kiem_tin_hieu.TOI_DA_CHU * 4 + 4000:
+                        self.rfile.read(min(n, 1_000_000))
+                        return self._gui(413, LOAI['.json'], json.dumps({'ok': False, 'ly_do': 'Đoạn dán quá dài; chia nhỏ rồi kiểm từng phần.'},
+                                                                        ensure_ascii=False).encode('utf-8'))
+                    yc = json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
+                    yc = yc if isinstance(yc, dict) else {}
+                    try:
+                        mg, cho, giu = float(yc.get('mui_gio', 7)), float(yc.get('cho_gio', 4)), float(yc.get('giu_ngay', 5))
+                        if not (-12 <= mg <= 14 and 0 < cho <= 72 and 0 < giu <= 30):
+                            raise ValueError('tùy chọn ngoài khoảng cho phép')
+                        ma0 = str(yc.get('ma_mac_dinh') or 'XAUUSD')
+                        if not re.fullmatch(r'[A-Z0-9]{3,10}', ma0):
+                            raise ValueError('mã mặc định không hợp lệ')
+                        cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                        kq = kiem_tin_hieu.kiem(cfg, str(yc.get('van_ban') or ''), mg, cho, giu, bool(yc.get('ve_hoa_von')), ma0)
+                    except (ValueError, TypeError) as e:
+                        kq = {'ok': False, 'ly_do': f'Chưa kiểm được: {e}.', 'ds': [], 'loi': []}
+                    return self._gui(200, LOAI['.json'], json.dumps(kq, ensure_ascii=False, default=str).encode('utf-8'))
                 if urlparse(self.path).path == '/api/mau-chi-bao' and self.headers.get('X-So-Cong-Khai') == '1':   # lưu mẫu chỉ báo và yêu thích
                     n = int(self.headers.get('Content-Length') or 0)
                     if n > mau_chi_bao.TOI_DA_BYTE + 4000:
