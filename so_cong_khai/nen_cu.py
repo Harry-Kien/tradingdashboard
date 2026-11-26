@@ -83,14 +83,22 @@ def goi(cfg: dict, ma: str = '', tf: str = 'M15', now: datetime | None = None) -
     mid, sd = close.rolling(20).mean(), close.rolling(20).std(ddof=0)
     over = {'ema20': close.ewm(span=20, adjust=False, min_periods=20).mean(), 'ema50': close.ewm(span=50, adjust=False, min_periods=50).mean(),
             'bb_tren': mid + 2 * sd, 'bb_duoi': mid - 2 * sd, 'rsi': gia.rsi_wilder(close)}
+    lt = da_ma._lam_tron
+    try:                                                           # chỉ báo thêm, cùng công thức với /api/gia (chi_bao_them.py), tính trên cả chuỗi
+        from . import chi_bao_them                                 # noqa: PLC0415
+        them = {k: v for k, v in chi_bao_them.tinh(bars, len(bars), lt, d, gia.KHUNG[tf] * 60).items() if isinstance(v, list) and len(v) == len(bars)
+                and k != 'ichi_sau'}
+    except Exception:                                              # noqa: BLE001 - thiếu chỉ báo thêm thì vẫn trả nến
+        them = {}
     chon = bars.index >= tu
     bars, over = bars[chon], {k: v[chon] for k, v in over.items()}
+    them = {k: [x for x, m in zip(v, chon) if m] for k, v in them.items()}
     cat = len(bars) >= TOI_DA                                      # chạm trần thì phần đầu năm đã bị cắt bớt
     if cat:
         bars, over = bars.iloc[-TOI_DA:], {k: v.iloc[-TOI_DA:] for k, v in over.items()}
-    lt = da_ma._lam_tron
+        them = {k: v[-TOI_DA:] for k, v in them.items()}
     return {'tf': tf, 'ma': '' if vang else ma, 'nam': now.year, 'so_nen': len(bars), 'cat_bot': cat,
             'tu': bars.index[0].isoformat() if len(bars) else None,
             'candles': [[gia._giay(t), lt(o, d), lt(h, d), lt(l, d), lt(c, d)] for t, o, h, l, c in
                         zip(bars.index, bars['open'], bars['high'], bars['low'], bars['close'])],
-            **{k: [lt(x, 2 if k == 'rsi' else d) for x in v.tolist()] for k, v in over.items()}}
+            **{k: [lt(x, 2 if k == 'rsi' else d) for x in v.tolist()] for k, v in over.items()}, **them}

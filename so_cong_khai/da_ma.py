@@ -202,6 +202,11 @@ def goi(cfg: dict, ma: str, tf: str = 'M15', n: int = 600, now: datetime | None 
                        zip(view.index, view['open'], view['high'], view['low'], view['close'])],
            **{k: day(v) for k, v in over.items()}, 'rsi': day(gia.rsi_wilder(close), 2), 'vung': [], 'tin': [], 'lenh': [],
            'nguon': 'mt5', 'bid': _lam_tron(bid, d), 'ask': _lam_tron(tick.ask, d) if tick and tick.ask else None, 'ly_do_khong_song': None}
+    try:                                                          # chỉ báo thêm, cùng công thức với vàng (chi_bao_them.py)
+        from . import chi_bao_them                                # noqa: PLC0415
+        out.update(chi_bao_them.tinh(bars, n, _lam_tron, d, gia.KHUNG[tf] * 60))
+    except Exception as e:                                        # noqa: BLE001
+        out['loi_chi_bao'] = f'{type(e).__name__}: {e}'
     if tf in chay and out['candles'] and gia._giay(chay[tf][0]) > out['candles'][-1][0]:
         out['dang_chay'] = [gia._giay(chay[tf][0])] + [_lam_tron(v, d) for v in chay[tf][1:]]
     bc, loi = _boi_canh(g, fr, bid, d, het)

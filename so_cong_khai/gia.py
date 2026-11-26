@@ -453,6 +453,11 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
            **{k: _day(v.iloc[-n:]) for k, v in over.items()}, 'vung': [], 'tin': [],
            'nguon': fr['nguon'], 'bid': _so(fr.get('bid')), 'ask': _so(fr.get('ask')),
            'ly_do_khong_song': song.ly_do() if fr['nguon'] != 'mt5' else None, 'lenh': lenh_dang_mo(cfg)}
+    try:                                                          # chỉ báo thêm (EMA200, MACD, Stochastic, ATR, SuperTrend, Ichimoku, pivot)
+        from . import chi_bao_them                                # noqa: PLC0415
+        out.update(chi_bao_them.tinh(bars, n, so_le=2, buoc_giay=KHUNG[tf] * 60))
+    except Exception as e:                                        # noqa: BLE001 - lỗi chỉ báo không làm mất biểu đồ
+        out['loi_chi_bao'] = f'{type(e).__name__}: {e}'
     dc = (fr.get('dang_chay') or {}).get(tf)
     if dc and out['candles'] and dc[0] > out['candles'][-1][0]:      # cây nến đang chạy: chỉ để vẽ
         out['dang_chay'] = [dc[0]] + [_so(v) for v in dc[1:]]

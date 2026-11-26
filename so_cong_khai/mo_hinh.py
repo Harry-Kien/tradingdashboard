@@ -70,7 +70,7 @@ def _bang(f: pd.DataFrame, h1: pd.DataFrame, d1: pd.DataFrame, t: pd.DatetimeInd
     gio = t.hour + t.minute / 60
     out = pd.DataFrame({
         'rui_atr': rui / x['atr'].to_numpy(), 'bien_do': [float(ti.iloc[i]) if i >= 0 else np.nan for i in k],
-        'gio_sin': np.sin(gio / 24 * 2 * np.pi), 'gio_cos': np.cos(gio / 24 * 2 * np.pi), 'thu': t.dayofweek.astype(float),
+        'gio_sin': np.sin(gio / 24 * 2 * np.pi), 'gio_cos': np.cos(gio / 24 * 2 * np.pi), 'thu': t.day_of_week.astype(float),
         'thuan_h1': PP._chieu_h1(h1, t) * dau, 'thuan_d1': xd * dau,
         'cach_ema50': x['cach_ema50'].to_numpy() * dau, 'rsi': x['rsi'].to_numpy() * dau, 'vi_tri_24h': x['vi_tri_24h'].to_numpy() * dau,
         'di_4h': x['di_4h'].to_numpy() * dau, 'than_nen': x['than_nen'].to_numpy() * dau, 'bien_nen': x['bien_nen'].to_numpy(),

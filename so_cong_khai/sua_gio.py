@@ -20,7 +20,7 @@ PHIEN_BAN = 1
 
 def _chu_nhat_cuoi(nam: int, thang: int) -> pd.Timestamp:
     cuoi = pd.Timestamp(year=nam, month=thang, day=31 if thang in (3, 10) else 30, tz='UTC')
-    return cuoi - pd.Timedelta(days=(cuoi.dayofweek + 1) % 7)
+    return cuoi - pd.Timedelta(days=(cuoi.day_of_week + 1) % 7)
 
 
 def mua_he_chau_au(t: pd.DatetimeIndex) -> pd.Series:

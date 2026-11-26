@@ -17,6 +17,7 @@ main.rong{max-width:1320px}
 .song-pill i{width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
 .song-pill.ok i{background:var(--gain);box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent);animation:nhip 1.8s infinite}
 .song-pill.loi i{background:var(--loss)}.song-pill b{color:var(--ink);font-weight:600}
+.song-pill.loi{white-space:normal;max-width:100%;min-width:0;border-radius:12px;overflow-wrap:anywhere}  /* lý do lỗi dài (MT5 tắt) không đẩy trang rộng 2169px trên điện thoại */
 @keyframes nhip{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .tt-hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0 4px}
 .tt-hero>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
