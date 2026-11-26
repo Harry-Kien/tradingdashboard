@@ -9,7 +9,7 @@
 Bảng điều khiển giao dịch Forex và CFD chạy ngay trên máy tính của bạn, lấy **giá trực tiếp từ MetaTrader 5** của chính bạn, song ngữ Việt / Anh.
 Webapp **chỉ đọc**: không đặt lệnh, không sửa gì trong MT5, không gửi dữ liệu của bạn đi đâu.
 
-**▶ Xem demo trực tuyến (không cần cài):** [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/)
+**▶ Xem demo trực tuyến (không cần cài):** [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Kỷ luật giao dịch](https://harry-kien.github.io/tradingdashboard/ky-luat.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/)
 
 ![Bảng giá trực tiếp](docs/bang-gia.jpg)
 
@@ -88,7 +88,7 @@ straight into a post. A sample-data mode lets you preview the page.
 
 **New: Trading discipline** (`/ky-luat`). Re-checks every closed MT5 trade (7/30/90 days, by manual or EA source) against the same rules: no stop loss, risk above the per-trade limit, quick re-entry or bigger size after a loss, trading after the daily loss limit, too many trades per day, entering near high-impact news. It splits the profit and loss of rule-following and rule-breaking trades and shows a discipline score, average risk per trade and the longest losing streak, so you can see which habits cost money.
 
-**▶ Live demo (no install):** [Money and trade plan](https://harry-kien.github.io/tradingdashboard/en/ke-hoach.html) · [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
+**▶ Live demo (no install):** [Money and trade plan](https://harry-kien.github.io/tradingdashboard/en/ke-hoach.html) · [Trading discipline](https://harry-kien.github.io/tradingdashboard/en/ky-luat.html) · [Markets & signals](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html) · [Performance analytics](https://harry-kien.github.io/tradingdashboard/en/)
 
 **Install (Windows):** only MetaTrader 5 logged in to a **demo** account is needed. Open MT5 and double-click `BAT_DAU.bat`: on first run it
 installs Python if missing (asks first, via the built-in winget) and the libraries, creates a **Harry Gold Research** desktop shortcut and opens

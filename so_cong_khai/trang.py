@@ -1018,27 +1018,27 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
 # Dải cảnh báo rủi ro (giam_sat.py) dưới thanh điều hướng của mọi trang: hỏi /api/giam-sat mỗi 30 giây khi tab đang mở, theo quy tắc người dùng
 # đặt ở trang Kiểm tra lệnh (localStorage kl-qt). Mỗi cảnh báo tắt được tới hết ngày theo giờ Việt Nam (localStorage gs-an; hàm ngay() cộng 7 giờ
 # để hết hạn lúc nửa đêm VN chứ không phải 07:00). Không có API (bản demo) thì im lặng.
-GIAM_SAT = r"""<div id="gs-dai" class="gs" hidden aria-live="polite"></div><style>
-.gs{max-width:1240px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
-.gs-m{display:grid;grid-template-columns:26px minmax(0,1fr) 32px;gap:10px;align-items:start;border-radius:12px;padding:10px 12px;border:1px solid var(--line);background:var(--card)}
-.gs-m.xau{border-color:color-mix(in srgb,var(--loss) 55%,var(--line));background:color-mix(in srgb,var(--loss) 9%,var(--card))}
-.gs-m.chu_y{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--card))}
-.gs-m i{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px}
-.gs-m.xau i{background:var(--loss);color:#1a0606}.gs-m.chu_y i{background:var(--warn);color:#161000}
-.gs-m b{display:block;font-size:13.5px}.gs-m span{display:block;color:var(--ink2);font-size:12.5px;margin-top:2px;line-height:1.45}
-.gs-m button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink2);font-size:18px;cursor:pointer}
-.gs-m button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+GIAM_SAT = r"""<div id="gsr-dai" class="gsr" hidden aria-live="polite"></div><style>
+.gsr[hidden]{display:none}.gsr{max-width:1240px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
+.gsr-m{display:grid;grid-template-columns:26px minmax(0,1fr) 32px;gap:10px;align-items:start;border-radius:12px;padding:10px 12px;border:1px solid var(--line);background:var(--card)}
+.gsr-m.xau{border-color:color-mix(in srgb,var(--loss) 55%,var(--line));background:color-mix(in srgb,var(--loss) 9%,var(--card))}
+.gsr-m.chu_y{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--card))}
+.gsr-m i{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:12px}
+.gsr-m.xau i{background:var(--loss);color:#1a0606}.gsr-m.chu_y i{background:var(--warn);color:#161000}
+.gsr-m b{display:block;font-size:13.5px}.gsr-m span{display:block;color:var(--ink2);font-size:12.5px;margin-top:2px;line-height:1.45}
+.gsr-m button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink2);font-size:18px;cursor:pointer}
+.gsr-m button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
 </style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const an=()=>{try{const o=JSON.parse(localStorage.getItem('gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
-function ve(ds){const el=document.getElementById('gs-dai');if(!el)return;const o=an(),con=ds.filter(a=>!o[a.id]);
+function ve(ds){const el=document.getElementById('gsr-dai');if(!el)return;const o=an(),con=ds.filter(a=>!o[a.id]);
  if(!con.length){el.hidden=true;el.innerHTML='';return}el.hidden=false;
- el.innerHTML=con.map(a=>{const c=a[LG]||a.vi;return`<div class="gs-m ${a.muc==='xau'?'xau':'chu_y'}" role="alert"><i>${a.muc==='xau'?'✕':'!'}</i><div><b>${esc(c.tieu)}</b><span>${esc(c.noi)}</span></div><button type="button" data-gs="${esc(a.id)}" title="Ẩn tới hết hôm nay" aria-label="Ẩn tới hết hôm nay">×</button></div>`}).join('')}
+ el.innerHTML=con.map(a=>{const c=a[LG]||a.vi;return`<div class="gsr-m ${a.muc==='xau'?'xau':'chu_y'}" role="alert"><i>${a.muc==='xau'?'✕':'!'}</i><div><b>${esc(c.tieu)}</b><span>${esc(c.noi)}</span></div><button type="button" data-gsr="${esc(a.id)}" title="Ẩn tới hết hôm nay" aria-label="Ẩn tới hết hôm nay">×</button></div>`}).join('')}
 async function hoi(){if(document.hidden)return;let q='';try{const t=JSON.parse(localStorage.getItem('kl-qt')||'{}');
  q=new URLSearchParams(Object.entries(t).filter(([k,v])=>/^q_(rui_ro_lenh_toi_da_pct|lo_ngay_toi_da_pct|tong_rui_ro_toi_da_pct)$/.test(k)&&v!=null&&v!=='')).toString()}catch(e){}
  try{const r=await fetch('/api/giam-sat'+(q?'?'+q:''),{cache:'no-store'});if(!r.ok)return;const j=await r.json();ve(j.ds||[])}catch(e){}}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;const o=an();o[b.dataset.gs]=ngay();try{localStorage.setItem('gs-an',JSON.stringify(o))}catch(x){}
- b.closest('.gs-m').remove();const el=document.getElementById('gs-dai');if(el&&!el.children.length)el.hidden=true});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-gsr]');if(!b)return;const o=an();o[b.dataset.gsr]=ngay();try{localStorage.setItem('gs-an',JSON.stringify(o))}catch(x){}
+ b.closest('.gsr-m').remove();const el=document.getElementById('gsr-dai');if(el&&!el.children.length)el.hidden=true});
 setTimeout(hoi,1500);setInterval(hoi,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)hoi()})})();</script>"""
 
 

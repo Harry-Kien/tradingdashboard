@@ -214,6 +214,14 @@ def ghep_lenh(deals, orders, ky_hieu: dict, tien_tk: str, so_du_hien: float, tu:
     return out
 
 
+def loc_nguon(gd: list[dict], nguon: str | None) -> list[dict]:
+    """Chỉ giữ lệnh của một nguồn. Trang tiếng Anh gửi tên nguồn đã dịch ("Manual", "Sample EA"), như trang Hiệu suất, nên nhận cả hai tên."""
+    from .hieu_suat import NHOM_EN                                           # noqa: PLC0415
+    if not nguon:
+        return gd
+    return [x for x in gd if nguon in (x['nguon'], NHOM_EN.get(x['nguon']))]
+
+
 def doc(cfg: dict, now: datetime | None = None, ngay: int = 30, nguon: str | None = None, quy_tac: dict | None = None) -> dict:
     """Đọc lệnh đã đóng trong `ngay` ngày gần nhất rồi chấm. `nguon`: chỉ chấm lệnh của một nguồn ('Đặt tay', 'EA E'…), None = tất cả.
     Không nối được MT5 hoặc không phải tài khoản demo: {'san_sang': False, 'ly_do': ...}."""
@@ -239,8 +247,7 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30, nguon: str | Non
     for x in gd:
         x['nguon'] = tai_khoan._ea(cfg, x.pop('magic'))
     cac_nguon = sorted({x['nguon'] for x in gd})
-    if nguon:
-        gd = [x for x in gd if x['nguon'] == nguon]
+    gd = loc_nguon(gd, nguon)
     tin, tin_tu, ly_do_tin = None, None, None
     try:
         lich = thi_truong.lich_tong(cfg, HERE, now, lui_gio=(ngay + 1) * 24, toi_ngay=0)

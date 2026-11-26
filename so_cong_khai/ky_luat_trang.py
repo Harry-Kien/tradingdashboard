@@ -75,14 +75,14 @@ async function tai(){const q=new URLSearchParams({ngay:ST.ngay});if(ST.nguon)q.s
  try{const r=await fetch('/api/ky-luat?'+q,{cache:'no-store'});const t=await r.text();if(n!==lan)return;if(!r.ok)throw new Error(t);ve(JSON.parse(t))}
  catch(e){if(n===lan)$('#ky-kq').innerHTML=`<p class="ky-cho">Không đọc được lịch sử lệnh: ${esc(e.message)}</p>`}
  finally{if(n===lan)$('#ky-kq').removeAttribute('aria-busy')}}
-function nguon(D){const s=$('#ky-nguon'),ds=D.cac_nguon||[];if(ST.nguon&&!ds.includes(ST.nguon))ds.push(ST.nguon);
+function nguon(D){const s=$('#ky-nguon'),ds=D.cac_nguon||[];if(ST.nguon&&!ds.includes(ST.nguon)){ST.nguon='';goi()}
  s.innerHTML=`<option value="">Mọi nguồn lệnh</option>`+ds.map(x=>`<option value="${esc(x)}"${x===ST.nguon?' selected':''}>${esc(x)}</option>`).join('')}
 function ve(D){if(!D.san_sang){$('#ky-kq').innerHTML=`<p class="ky-cho">Chưa đọc được tài khoản: ${esc(D.ly_do||'')}</p>`;return}
  nguon(D);const t=D.tien||'';
  if(!D.n){$('#ky-kq').innerHTML=`<p class="ky-cho">Chưa có lệnh nào đóng trong khoảng này.</p>`;return}
  const P=D.pham,A=D.dat,T=D.tong;let y,cls;
  if(!P.n){cls='tot';y='Mọi lệnh trong khoảng này đều đúng quy tắc của bạn. Giữ nguyên cách làm này.'}
- else if(P.lai<0){cls='xau';y=`Các lệnh phạm quy tắc đã lấy đi ${tien(P.lai,t)}. Chỉ tính các lệnh đúng quy tắc, kết quả là ${tien(A.lai,t)} thay vì ${tien(T.lai,t)}.`}
+ else if(P.lai<0){cls='xau';y=`Các lệnh phạm quy tắc đã lấy đi <span class="ky-lo">${fmt(-P.lai)}</span> <em>${esc(t)}</em>. Chỉ tính các lệnh đúng quy tắc, kết quả là ${tien(A.lai,t)} thay vì ${tien(T.lai,t)}.`}
  else{cls='chu_y';y=`Các lệnh phạm quy tắc lần này vẫn có lãi (${tien(P.lai,t)}), nhưng đó là may mắn chứ không phải lợi thế: rủi ro đã cao hơn mức bạn đặt.`}
  const gh=(D.quy_tac_dung||{}).rui_ro_lenh_toi_da_pct||2;
  if(D.rui_ro_tb_pct!=null&&D.rui_ro_tb_pct>gh*2){const r=Math.min(D.rui_ro_tb_pct,99)/100,k=Math.max(1,Math.ceil(Math.log(.5)/Math.log(1-r)));cls='xau';
