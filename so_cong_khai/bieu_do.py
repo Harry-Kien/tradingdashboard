@@ -21,6 +21,15 @@ CSS = """
 .trong-nhan{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink2);font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap}
 .trong-nhan[hidden]{display:none}
 .tu-co{position:absolute;z-index:5;padding:4px 10px;border:1px solid var(--series);border-radius:6px;background:var(--card);color:var(--series);font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}.tu-co[hidden]{display:none}
+#kh-nhan{position:absolute;inset:0;pointer-events:none;z-index:4}
+.khn{position:absolute;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;max-width:min(420px,calc(100% - 90px));font-size:11.5px;color:var(--ink2);
+ background:color-mix(in srgb,var(--card) 78%,transparent);border-radius:6px;padding:1px 2px 1px 8px;pointer-events:auto}
+.khn b{color:var(--ink);font-weight:600}.khn-gt{font-variant-numeric:tabular-nums}
+.khn button{border:0;background:none;color:var(--mute);cursor:pointer;width:22px;height:22px;border-radius:5px;font-size:12px;line-height:1;padding:0}
+.khn button:hover,.khn button:focus-visible,.khn-hoi[aria-expanded=true]{background:var(--line);color:var(--ink)}
+.khn-pop{flex-basis:100%;margin:2px 6px 4px 0;font-size:12px;line-height:1.45;color:var(--ink)}
+.khn:has(.khn-pop){z-index:2;background:var(--card);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.35);padding:4px 4px 4px 10px}
+@media(max-width:640px){.khn button{width:26px;height:26px}}
 .stage[data-doi]::before{content:"Đang tải dữ liệu nến…";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:7px 16px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink2);font-size:12.5px;box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none}.trong-nhan button{border:0;border-radius:999px;padding:3px 10px;background:var(--series);color:var(--card);font-weight:700;font-size:12px;cursor:pointer}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 .col{display:grid;gap:16px;align-content:start}
@@ -264,7 +273,7 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
  LW.askL=null;if(D.nguon==='mt5'&&D.ask){ngang(D.ask,P.ask,'',0,1,undefined,1);LW.askL=LW.lines[LW.lines.length-1]}LW.tCuoi=cs[cs.length-1][0];
  let xem=giu;if(giu&&LW.t0!=null&&cs[0][0]<LW.t0){const k=LW.idx.get(LW.t0);if(k>0)xem={from:giu.from+k,to:giu.to+k}}LW.t0=cs[0][0];
  if(moi){LW.key=key;try{LW.nen.priceScale().applyOptions({autoScale:true})}catch(e){}{const ap=$('#tu-co');if(ap)ap.hidden=true}if(!lwTamDat())lwNay()}else if(LW.tam&&LW.tam.cho&&lwTamDat()){}else if(xem)ts.setVisibleLogicalRange(xem);   // đổi mã/khung: bỏ thang giá kéo tay trước đó, kẻo nến mới nằm ngoài khung
- lwDoc(null);requestAnimationFrame(lwPhu);if(window.CBCN)try{CBCN.ve()}catch(e){console.warn('Chỉ báo cá nhân:',e)}if(window.MNP)try{MNP.ve()}catch(e){console.warn('Menu biểu đồ:',e)}}
+ lwDoc(null);requestAnimationFrame(lwPhu);if(window.CBCN)try{CBCN.ve()}catch(e){console.warn('Chỉ báo cá nhân:',e)}if(window.MNP)try{MNP.ve()}catch(e){console.warn('Menu biểu đồ:',e)}if(window.KHN)requestAnimationFrame(()=>{try{KHN()}catch(e){console.warn('Nhãn khung:',e)}})}
 // lớp phủ: vùng rủi ro và lợi nhuận của phương án, vùng giá gần nhất, giờ tin, và các lần luật ra lệnh trước đây
 function lwPhu(){if(!LW||!D||!D.candles.length)return;const d=window.devicePixelRatio||1,W=LWE.clientWidth,H=LWE.clientHeight,c=LW.chart,ts=c.timeScale(),cs=D.candles,P=pal();
  if(LWO.width!==Math.round(W*d)||LWO.height!==Math.round(H*d)){LWO.width=Math.round(W*d);LWO.height=Math.round(H*d)}LWO.style.width=W+'px';LWO.style.height=H+'px';
@@ -819,6 +828,34 @@ if(LW){VTB.setAttribute('data-thu','');$('.stage').appendChild(VTB);$('.stage').
   for(const ev of['pointerup','pointercancel'])addEventListener(ev,()=>{if(KD){KD=null;apVe()}});
   LWE.addEventListener('dblclick',()=>setTimeout(apVe,0));LWE.addEventListener('pointerup',()=>setTimeout(apVe,0));   // kéo trục giá hay bấm đúp trục giá cũng đổi autoScale
   if(AP)AP.addEventListener('click',()=>{try{LW.nen.priceScale().applyOptions({autoScale:true})}catch(_){}apVe()})}
+ // Nhãn của từng khung chỉ báo phụ (như TradingView): tên và thông số, giá trị mới nhất, nút "?" giải thích cách đọc, nút "✕" ẩn riêng khung đó.
+ // Khung phụ dựng theo LW.khDao (RSI, MACD, Stochastic, ATR) nên khung thứ i+1 là chỉ báo thứ i trong danh sách đó.
+ {const KDN={rsi:['RSI 14','Chỉ số sức mạnh tương đối, từ 0 đến 100. Trên 70: giá đã tăng mạnh (quá mua), dễ chững lại. Dưới 30: giá đã giảm mạnh (quá bán). Quanh 50: chưa nghiêng bên nào.'],
+   macd:['MACD 12 26 9','Đường xanh là MACD (EMA12 trừ EMA26), đường cam là đường tín hiệu (trung bình 9 nến của MACD), cột là khoảng cách giữa hai đường. Xanh cắt lên cam: đà tăng mạnh dần; cắt xuống: đà giảm mạnh dần. Trên 0: xu hướng ngắn đang mạnh hơn xu hướng dài.'],
+   sto:['Stochastic 14 3','%K (xanh) và %D (cam), từ 0 đến 100: giá đóng cửa nằm ở đâu trong biên độ 14 nến. Trên 80: sát đỉnh biên độ (quá mua); dưới 20: sát đáy (quá bán).'],
+   atr:['ATR 14','Biên độ dao động trung bình của 14 nến gần nhất, tính bằng giá. Càng cao giá càng giật mạnh. Dùng để đặt dừng lỗ theo biến động, ví dụ dừng lỗ cách 1,5 ATR.']};
+  const cuoi=a=>{if(!a)return null;for(let i=a.length-1;i>=0;i--)if(a[i]!=null)return a[i];return null},so2=v=>v==null?'—':f2(v);
+  const GT={rsi:()=>so2(cuoi(D.rsi)),macd:()=>so2(cuoi(D.macd))+' · '+so2(cuoi(D.macd_tin)),sto:()=>so2(cuoi(D.stoch_k))+' · '+so2(cuoi(D.stoch_d)),atr:()=>so2(cuoi(D.atr14))};
+  let BOX=null,mo='';
+  function khungNhan(){const st=$('.stage'),lw=$('#lw');if(!st||!lw||!LW||!D)return;
+   if(!BOX){BOX=document.createElement('div');BOX.id='kh-nhan';st.appendChild(BOX);
+    BOX.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+     if(b.dataset.an){const k=b.dataset.an;on[k]=0;mo='';luu();boVe();draw();toast({tieu_de:'Đã ẩn khung '+(KDN[k]||[k])[0],noi_dung:'Bật lại ở nút Chỉ báo trên thanh công cụ.'})}
+     else if(b.dataset.hoi){mo=mo===b.dataset.hoi?'':b.dataset.hoi;BOX.dataset.h='';khungNhan()}})}
+   const ks=(LW.khDao||'').split(',').filter(Boolean);let pa=[];try{pa=LW.chart.panes()}catch(e){}
+   if(!ks.length||pa.length<2){BOX.innerHTML='';BOX.dataset.h='';return}
+   const r=lw.getBoundingClientRect(),rs=st.getBoundingClientRect();let x=Math.round(r.left-rs.left+8),y=r.top-rs.top,h='';
+   const tb=st.querySelector('.vetb');if(tb&&tb.offsetParent){const b=tb.getBoundingClientRect();if(b.width)x=Math.max(x,Math.round(b.right-rs.left+8))}   // không đè thanh công cụ vẽ
+   pa.forEach((p,i)=>{let ph=0,el=null;try{ph=p.getHeight();el=p.getHTMLElement()}catch(e){}const k=i?ks[i-1]:null;
+    if(el){const b=el.getBoundingClientRect();if(b.height)y=b.top-rs.top}                // vị trí thật của khung trên trang (đúng cả khi vừa đổi cỡ)
+    if(k&&KDN[k]){const[ten,gt]=KDN[k];h+=`<div class="khn" style="top:${Math.round(y+4)}px;left:${x}px"><b>${ten}</b><span class="khn-gt">${GT[k]()}</span>`
+     +`<button type="button" class="khn-hoi" data-hoi="${k}" aria-expanded="${mo===k}" title="${gt}" aria-label="Giải thích ${ten}">?</button>`
+     +`<button type="button" class="khn-an" data-an="${k}" title="Ẩn khung ${ten}" aria-label="Ẩn khung ${ten}">✕</button>`
+     +(mo===k?`<p class="khn-pop">${gt}</p>`:'')+'</div>'}
+    y+=ph+1});
+   if(BOX.dataset.h!==h){BOX.innerHTML=h;BOX.dataset.h=h}}
+  window.KHN=khungNhan;let hen=0;const lai=()=>{cancelAnimationFrame(hen);hen=requestAnimationFrame(()=>requestAnimationFrame(khungNhan))};   // chờ thư viện vẽ lại khung xong
+  addEventListener('resize',lai);try{const lw=$('#lw');if(lw&&window.ResizeObserver)new ResizeObserver(lai).observe(lw)}catch(e){}}
  addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||''))return;if((e.ctrlKey||e.metaKey)&&(e.key==='y'||e.key==='Y'||((e.key==='z'||e.key==='Z')&&e.shiftKey))){e.preventDefault();veLam()}else if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')){e.preventDefault();veHoan()}else if((e.key==='Delete'||e.key==='Backspace')&&VE.chon&&!(VE.ds.find(x=>x.id===VE.chon)||{}).khoa){e.preventDefault();veXoa()}else if(e.key==='Escape'&&(VE.cong!=='tro'||VE.do||VE.chon)){VE.do=null;VE.chon=null;veCong('tro')}})
  window.BDMN=()=>({LW,D,VE,VEC,ma,dg,tf,TRONG,P:pal(),fp,f2,vnN,esc,veLuu,veTb,veCong,veToa,veTrung,veXoa,moiId,xong,lwPhu,lwNay,datTrong,ctabDat,rk,rkLuu,rkDraw,toast,beep,tkMa})}   // menu chuột phải (bieu_do_menu.py) dùng các hàm này
 // --- tài khoản MT5: chỉ đọc, chỉ tài khoản demo. Thẻ bên phải và các đường trên biểu đồ chỉ nói về mã đang xem.
