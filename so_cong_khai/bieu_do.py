@@ -68,6 +68,9 @@ color:var(--ink);background:var(--card);border:1px solid var(--line);transition:
 .bott{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--ink2);margin:0 0 10px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}.bott:empty{display:none}.bott b{color:var(--ink)}.bott .mo{color:var(--mute);font-size:12px}
 body[data-khac] #rk,body[data-khac] #ai{display:none}
 .stage[data-tai]::after{content:"Đang tải dữ liệu nến…";position:absolute;inset:0;display:grid;place-items:center;color:var(--mute);font-size:13px;background:var(--card)}
+/* nến thường về trước khi trang vẽ xong: chữ "Đang tải" chỉ hiện khi phải chờ quá nửa giây, kẻo lần mở nào cũng nháy chữ. Nhãn data-luu: đang vẽ tạm nến của lần xem trước */
+@keyframes tai-hien{from{color:transparent}}.stage[data-tai]::after{animation:tai-hien .2s .5s both}
+.stage[data-luu]::before{content:attr(data-luu);position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:6;padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink2);font-size:12px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none}
 .stage{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 #cv{width:100%;height:clamp(420px,calc(100vh - 395px),760px);display:block;cursor:crosshair;touch-action:none}
 #lw{display:none;width:100%;height:clamp(420px,calc(100vh - 395px),760px)}#lwo{display:none;position:absolute;left:0;top:0;pointer-events:none;z-index:2}
@@ -557,12 +560,22 @@ function sgKe(){sgVe=0;if(!D||!D.candles.length)return;const cs=D.candles,i=cs.l
  srcVe();
  const bay=performance.now();if(bay-sgBen>500){sgBen=bay;botTT()}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(D)load(1)}else sgDong()});
+// --- nến có sẵn khi mở trang (26/11/2026). Đầu trang (NAP_SOM) đã gọi /api/gia ngay từ dòng đầu, song song với lúc trình duyệt còn đọc trang, nên thường
+// nến về trước khi mã này chạy. Máy chủ chưa kịp trả (vừa khởi động lại, đang nối MT5) thì vẽ tạm bản nến của lần xem trước, có nhãn giờ lưu, rồi bản mới đè lên.
+// Bản lưu chỉ có nến đã đóng và chỉ báo: không giá bid/ask, không lệnh đang mở, không luật, không luồng tick (nguon='luu').
+const luuLan={},LUU_HAN=4*86400000;
+function napSom(u,cu){const o=window.BDNAP;window.BDNAP=null;if(!o||o.u!==u)return fetch(u,{cache:'no-store'});if(o.luu&&!o.xong)o.luu.then(j=>{if(!o.xong&&!cu())luuVe(j)});return o.p}
+function luuVe(j){if(D||ANH||!j||(j.tf&&j.tf!==tf)||!j.candles||j.candles.length<50||!(Date.now()-j._luc<LUU_HAN)||(window.BDPL&&BDPL.chan))return;
+ j.nguon='luu';j.luat=null;j.lenh=[];j.bid=j.ask=null;delete j.dang_chay;D=j;D.live=-1;dg=D.so_le==null?2:D.so_le;CBS=null;view={n:defN(),off:0};draw();
+ const s=$('.stage');delete s.dataset.tai;s.dataset.luu='Nến lưu lúc '+new Date(j._luc).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',timeZone:'Asia/Ho_Chi_Minh'}).replace('-','/')+' · '+'đang cập nhật…'}
+function luuGhi(u,r){if(!window.caches||ANH||Date.now()-(luuLan[u]||0)<60000)return;luuLan[u]=Date.now();const b=r.clone();   // mỗi phút một lần cho mỗi mã và khung, giữ 12 bản mới nhất
+ caches.open('so-nen').then(async c=>{await c.put(u,new Response(await b.blob(),{headers:{'Content-Type':'application/json','X-Luc':String(Date.now())}}));const ks=await c.keys();for(const k of ks.slice(0,Math.max(0,ks.length-12)))c.delete(k)}).catch(()=>{})}
 async function load(keep){if(window.BDPL&&BDPL.chan)return;const t0=tf,m0=ma,cu=()=>t0!==tf||m0!==ma,hen=!keep&&D?setTimeout(()=>{if(!cu())$('.stage').dataset.doi='1'},350):0,xong=()=>{clearTimeout(hen);delete $('.stage').dataset.doi};   // phản hồi về sau khi người dùng đã đổi khung/mã thì bỏ, kẻo nến khung cũ đè lên khung mới và biểu đồ trôi khỏi khung hình
- try{const r=await fetch('/api/gia?tf='+tf+'&n=900'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();if(cu())return;if(window.BDPL&&BDPL.chan){xong();delete $('.stage').dataset.tai;return}   // vào phát lại nến trong lúc đang tải: bỏ kết quả, kẻo nến hiện tại đè lên đoạn đang phát
+ try{const u='/api/gia?tf='+tf+'&n=900'+(ma?'&ma='+encodeURIComponent(ma):''),r=await napSom(u,cu);if(!r.ok)throw new Error(await r.text());luuGhi(u,r);const j=await r.json();if(cu())return;if(window.BDPL&&BDPL.chan){xong();delete $('.stage').dataset.tai;return}   // vào phát lại nến trong lúc đang tải: bỏ kết quả, kẻo nến hiện tại đè lên đoạn đang phát
  xong();D=j;D.live=-1;dg=D.so_le==null?2:D.so_le;document.body.toggleAttribute('data-khac',!!D.khac_vang);$('#tieu-de').textContent=D.khac_vang&&!D.chia_se?'Biểu đồ '+D.ma:'Biểu đồ vàng';{const cn=$('#chan-nguon');if(cn&&D.chia_se)cn.textContent='Giá và nến đọc trực tiếp từ MT5 của bạn ở chế độ chỉ đọc. Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo tính trên nến đã đóng; các phương pháp tùy chọn tính theo ATR. '}{const dt=$('#doc-truoc');if(dt&&D.chia_se)dt.innerHTML='<b>Đọc trước:</b> giá và nến lấy trực tiếp từ MT5 của bạn. Các phương án ở nút Phân tích điểm vào là những phương pháp tùy chọn tính theo ATR, kèm kết quả đo lại trên dữ liệu quá khứ của chính mã đó; kết quả quá khứ không bảo đảm tương lai. Trang này không đặt lệnh và không phải lời khuyên đầu tư.'}$('#ma-nhan').textContent=D.khac_vang?D.ma+(D.chia_se?' · bản chia sẻ, phương pháp tùy chọn tính theo ATR':' · phương pháp tùy chọn, đo trên dữ liệu của chính mã'):'XAUUSD · luật tính trên nến đã đóng';
   hisGhep();plCach();if(D.dang_chay){D.candles.push(D.dang_chay);for(const k of['ema20','ema50','bb_tren','bb_duoi','ho_tro','khang_cu','rsi'])if(D[k])D[k].push(null);D.live=D.candles.length-1}
   CBS=null;if(SG&&SG.k===sgK())sgAp(SG);else cbSong();                                                  // tick mới nhất của luồng luôn mới hơn bản vừa tải
-  if(!keep)view={n:defN(),off:0};draw();side();botTT();rkAtr();zNow();sgMo();srcVe();$('#err').textContent='';delete $('.stage').dataset.tai;hisTai();tkTai()}catch(e){if(cu())return;xong();$('#err').textContent='Không tải được dữ liệu: '+e.message;delete $('.stage').dataset.tai}}
+  if(!keep)view={n:defN(),off:0};draw();side();botTT();rkAtr();zNow();sgMo();srcVe();$('#err').textContent='';delete $('.stage').dataset.tai;delete $('.stage').dataset.luu;hisTai();tkTai()}catch(e){if(cu())return;xong();$('#err').textContent='Không tải được dữ liệu: '+e.message;delete $('.stage').dataset.tai}}
 const luu=()=>{try{localStorage.setItem('so-on2',JSON.stringify(on));localStorage.setItem('so-kieu3',kieu)}catch(e){}};
 document.querySelectorAll('.seg.tf button').forEach(b=>b.addEventListener('click',()=>{const m=lwTam();tf=b.dataset.tf;if(LW){if(m)m.tf=tf;LW.tam=m}document.querySelectorAll('.seg.tf button').forEach(o=>o.setAttribute('aria-pressed',o===b));load()}));
 document.querySelectorAll('.seg.kieu button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.kieu===kieu);b.addEventListener('click',()=>{kieu=b.dataset.kieu;document.querySelectorAll('.seg.kieu button').forEach(o=>o.setAttribute('aria-pressed',o===b));luu();draw()})});
@@ -1150,13 +1163,22 @@ FS.addEventListener('click',()=>{const on=!fsOn();fsDat(on);
 if(ANH){fsDat(true);const b=document.createElement('div');b.className='anh-dau';b.textContent=document.title.split(' · ').slice(1).join(' · ');$('.stage').appendChild(b);(async()=>{const t0=Date.now();while(!D&&Date.now()-t0<15000)await new Promise(r=>setTimeout(r,200));if(D)nkTai();else document.documentElement.dataset.anh='loi'})()}
 document.addEventListener('fullscreenchange',()=>{if(document.fullscreenElement){fsLuc=Date.now()}else{if(fsLuc&&Date.now()-fsLuc>500&&fsOn())fsDat(false);fsLuc=0}});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&fsOn()&&!document.fullscreenElement)fsDat(false)});
-async function loop(){if(document.visibilityState==='visible')await load(1);setTimeout(loop,D&&D.nguon==='mt5'?(ES?15000:5000):60000)}
-fit();cb();setInterval(cb,10000);cotTai();setInterval(cotTai,1800000);load().then(()=>{ai();setTimeout(loop,D&&D.nguon==='mt5'?5000:60000)});
+async function loop(){if(document.visibilityState==='visible')await load(1);setTimeout(loop,D&&D.nguon==='mt5'?(ES?15000:5000):D&&D.nguon==='luu'?3000:60000)}
+fit();cb();setInterval(cb,10000);cotTai();setInterval(cotTai,1800000);load().then(()=>{ai();setTimeout(loop,D&&D.nguon==='mt5'?5000:D&&D.nguon==='luu'?3000:60000)});
 setInterval(()=>{if(!$('#ask')||!$('#ask').textContent.startsWith('Đang'))ai()},60000)})();
 {const lt=document.getElementById('lt');if(lt)for(const ev of['pointerdown','focusin','click'])lt.addEventListener(ev,e=>{   // lối tắt mang theo mã đang xem
  const a=e.target.closest('a[data-lt]'),m=document.getElementById('ma'),o=m&&m.options[m.selectedIndex];   // ô trống = mã vàng mặc định, tên nằm ở đầu chữ của ô
  const v=m&&(m.value||(o?o.textContent.split(' · ')[0].trim():''));if(a&&v)a.href=a.dataset.lt+'?ma='+encodeURIComponent(v)})}
 """
+
+
+# Chạy ngay ở dòng đầu của trang, trước cả CSS: gọi nến của mã và khung sẽ mở (cùng cách chọn với JS chính: ?ma= rồi tới mã đã nhớ; M15, riêng chế độ
+# ảnh theo ?tf=), và đọc bản nến của lần xem trước trong Cache Storage. load() nhận lại qua window.BDNAP; địa chỉ không khớp thì bỏ, gọi như thường.
+NAP_SOM = r"""(()=>{try{const q=new URLSearchParams(location.search),anh=q.get('anh')==='1';let ma='',tf='M15';try{ma=q.get('ma')||localStorage.getItem('so-ma')||''}catch(e){}
+if(anh){const t=q.get('tf')||'';if(/^(M1|M5|M15|M30|H1|H4|D1)$/.test(t))tf=t}
+const u='/api/gia?tf='+tf+'&n=900'+(ma?'&ma='+encodeURIComponent(ma):''),o={u,xong:0,luu:null};o.p=fetch(u,{cache:'no-store'});o.p.then(()=>{o.xong=1},()=>{o.xong=1});
+if(window.caches&&!anh)o.luu=caches.open('so-nen').then(c=>c.match(u)).then(r=>r?r.json().then(j=>{j._luc=+r.headers.get('X-Luc')||0;return j}):null).catch(()=>null);
+window.BDNAP=o}catch(e){}})();"""
 
 
 def trang_bieu_do(ten: str) -> str:
@@ -1171,7 +1193,8 @@ def trang_bieu_do(ten: str) -> str:
     extra = ':root{--ema50:#eb6834;--ob:#6250d6;--fvg:#eda100}:root[data-theme="dark"]{--ema50:#d95926;--ob:#9085e9;--fvg:#c98500}' \
             '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ema50:#d95926;--ob:#9085e9;--fvg:#c98500}}'
     return '\n'.join([
-        '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+        '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<script>{NAP_SOM}</script>',
         f'{trang.BIEU_TUONG}<title>Biểu đồ vàng · {escape(ten)}</title><style>{trang.CSS}{extra}{CSS}{bieu_do_chi_bao.CSS}{bieu_do_menu.CSS}{canh_bao_ve.CSS}</style></head><body>',
         trang.thanh_dau(ten, 'bieu-do', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1 id="tieu-de">Biểu đồ vàng</h1></div><div class="stamp"><span id="ma-nhan">XAUUSD · luật tính trên nến đã đóng</span><br><span id="src">đang tải…</span></div></div>',
