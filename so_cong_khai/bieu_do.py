@@ -1137,7 +1137,8 @@ function dvKiem(){if(!PTR)return;const now=Date.now(),sym=ma||'XAUUSD',pc=v=>v.t
  try{sessionStorage.setItem('so-dv',JSON.stringify([...dvDa].slice(-60)))}catch(e){}dvVe()}
 let ptDang=0,ptCho=0,ptLan=0;async function ptTai(tu){if(window.BDPL&&BDPL.chan)return;if(ptDang){if(!tu)ptCho=1;return}ptDang=1;ptLan=Date.now();const b=$('#pt-btn'),ma0=ma;if(!tu){planTat=0;b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Đang phân tích…'}
  try{const r=await fetch('/api/phan-tich'+(ma?'?ma='+encodeURIComponent(ma):''),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();
-  if(ma0===ma&&!(window.BDPL&&BDPL.chan)){   // đã vào phát lại nến trong lúc chờ: không vẽ phân tích của giá hiện tại (vẫn dọn nút ở cuối)PTR=j;
+  if(ma0===ma&&!(window.BDPL&&BDPL.chan)){   // đã vào phát lại nến trong lúc chờ: không vẽ phân tích của giá hiện tại (vẫn dọn nút ở cuối)
+   PTR=j;
    if(!tu&&ppChon!=='tat'&&!ppNhom(ppChon).some(p=>p.co)&&ppNhom('tat').some(p=>p.co)){ppChon='tat';try{localStorage.setItem('so-ppc','tat')}catch(e){}}      // bấm nút mà thẻ đang nhớ không có điểm vào trong khi thẻ khác có: về 'Tất cả phương pháp'
    const ds=ptDs().filter(p=>bat(ppKhoa(p))),tn=totNhat();
    if(plan&&(plan.ma==='ai'||plan.nk)&&tu){}else if(plan&&plan.ph){const q=[...(PTR.phuong_phap||[]),...(PTR.phuong_an||[])].find(x=>x.phieu&&'phieu:'+x.phieu.ma===plan.ma);plan=q?phPlan(q.phieu):null}else{const cu=plan&&ppNhom(ppChon).find(p=>p.co&&p.ma===plan.ma);plan=cu||(tu&&planTat?null:ppTot(ppChon,tu&&ppChon==='tat'))}
