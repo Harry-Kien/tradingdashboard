@@ -28,6 +28,21 @@ main.rong{max-width:none;padding-left:16px;padding-right:16px}
 .rk-nut[aria-pressed=true]{background:var(--series);color:var(--btn-ink);border-color:var(--series)}.rk-nut:focus-visible{outline:2px solid var(--series);outline-offset:1px}
 .rk-tt i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 2px;vertical-align:0}
 #rk-cv.ve{cursor:crosshair}
+/* Máy tính (27/11/2026): tiêu đề và hàng nút gộp một hàng, đoạn mô tả thu vào nút "i", khung vẽ cao vừa phần còn lại của cửa sổ. */
+.rk-i{display:none}
+@media(min-width:981px) and (min-height:600px){
+main.rong{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:18px;align-items:center;padding-top:10px;padding-bottom:24px}
+main.rong>*{grid-column:1/-1}main.rong>.rk-top{grid-column:1;display:flex;align-items:center;gap:8px;position:relative}
+main.rong>.rk-thanh{grid-column:2;margin:0;justify-content:flex-end;flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}   /* luôn một hàng: chiều cao khung vẽ tính theo một hàng */
+main.rong>.rk-thanh>*{flex:none}#rk-ma{max-width:200px}
+.rk-top h1{font-size:18px;white-space:nowrap}
+.rk-i{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);color:var(--ink2);font:italic 700 12px/1 Georgia,serif;cursor:pointer}
+.rk-i:focus-visible{outline:2px solid var(--series);outline-offset:1px}
+.rk-top p{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:8;width:min(520px,80vw);max-width:none;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.rk-i:hover+p,.rk-i:focus+p{display:block}
+.rk-tt{margin:8px 0}
+#rk-cv{height:calc(100dvh - var(--nv-h,56px) - 112px);min-height:300px}
+}
 """
 
 JS = r"""
@@ -120,7 +135,7 @@ def trang_renko(ten: str) -> str:
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
         f'{trang.BIEU_TUONG}<title>Renko và Điểm &amp; Hình · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'renko', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
-        '<div class="rk-top"><h1>Renko và Điểm &amp; Hình</h1><p>Hai kiểu biểu đồ chỉ theo giá, bỏ thời gian: giá phải đi đủ một ô mới có gạch hay dấu mới, '
+        '<div class="rk-top"><h1>Renko và Điểm &amp; Hình</h1><span class="rk-i" tabindex="0" aria-label="Giới thiệu trang" aria-describedby="rk-gt">i</span><p id="rk-gt">Hai kiểu biểu đồ chỉ theo giá, bỏ thời gian: giá phải đi đủ một ô mới có gạch hay dấu mới, '
         'nên nhiễu nhỏ biến mất và xu hướng, vùng đảo chiều hiện rõ hơn. Tính trên giá đóng của nến đã đóng trong MT5 của bạn.</p></div>',
         '<div class="rk-thanh"><select id="rk-ma" aria-label="Mã"><option value="">XAUUSD</option></select>'
         f'<select id="rk-tf" aria-label="Khung thời gian của nến nguồn">{tfs}</select>'

@@ -720,7 +720,7 @@ body{font-size:13px}h1{font-size:24px}h2{font-size:17px}.hero b{font-size:24px}.
 .cbr{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink2)}.cbr:last-child{border-bottom:0}
 .cbr b{display:block;color:var(--ink)}.cbr span{display:block;margin:2px 0}.cbr small{color:var(--mute);font-size:12px}
 @media print{.pane[hidden]{display:block!important}.tabs{display:none}}
-main{max-width:1240px}.bar>div,.subnav>div{max-width:1240px}
+main{max-width:1560px}.bar>div,.subnav>div{max-width:1560px}main .note,main p.why,main p.sub{max-width:100ch}
 .hero{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.hero a{display:flex;flex-direction:column;padding:14px 16px 12px}
 .hero .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.hero .hd h4{margin:0;font-size:13px}
 .hero b i{font-style:normal;font-size:14px;font-weight:600;color:var(--mute)}.hero small{font-size:12.5px;font-variant-numeric:tabular-nums}
@@ -991,7 +991,7 @@ def thanh_dau(ten: str, trang_hien: str, phai: str = '', muc: str = '') -> str:
 # đặt ở trang Kiểm tra lệnh (localStorage kl-qt). Mỗi cảnh báo tắt được tới hết ngày theo giờ Việt Nam (localStorage gs-an; hàm ngay() cộng 7 giờ
 # để hết hạn lúc nửa đêm VN chứ không phải 07:00). Không có API (bản demo) thì im lặng.
 GIAM_SAT = r"""<div id="gsr-dai" class="gsr" hidden aria-live="polite"></div><style>
-.gsr[hidden]{display:none}.gsr{max-width:1240px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
+.gsr[hidden]{display:none}.gsr{max-width:1560px;margin:10px auto 0;padding:0 16px;display:grid;gap:8px;box-sizing:border-box}
 .gsr-m{display:grid;grid-template-columns:26px minmax(0,1fr) 32px;gap:10px;align-items:start;border-radius:12px;padding:10px 12px;border:1px solid var(--line);background:var(--card)}
 .gsr-m.xau{border-color:color-mix(in srgb,var(--loss) 55%,var(--line));background:color-mix(in srgb,var(--loss) 9%,var(--card))}
 .gsr-m.chu_y{border-color:color-mix(in srgb,var(--warn) 55%,var(--line));background:color-mix(in srgb,var(--warn) 9%,var(--card))}
@@ -1170,7 +1170,7 @@ fetch('/api/tinh-trang',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.j
 CSS += r"""
 :root{--nv-h:56px}
 .nv{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--line)}
-.nv-in{max-width:1520px;margin:0 auto;height:var(--nv-h);padding:0 20px;display:flex;align-items:center;gap:6px}
+.nv-in{max-width:1560px;margin:0 auto;height:var(--nv-h);padding:0 20px;display:flex;align-items:center;gap:6px}
 .nv .ic{width:18px;height:18px;flex:none}
 .nv-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);margin-right:18px;flex:none}
 .nv-mk{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--btn-ink);overflow:hidden;background:#090a08;
@@ -1217,7 +1217,7 @@ font-family:inherit;text-decoration:none;white-space:nowrap}.nv-tg:hover{backgro
 .nv-d .ic{color:var(--series)}.nv-d[aria-current=page],.nv-d:hover{background:color-mix(in srgb,var(--series) 10%,transparent)}.nv-d[aria-current=page]{font-weight:600}
 .nv-i[aria-current=page]{background:color-mix(in srgb,var(--series) 8%,transparent)}
 html.nv-khoa{overflow:hidden}
-.nv .subnav{border-top:1px solid var(--line);background:transparent}.nv .subnav>div{max-width:1520px;padding:0 20px}.nv .subnav a{display:inline-block;padding:8px 0;color:var(--mute);text-decoration:none}
+.nv .subnav{border-top:1px solid var(--line);background:transparent}.nv .subnav>div{max-width:1560px;padding:0 20px}.nv .subnav a{display:inline-block;padding:8px 0;color:var(--mute);text-decoration:none}
 .nv .subnav a:hover{color:var(--ink)}
 .tt-tabs{top:var(--nv-h)}
 @media(max-width:1180px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd,.nv-tg span{display:none}.nv-tg{padding:0 10px}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}

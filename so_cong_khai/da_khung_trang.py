@@ -45,6 +45,23 @@ main.rong{max-width:none;padding-left:16px;padding-right:16px}
 .dk-ghi{margin:12px 0 0;color:var(--ink2);font-size:12.5px;line-height:1.55}
 @media(max-width:900px){.dk-luoi,.dk-luoi[data-bo="1+3"]{grid-template-columns:1fr}.dk-luoi[data-bo="1+3"] .dk-o:first-child{grid-row:auto}
  .dk-c,.dk-luoi[data-bo] .dk-c,.dk-luoi[data-bo="1+3"] .dk-o .dk-c{height:300px;min-height:300px}}
+/* Máy tính (27/11/2026): tiêu đề và hàng nút gộp một hàng, đoạn mô tả thu vào nút "i", lưới biểu đồ cao vừa phần còn lại của cửa sổ nên màn hình
+   đầu là biểu đồ. --tru = mọi thứ phía trên lưới + lề dưới; lưới có chiều cao cố định, các hàng chia đều, vùng nến của mỗi ô lấp phần còn lại
+   (đầu ô có xuống dòng ở ô hẹp cũng không làm lưới tràn màn hình). */
+.dk-i{display:none}
+@media(min-width:981px) and (min-height:600px){
+main.rong{--tru:calc(var(--nv-h,56px) + 112px);display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:18px;align-items:center;padding-top:10px;padding-bottom:24px}
+main.rong>*{grid-column:1/-1}main.rong>.dk-top{grid-column:1;min-width:0;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:10px;position:relative}
+main.rong>.dk-thanh{grid-column:2;margin:0;justify-content:flex-end;flex-wrap:nowrap}
+.dk-top>div{display:flex;align-items:center;gap:8px;flex:none}.dk-song{min-width:0}.dk-song span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dk-top h1{font-size:18px;white-space:nowrap}
+.dk-i{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);color:var(--ink2);font:italic 700 12px/1 Georgia,serif;cursor:pointer}
+.dk-i:focus-visible{outline:2px solid var(--series);outline-offset:1px}
+.dk-top p{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:8;width:min(520px,80vw);max-width:none;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.dk-i:hover+p,.dk-i:focus+p{display:block}
+.dk-tom{margin:8px 0}
+.dk-luoi{height:calc(100dvh - var(--tru));min-height:420px;grid-auto-rows:minmax(0,1fr)}.dk-luoi .dk-o{min-height:0}
+.dk-luoi .dk-c,.dk-luoi[data-bo] .dk-o .dk-c{height:auto;flex:1 1 0;min-height:0}
+}
 """
 
 JS = r"""
@@ -144,7 +161,7 @@ def trang_da_khung(ten: str) -> str:
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
         f'{trang.BIEU_TUONG}<title>Nhiều biểu đồ · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'da-khung', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
-        '<div class="dk-top"><div><h1>Nhiều biểu đồ</h1><p>Hai, bốn hoặc một lớn ba nhỏ trên một màn hình, chạy theo từng tick. Mỗi ô chọn mã và khung riêng; '
+        '<div class="dk-top"><div><h1>Nhiều biểu đồ</h1><span class="dk-i" tabindex="0" aria-label="Giới thiệu trang" aria-describedby="dk-gt">i</span><p id="dk-gt">Hai, bốn hoặc một lớn ba nhỏ trên một màn hình, chạy theo từng tick. Mỗi ô chọn mã và khung riêng; '
         'bật Đồng bộ mã để xem một mã ở nhiều khung. Rê chuột ở một ô thì các ô khác chỉ vào cùng thời điểm; bấm đúp một ô để mở ô đó ở trang Biểu đồ.</p></div>'
         '<span id="dk-song" class="dk-song"><i></i><span>Đang nối…</span></span></div>',
         f'<div class="dk-thanh"><div class="dk-seg" id="dk-bo" role="group" aria-label="Bố cục">{bo}</div>'

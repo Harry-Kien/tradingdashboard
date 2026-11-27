@@ -10,7 +10,7 @@ from . import trang
 
 # --------------------------------------------------------------------------- kiểu dáng dùng chung cho ba trang mới
 CSS = r"""
-main.rong{max-width:1320px}
+main.rong{max-width:1560px}
 .tt-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .tt-top h1{margin:0}.tt-top p{margin:6px 0 0;color:var(--ink2);max-width:760px}
 .song-pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import bieu_do_chi_bao, bieu_do_cong_cu, bieu_do_menu, canh_bao_ve, do_sau, hinh_ve, mau_chi_bao, trang
+from . import bieu_do_ban, bieu_do_chi_bao, bieu_do_cong_cu, bieu_do_menu, canh_bao_ve, do_sau, hinh_ve, mau_chi_bao, trang
 
 CSS = """
 .desk{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;margin-top:14px}
@@ -42,7 +42,7 @@ CSS = """
 .chartp.max.gon .tools .seg.tf{order:0;flex:1 1 0;min-width:0}.chartp.max.gon #gon-btn,.chartp.max.gon #fs-btn{order:1}}
 .chartp{position:relative}.chartp.max{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;padding:10px 12px;border-radius:0;border:0;background:var(--card);overflow:auto}
 html.khoa{overflow:hidden}.chartp.max .stage{flex:1 1 0;min-height:320px}.chartp.max #dv{flex:none;max-height:min(30vh,280px);overflow:auto}.chartp.max .hint{display:none}
-main{max-width:1520px}.bar>div{max-width:1520px}
+main{max-width:1560px}.bar>div{max-width:1560px}
 aside.pt{font-size:13px;border-left:3px solid var(--series)}aside.pt[hidden]{display:none!important}
 .stage aside.pt{flex:none;width:372px;contain:size;overflow:auto;border:0;border-left:1px solid var(--line);border-radius:0;box-shadow:none}
 .chartp.max .stage{display:flex}.chartp.max #cv{flex:1 1 0;min-width:0;width:0;height:auto}
@@ -1328,7 +1328,7 @@ def trang_bieu_do(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f'<script>{NAP_SOM}</script>',
-        f'{trang.BIEU_TUONG}<title>Biểu đồ vàng · {escape(ten)}</title><style>{trang.CSS}{extra}{CSS}{bieu_do_chi_bao.CSS}{bieu_do_menu.CSS}{canh_bao_ve.CSS}{do_sau.CSS}{bieu_do_cong_cu.CSS}</style></head><body>',
+        f'{trang.BIEU_TUONG}<title>Biểu đồ vàng · {escape(ten)}</title><style>{trang.CSS}{extra}{CSS}{bieu_do_chi_bao.CSS}{bieu_do_menu.CSS}{canh_bao_ve.CSS}{do_sau.CSS}{bieu_do_cong_cu.CSS}{bieu_do_ban.CSS}</style></head><body>',
         trang.thanh_dau(ten, 'bieu-do', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1 id="tieu-de">Biểu đồ vàng</h1></div><div class="stamp"><span id="ma-nhan">XAUUSD · luật tính trên nến đã đóng</span><br><span id="src">đang tải…</span></div></div>',
         '<p class="note" id="doc-truoc"><b>Đọc trước:</b> các ô bên phải cho biết luật bạn đã viết đang nói gì trên nến đã đóng gần nhất. '
@@ -1386,4 +1386,4 @@ def trang_bieu_do(ten: str) -> str:
         '<footer><span id="chan-nguon">Giá đọc trực tiếp từ MT5 demo của bạn ở chế độ chỉ đọc; khi không nối được thì trang dùng kho nến 1 phút do hệ thống tự lưu. '
         'Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo và luật gọi thẳng các hàm trong mã của bạn '
         '(bot tín hiệu, luật ba khung, luật đỉnh/đáy), tính trên nến đã đóng. </span>' + escape(trang.MIEN_TRU) + '</footer></main>',
-        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{bieu_do_cong_cu.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{do_sau.JS}</script><script>{hinh_ve.JS}</script><script>{mau_chi_bao.JS}</script></body></html>'])
+        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{bieu_do_cong_cu.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{do_sau.JS}</script><script>{hinh_ve.JS}</script><script>{mau_chi_bao.JS}</script><script>{bieu_do_ban.JS}</script></body></html>'])

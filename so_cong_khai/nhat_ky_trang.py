@@ -22,7 +22,7 @@ td.tt{font-weight:700}td.pp{white-space:normal;min-width:190px;max-width:320px}
 td a.xem{color:var(--series);font-weight:600;text-decoration:none;border:1px solid var(--series);border-radius:6px;padding:3px 9px;font-size:12.5px}
 td a.xem:hover{background:color-mix(in srgb,var(--series) 9%,transparent)}
 h2.nk{margin:26px 0 4px;font-size:16px}
-main{max-width:1400px!important}.bar>div{max-width:1400px!important}td.pp{min-width:170px;max-width:260px}
+main{max-width:1560px!important}.bar>div{max-width:1400px!important}td.pp{min-width:170px;max-width:260px}
 details.gt{margin:18px 0 0;font-size:13.5px;color:var(--ink2)}details.gt summary{cursor:pointer;color:var(--series);font-weight:600;text-transform:none;letter-spacing:0;font-size:13.5px}
 details.gt p{margin:8px 0 0;max-width:78ch}
 """

@@ -7,7 +7,7 @@ from html import escape
 from . import trang
 
 CSS = r"""
-main.rong{max-width:1240px}
+main.rong{max-width:1560px}
 .kh-top h1{margin:0}.kh-top p{margin:6px 0 0;color:var(--ink2);max-width:820px}
 .kh{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
 @media(max-width:920px){.kh{grid-template-columns:minmax(0,1fr)}}

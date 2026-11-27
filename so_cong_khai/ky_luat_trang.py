@@ -8,7 +8,7 @@ from html import escape
 from . import trang
 
 CSS = r"""
-main.rong{max-width:1240px}
+main.rong{max-width:1560px}
 .ky-top h1{margin:0}.ky-top p{margin:6px 0 0;color:var(--ink2);max-width:820px}
 .ky-loc{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 4px}
 .ky-seg{display:inline-flex;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:4px}
