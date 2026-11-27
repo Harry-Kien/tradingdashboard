@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import trang
+from . import phieu_js, trang
 
 CSS = """
 .nkt{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:18px 0 10px}
@@ -80,6 +80,11 @@ def trang_nhat_ky(ten: str) -> str:
         trang.thanh_dau(ten, 'nhat-ky', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Nhật ký điểm vào</h1></div><div class="stamp">ghi lúc điểm vào xuất hiện, chấm kết quả về sau<br><span id="nk-luc">đang đọc…</span></div></div>',
         '<div id="nk-trang"></div>',
+        '<section class="card" id="phieu" style="margin-top:18px"><h2>Phiếu kế hoạch và quyết định của bạn</h2>'
+        '<p class="sub">Phiếu lập từ phương án trên Biểu đồ: giữ nguyên mã, phương pháp, nến tín hiệu, giá vào, SL, TP qua Kế hoạch và Kiểm tra lệnh. '
+        'Kết quả mô phỏng (chạm TP hay SL) và việc làm đúng kế hoạch là hai cột riêng. Dữ kiện của phiếu không bị sửa; ghi chú là lớp thêm.</p>'
+        '<div class="pk-loc" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><input id="pk-tim" placeholder="Lọc theo mã, phương pháp hoặc tag" '
+        'style="min-height:34px;padding:0 10px;flex:1 1 220px"></div><div id="pk-ds"><p class="small">Đang đọc phiếu…</p></div></section>',
         '<details class="gt"><summary>Cách ghi và cách chấm</summary>'
         '<p>Mỗi khi một luật hoặc một phương pháp có điểm vào còn hiệu lực, máy chủ ghi lại ngay lúc đó. Mức giá chốt lúc ghi và không sửa lại. '
         'Mỗi mã, mỗi phương pháp, mỗi chiều chỉ có một dòng còn sống.</p>'
@@ -92,4 +97,25 @@ def trang_nhat_ky(ten: str) -> str:
         'không biết bạn có kịp vào lệnh hay không.</p>'
         '<p>Cột Mô hình là điểm thử nghiệm 0–100 của mô hình học máy, chỉ có cho vàng, ghi lúc điểm vào xuất hiện. Nhật ký sẽ cho biết điểm cao có '
         'thật sự đi kèm kết quả tốt hơn không.</p></details>',
-        '<footer>' + escape(trang.MIEN_TRU) + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
+        '<footer>' + escape(trang.MIEN_TRU) + f'</footer></main><script>{trang.JS}</script><script>{JS}</script>'
+        f'<script>{phieu_js.JS}</script><script>{JS_PHIEU}</script></body></html>'])
+
+
+JS_PHIEU = r"""
+(()=>{const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const so=v=>v==null?'—':Number(v).toLocaleString('vi-VN',{maximumFractionDigits:5}),TT={dung:'Đúng kế hoạch',mot_phan:'Một phần',lech:'Lệch kế hoạch'};
+let DS=[];
+function ve(){const q=($('#pk-tim').value||'').trim().toLowerCase(),ds=DS.filter(p=>!q||[p.ma,(p.phuong_phap||{}).ten,...(p.ghi_chu_nd||[]).flatMap(g=>g.tag||[])].join(' ').toLowerCase().includes(q));
+ if(!ds.length){$('#pk-ds').innerHTML='<p class="small">'+(DS.length?'Không có phiếu khớp bộ lọc.':'Chưa có phiếu nào. Trên trang Biểu đồ, chọn một phương án rồi bấm "Lập kế hoạch lệnh" hoặc "Kiểm tra lệnh trước khi vào".')+'</p>';return}
+ $('#pk-ds').innerHTML='<div class="wrap"><table><thead><tr><th>Phiếu</th><th>Lập lúc</th><th>Mã · chiều</th><th class="r">Vào</th><th class="r">SL</th><th class="r">TP</th><th>Phương pháp</th><th>Kỹ thuật lúc lập</th><th>Kiểm rủi ro</th><th>Quyết định</th><th>Kết quả mô phỏng</th><th>Tuân thủ</th><th>Ghi chú</th></tr></thead><tbody>'
+  +ds.map(p=>{const pp=p.phuong_phap||{},c=p.cham||{},qd=(p.quyet_dinh||{}).loai,g=(p.ghi_chu_nd||[]),q=new URLSearchParams({ma:p.ma,phieu:p.id});
+   return`<tr><td><a href="/kiem-lenh?${q}">${esc(p.id)}</a><br><small>bản ${p.phien_ban}</small>${p.anh?` · <a href="/api/phieu/anh?f=${encodeURIComponent(p.anh)}" target="_blank" rel="noopener">ảnh</a>`:''}</td><td>${PKJ.gio(p.tao_luc)}</td>
+    <td><a href="/bieu-do?ma=${encodeURIComponent(p.ma)}">${esc(p.ma)}</a> · ${p.chieu==='MUA'?'MUA':'BÁN'}</td><td class="r">${so(p.vao)}</td><td class="r">${so(p.sl)}</td><td class="r">${(p.tp||[]).map(so).join(' / ')||'—'}</td>
+    <td>${esc(pp.ten||pp.ma||'')}${pp.phien_ban_quy_tac?'<br><small>'+esc(pp.phien_ban_quy_tac)+'</small>':''}</td><td>${(PKJ.KT[p.ky_thuat]||PKJ.KT.khong_ro)[1]}</td><td>${(PKJ.RR[(p.rui_ro||{}).trang_thai]||PKJ.RR.chua_kiem)[1]}</td>
+    <td>${qd==='dung_ngoai'?'Đứng ngoài':qd==='vao_mo_phong'?'Theo dõi mô phỏng':'—'}</td><td>${p.theo_doi?esc(PKJ.KQ[c.trang_thai]||c.trang_thai||'—')+(c.r!=null?' · '+(c.r>0?'+':'')+so(c.r)+'R':''):'—'}</td>
+    <td>${esc(TT[p.tuan_thu]||'—')}</td><td>${g.length?esc(g[g.length-1].noi_dung).slice(0,80)+(g.length>1?' <small>(+'+(g.length-1)+')</small>':''):'—'}</td></tr>`}).join('')+'</tbody></table></div>'
+  +'<p class="small">Kết quả mô phỏng chấm trên nến M5 đã đóng sau lúc bấm theo dõi; một nến chạm cả SL và TP tính SL trước; thiếu nến thì ghi "Chưa xác định". Đây không phải lệnh thật.</p>'}
+async function tai(){try{const r=await fetch('/api/phieu/ds',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());DS=(await r.json()).ds||[];ve()}
+ catch(e){$('#pk-ds').innerHTML='<p class="note">Không đọc được sổ phiếu: '+esc(e.message)+'. Dữ liệu cũ trên máy không bị ảnh hưởng.</p>'}}
+$('#pk-tim').addEventListener('input',ve);tai();setInterval(tai,60000);})();
+"""

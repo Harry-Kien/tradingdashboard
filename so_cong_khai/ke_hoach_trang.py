@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import trang
+from . import phieu_js, trang
 
 CSS = r"""
 main.rong{max-width:1560px}
@@ -25,6 +25,8 @@ main.rong{max-width:1560px}
 .kh-seg button[aria-pressed=true][data-v=BAN]{background:color-mix(in srgb,var(--loss) 18%,transparent);color:var(--loss)}
 .kh-gia{display:flex;gap:8px}.kh-gia input{flex:1}.kh-gia button{flex:none;min-height:40px;padding:0 12px;border-radius:10px;font:600 12px/1 inherit;font-family:inherit;cursor:pointer}
 .kh-goi{font-size:12px;color:var(--ink2);margin:-4px 0 0}
+.kh-gd{margin:0 0 10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--warn,#f5b301) 10%,transparent);font-size:13px;line-height:1.45}
+.kh-pk .kh-so>div>b{font-size:14px}.kh-pk .kh-doi{color:var(--loss);font-weight:600}
 details.kh-mp{border-top:1px solid var(--line);padding-top:10px}details.kh-mp summary{cursor:pointer;font-size:13px;font-weight:700}
 .kh-kq{display:grid;gap:14px}
 .kh-kl{display:flex;align-items:center;gap:14px;border-radius:16px;padding:14px 18px;border:1px solid var(--line);background:var(--card)}
@@ -74,6 +76,15 @@ async function taiMa(){try{const r=await fetch('/api/thi-truong',{cache:'no-stor
   const u=new URLSearchParams(location.search),chon=u.get('ma')||ST.ma||(DS.find(x=>/XAU/.test(x.ma))||DS[0]||{}).ma;
   $('#kh-ma').innerHTML=DS.map(x=>`<option value="${esc(x.ma)}"${x.ma===chon?' selected':''}>${esc(x.goc||x.ma)} · ${esc(x.ten||'')}</option>`).join('')}
  catch(e){$('#kh-kq').innerHTML=`<p class="kh-cho">Không đọc được danh sách mã: ${esc(e.message)}</p>`}}
+// phiếu kế hoạch mở từ Biểu đồ (?phieu=ID): điền đúng chiều, mã, giá vào, SL của phiếu; không thay bằng mặc định
+let PK=null;const PKID=new URLSearchParams(location.search).get('phieu');
+async function taiPhieu(){if(!PKID)return;try{PK=await PKJ.tai(PKID);ST.chieu=PK.chieu;const sel=$('#kh-ma'),o=[...sel.options].find(o=>o.value===PK.ma)||[...sel.options].find(o=>o.value.toUpperCase().startsWith(PK.ma.toUpperCase()));
+  if(o)sel.value=o.value;$('#kh-vao').value=PK.vao;if(PK.sl!=null){$('#kh-sl').value=PK.sl;slTay=true}if(PK.rui_ro_pct){ST.muc='tu_dat';$('#kh-rr-tu').value=PK.rui_ro_pct}bo()}
+ catch(e){PK={loi:e.message}}}
+function pkCur(){return{chieu:ST.chieu,vao:so($('#kh-vao')),sl:so($('#kh-sl'))}}
+function pkVe(){const el=$('#kh-pk');if(!el)return;el.innerHTML=!PK?'':PK.loi?`<p class="kh-cho">Không mở được phiếu: ${esc(PK.loi)}</p>`:pkHtml()}   // khung riêng: vẫn hiện khi chưa lập được kế hoạch
+function pkHtml(){const d=PKJ.doi(PK,pkCur()),q=new URLSearchParams({ma:PK.ma,phieu:PK.id});
+ return PKJ.html(PK,pkCur()).replace('</section>',`<div class="pkj-nut">${d.length?'':`<a class="btn" href="/kiem-lenh?${q}">Kiểm tra đúng phiếu này</a>`}<a class="ghost btn" href="/bieu-do?ma=${encodeURIComponent(PK.ma)}">Về biểu đồ</a></div></section>`)}
 function goi(){clearTimeout(hen);hen=setTimeout(tai,350)}
 async function tai(){const ma=$('#kh-ma').value;if(!ma)return;ST.ma=ma;
  const q=new URLSearchParams({ma,chieu:ST.chieu,khung:ST.khung,muc:ST.muc});const von=so($('#kh-von')),vao=so($('#kh-vao')),sl=so($('#kh-sl'));
@@ -97,8 +108,8 @@ function ve(){const t=D.tien||'',V=D.von,L=D.lenh,M=D.muc,P=D.mo_phong,dl=D.so_l
  if(P.ky_vong_r<=0)xau(`Với tỷ lệ thắng ${fmt(ST.thang,0)}% và lời/lỗ 1:${fmt(ST.rr,1)}, kỳ vọng mỗi lệnh là âm: về lâu dài sẽ lỗ dù quản lý vốn tốt. Cần thắng trên ${fmt(P.hoa_von_pct,0)}% số lệnh mới hòa vốn.`);
  if(P.xs_sut_50>=5)xau(`Mô phỏng: ${fmt(P.xs_sut_50,0)}% khả năng có lúc mất một nửa tài khoản trong ${P.so_lenh} lệnh.`);
  else if(P.xs_sut_20>=25)chu(`Mô phỏng: ${fmt(P.xs_sut_20,0)}% khả năng có lúc sụt 20% vốn trong ${P.so_lenh} lệnh.`);
- if(!canh.length)canh.push(['tot','Không thấy rủi ro cháy tài khoản với kế hoạch này. Kết quả từng lệnh vẫn có thể thắng hoặc thua.']);
- const KL={tot:['✓','Kế hoạch an toàn'],chu_y:['!','Cần xem lại'],xau:['✕','Nguy cơ cháy tài khoản']}[muc];
+ if(!canh.length)canh.push(['tot','Các phép kiểm ở đây chưa thấy dấu hiệu cháy tài khoản với kế hoạch này. Phép tính chưa gồm giá nhảy qua dừng lỗ và trượt giá; từng lệnh vẫn có thể thua.']);
+ const KL={tot:['✓','Qua các phép kiểm rủi ro'],chu_y:['!','Cần xem lại'],xau:['✕','Nguy cơ cháy tài khoản']}[muc];
  const MUCV={an_toan:'An toàn',can_bang:'Cân bằng',manh:'Mạnh',tu_dat:'Tự đặt'}[V.muc]||V.muc;
  const von=`<section class="kh-card"><h2>Phân bổ vốn<small>${D.nguon_von==='mt5'?'vốn lấy từ MT5':D.nguon_von==='mau'?'vốn mẫu của bản demo':'vốn bạn nhập'} · ${esc(MUCV)}</small></h2><div class="kh-so">
   <div><small>Vốn</small><b>${tien(V.von,t)}</b></div>
@@ -121,13 +132,14 @@ function ve(){const t=D.tien||'',V=D.von,L=D.lenh,M=D.muc,P=D.mo_phong,dl=D.so_l
   <h3 style="font-size:13.5px;margin:16px 0 6px">Chốt lời</h3><div class="kh-bang"><table><thead><tr><th>Mức</th><th>Giá</th><th>Lời/lỗ</th><th>Lời nếu chạm</th></tr></thead><tbody>${tp}</tbody></table></div>
   <div class="kh-hd" style="margin-top:14px"><a class="btn" href="/kiem-lenh?${link}">Kiểm tra lệnh này trước khi vào</a><span class="kh-ghi">Trang kiểm tra xem thêm tin mạnh, spread, lỗ trong ngày và các lệnh đang mở.</span></div></section>`}
  else lenh=`<section class="kh-card"><p class="kh-cho">Chưa đủ dữ liệu để gợi ý dừng lỗ. Hãy nhập mức dừng lỗ.</p></section>`;
- const mp=`<section class="kh-card"><h2>Mô phỏng ${P.so_lenh} lệnh<small>${P.theo_rui_ro_that?'theo rủi ro thật '+fmt(P.theo_rui_ro_that,1)+'% mỗi lệnh · ':''}${fmt(P.lan,0)} lần · thắng ${fmt(ST.thang,0)}% · lời/lỗ 1:${fmt(ST.rr,1)}</small></h2><div class="kh-so">
+ const mp=`<section class="kh-card"><h2>Mô phỏng ${P.so_lenh} lệnh<small>${P.theo_rui_ro_that?'theo rủi ro thật '+fmt(P.theo_rui_ro_that,1)+'% mỗi lệnh · ':''}${fmt(P.lan,0)} lần</small></h2>
+  <p class="kh-gd"><b>Giả định do bạn nhập: thắng ${fmt(ST.thang,0)}%, lời/lỗ 1:${fmt(ST.rr,1)}.</b> Đây là kịch bản để thử cách quản lý vốn, không phải hiệu suất đã đo của Harrison hay của phương pháp nào. Đổi giả định ở ô "Giả định mô phỏng".</p><div class="kh-so">
   <div><small>Kết quả thường gặp (trung vị)</small><b>${pc(P.trung_vi_pct)}</b><span>vốn sau ${P.so_lenh} lệnh</span></div>
   <div><small>5% trường hợp xấu nhất</small><b>${pc(P.xau_5_pct)}</b><span>hoặc tệ hơn</span></div>
   <div><small>Khả năng sụt 20%</small><b>${fmt(P.xs_sut_20,1)}%</b><span>sụt trung vị ${fmt(P.sut_trung_vi_pct,1)}%</span></div>
   <div><small>Khả năng mất một nửa</small><b>${fmt(P.xs_sut_50,1)}%</b><span>kỳ vọng ${fmt(P.ky_vong_r,2)}R mỗi lệnh</span></div></div>
   <p class="kh-ghi" style="margin-top:10px">Mỗi lần mô phỏng xáo ngẫu nhiên thứ tự thắng thua theo tỷ lệ thắng bạn nhập. Đây là phép thử rủi ro của cách quản lý vốn, không phải dự báo lợi nhuận.</p></section>`;
- $('#kh-kq').innerHTML=`<div class="kh-kl ${muc}" role="status"><i>${KL[0]}</i><div><b>${KL[1]}</b><span>${muc==='tot'?'Rủi ro mỗi lệnh và ký quỹ trong mức an toàn.':'Xem các điểm bên dưới.'}</span></div></div>
+ pkVe();$('#kh-kq').innerHTML=`<div class="kh-kl ${muc}" role="status"><i>${KL[0]}</i><div><b>${KL[1]}</b><span>${muc==='tot'?'Rủi ro mỗi lệnh và ký quỹ nằm trong ngưỡng đã chọn. Điều này không có nghĩa lệnh sẽ thắng.':'Xem các điểm bên dưới.'}</span></div></div>
   <section class="kh-card"><ul class="kh-ds">${canh.map(([m,s])=>`<li class="${m}"><i>${{xau:'✕',chu_y:'!',tot:'✓'}[m]}</i><span>${s}</span></li>`).join('')}</ul></section>
   ${lenh}${von}${mp}${(D.thieu||[]).length?`<p class="kh-ghi">Chưa đủ dữ liệu: ${D.thieu.map(esc).join('; ')}.</p>`:''}`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nhom] button[data-v]');if(b){const g=b.closest('[data-nhom]').dataset.nhom;ST[g]=b.dataset.v;if(g!=='muc'){slTay=false;$('#kh-sl').value=''}
@@ -137,7 +149,8 @@ $('#kh-ma').addEventListener('change',()=>{$('#kh-vao').value='';$('#kh-sl').val
 $('#kh-lay').addEventListener('click',()=>{$('#kh-vao').value='';goi()});
 $('#kh-sl').addEventListener('input',()=>{slTay=$('#kh-sl').value.trim()!=='';goi()});
 ['#kh-von','#kh-vao','#kh-rr-tu','#kh-thang','#kh-rrr'].forEach(s=>$(s).addEventListener('input',goi));
-bo();taiMa().then(tai)})();
+['#kh-vao','#kh-sl'].forEach(s=>$(s).addEventListener('input',pkVe));document.addEventListener('click',e=>{if(e.target.closest('[data-nhom] button'))setTimeout(pkVe,0)});
+bo();taiMa().then(taiPhieu).then(()=>{pkVe();tai()})})();
 """
 
 
@@ -156,7 +169,8 @@ def trang_ke_hoach(ten: str) -> str:
         trang.thanh_dau(ten, 'ke-hoach', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="kh-top"><h1>Kế hoạch vốn và lệnh</h1><p>Nhập vốn và chọn mức rủi ro: trang chia vốn thành rủi ro mỗi lệnh, giới hạn lỗ ngày, tổng rủi ro '
         'được mở, rồi mô phỏng hàng nghìn chuỗi lệnh để cho biết khả năng sụt vốn. Chọn mã và chiều: trang gợi ý dừng lỗ theo đỉnh/đáy gần nhất và theo '
-        'biến động, chốt lời theo bội số R, tính khối lượng, ký quỹ và khoảng giá tới mức sàn đóng lệnh, để một lệnh không thể làm cháy tài khoản.</p></div>',
+        'biến động, chốt lời theo bội số R, tính khối lượng, ký quỹ và khoảng giá tới mức sàn đóng lệnh, để biết trước một lệnh mất bao nhiêu nếu chạm dừng lỗ. '
+        'Phép tính chưa gồm giá nhảy qua dừng lỗ, trượt giá khi tin ra hay lỗi kết nối, và khi vốn nhỏ thì lot tối thiểu của sàn có thể làm rủi ro thật lớn hơn mức đã chọn.</p></div>',
         '<div class="kh"><form class="kh-card kh-f" onsubmit="return false" aria-label="Kế hoạch"><h2>Vốn và mức rủi ro</h2>',
         '<label>Vốn (để trống: lấy vốn từ MT5)<input id="kh-von" inputmode="decimal" autocomplete="off" placeholder="Lấy từ MT5"></label>',
         muc, '<label hidden>Rủi ro mỗi lệnh (% vốn)<input id="kh-rr-tu" inputmode="decimal" autocomplete="off" value="1"></label>',
@@ -164,12 +178,12 @@ def trang_ke_hoach(ten: str) -> str:
         '<label>Giá vào (để trống: giá hiện tại)<span class="kh-gia"><input id="kh-vao" inputmode="decimal" autocomplete="off">'
         '<button type="button" class="ghost" id="kh-lay">Giá hiện tại</button></span></label>',
         '<label>Dừng lỗ (để trống: dùng mức gợi ý)<input id="kh-sl" inputmode="decimal" autocomplete="off"></label>',
-        '<details class="kh-mp"><summary>Mô phỏng: tỷ lệ thắng và lời/lỗ của bạn</summary><div class="kh-2" style="margin-top:10px">'
+        '<details class="kh-mp" open><summary>Giả định mô phỏng do bạn nhập (không phải hiệu suất đã đo)</summary><div class="kh-2" style="margin-top:10px">'
         '<label>Tỷ lệ thắng (%)<input id="kh-thang" inputmode="decimal" autocomplete="off"></label>'
         '<label>Lời/lỗ trung bình (R)<input id="kh-rrr" inputmode="decimal" autocomplete="off"></label></div></details></form>',
-        '<section class="kh-kq" id="kh-kq" aria-live="polite"><p class="kh-cho">Đang lập kế hoạch…</p></section></div>',
+        '<div class="kh-kq"><div id="kh-pk"></div><section class="kh-kq" id="kh-kq" aria-live="polite"><p class="kh-cho">Đang lập kế hoạch…</p></section></div></div>',
         '<p class="note" style="margin-top:22px"><b>Chỉ đọc.</b> Giá, nến, ATR, thông số mã, ký quỹ (MT5 tính) và mức sàn đóng lệnh lấy từ MT5 trên máy bạn. '
         'Các mức dừng lỗ, chốt lời là gợi ý quản lý rủi ro dựa trên dữ liệu hiện tại, không phải dự báo giá; đạt kế hoạch không bảo đảm lệnh thắng; '
         'không phải lời khuyên đầu tư.</p>',
         '<footer>' + escape(trang.mien_tru() if hasattr(trang, 'mien_tru') else trang.MIEN_TRU)
-        + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
+        + f'</footer></main><script>{trang.JS}</script><script>{phieu_js.JS}</script><script>{JS}</script></body></html>'])

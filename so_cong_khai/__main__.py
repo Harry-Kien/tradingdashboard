@@ -96,6 +96,11 @@ def xay(cfg: dict, ma_tuan: str | None = None, ra: str | None = None, live: bool
     khoi_tuan = {'start': start, 'bai': bai, 'threads': ban_nhap_threads(out)}
     hien_tai = {'lenh': thu(gia.lenh_dang_mo, cfg), 'canh_bao': thu(canh_bao.doc, out, 5), 'tin': thu(gia.tin_sap_toi, cfg, now, 5)}
     hien_tai = {k: (v if isinstance(v, list) else []) for k, v in hien_tai.items()}
+    try:                                                                # lệnh nhật ký EA còn ghi mở nhưng MT5 đã xác nhận đóng (vi_the.py)
+        from . import vi_the                                            # noqa: PLC0415
+        hien_tai['da_dong_mt5'] = vi_the.tong_hop_nho(cfg)['da_dong_theo_mt5']
+    except Exception:                                                   # noqa: BLE001
+        hien_tai['da_dong_mt5'] = []
     html = trang.trang_html(thuong_hieu.TEN, now, tat_ca, khoi_tuan, live, hien_tai)
     (out / 'index.html').write_text(trang.trang_html(thuong_hieu.TEN, now, tat_ca, khoi_tuan, False, hien_tai), encoding='utf-8')
     (out / f'tong-ket-tuan-{ma}.txt').write_text(bai, encoding='utf-8')

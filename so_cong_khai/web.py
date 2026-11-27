@@ -24,6 +24,7 @@ from . import ai_chi_bao, do_lai
 from . import canh_bao_ve, hinh_ve, kiem_tin_hieu, kiem_tin_hieu_trang, mau_chi_bao
 from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, sao_luu, telegram_nhom, tin_phan_ung
 from . import bao_mat_http
+from . import ai_giai_thich, loi_nghiep_vu, phieu_ke_hoach
 from .__main__ import HERE, xay
 
 
@@ -41,6 +42,24 @@ LOAI = {'.png': 'image/png', '.txt': 'text/plain; charset=utf-8', '.json': 'appl
 def _out(cfg: dict) -> Path:
     base = Path(cfg.get('thu_muc_ra', 'out'))
     return base if base.is_absolute() else HERE / base
+
+
+def _cham_phieu(cfg: dict, p: dict) -> dict:
+    """Kết quả mô phỏng của phiếu đang theo dõi, chấm trên nến M5 đã đóng (bỏ nến đang chạy). Lỗi dữ liệu thì 'chua_xac_dinh'."""
+    if not p.get('theo_doi'):
+        return {'trang_thai': 'khong_theo_doi'}
+    try:
+        ma_phieu = str(p.get('ma') or da_ma.ma_vang(cfg))
+        d = gia.goi(cfg, 'M5', 1500) if ma_phieu == da_ma.ma_vang(cfg) else da_ma.goi(cfg, ma_phieu, 'M5', 1500)
+        cs = d.get('candles') or []
+        live = d.get('live')
+        if isinstance(live, int) and 0 <= live < len(cs):
+            cs = cs[:live]
+        return phieu_ke_hoach.cham_mo_phong(p, cs, 300)
+    except gia.ChuaCoGia:
+        return {'trang_thai': 'chua_xac_dinh', 'ly_do': 'chưa có dữ liệu nến (MT5 chưa nối, kho nến trống)'}
+    except Exception as e:                                                    # noqa: BLE001
+        return {'trang_thai': 'chua_xac_dinh', 'ly_do': f'không đọc được nến: {type(e).__name__}'}
 
 
 def tao_vong_canh(cau_hinh: str):
@@ -244,6 +263,61 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                         body = kiem_lenh.kiem(cfg, bang, lenh)
                     except ValueError as e:
                         return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/vi-the':                                  # đối chiếu vị thế MT5 / nhật ký EA / bot (vi_the.py), chỉ đọc
+                    from . import vi_the                                     # noqa: PLC0415
+                    body = vi_the.tong_hop_nho(json.loads(Path(cau_hinh).read_text(encoding='utf-8')))
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
+                if path.startswith('/api/loi/'):                            # lõi nghiệp vụ chỉ đọc (loi_nghiep_vu.py), dùng cho MCP và kiểm tra
+                    q = parse_qs(url.query)
+                    lay = lambda k: (q.get(k, [''])[0] or '').strip()[:60]     # noqa: E731
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    try:
+                        if path == '/api/loi/chup':
+                            tf = lay('tf') or 'M15'
+                            if tf not in gia.KHUNG:
+                                raise ValueError('khung không hợp lệ')
+                            body = loi_nghiep_vu.chup(cfg, lay('ma'), tf, thu_muc=_out(cfg))
+                        elif path == '/api/loi/anh-chup':
+                            body = loi_nghiep_vu.lay(lay('id'), _out(cfg))
+                        elif path == '/api/loi/dieu-kien':
+                            sn = loi_nghiep_vu.lay(lay('sn'), _out(cfg))
+                            body = loi_nghiep_vu.dieu_kien(sn, lay('pp')) if sn else None
+                        elif path == '/api/loi/bang-chung':
+                            body = loi_nghiep_vu.bang_chung_phuong_phap(lay('pp'))
+                        elif path == '/api/loi/review':
+                            body = loi_nghiep_vu.tong_ket_review(_out(cfg))
+                        else:
+                            body = None
+                    except gia.ChuaCoGia as e:
+                        return self._gui(503, 'text/plain; charset=utf-8', f'Chưa có giá: {e}'.encode('utf-8'))
+                    except ValueError as e:
+                        return self._gui(400, 'text/plain; charset=utf-8', f'Yêu cầu không hợp lệ: {e}'.encode('utf-8'))
+                    if body is None:
+                        return self._gui(404, 'text/plain; charset=utf-8', 'Không có (ảnh chụp đã hết hạn hoặc sai id).'.encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/phieu/anh':                               # ảnh chart lúc quyết định của một phiếu
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    p = phieu_ke_hoach.duong_anh(_out(cfg), (parse_qs(url.query).get('f', [''])[0] or '').strip())
+                    if p is None:
+                        return self._gui(404, 'text/plain; charset=utf-8', 'Không có ảnh này.'.encode('utf-8'))
+                    return self._gui(200, 'image/jpeg' if p.suffix == '.jpg' else 'image/png', p.read_bytes())
+                if path in ('/api/phieu', '/api/phieu/ds'):                # phiếu kế hoạch dùng chung (phieu_ke_hoach.py): chỉ đọc
+                    q = parse_qs(url.query)
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    if path == '/api/phieu/ds':
+                        ds = phieu_ke_hoach.danh_sach(_out(cfg))
+                        for p in ds[:30]:                                    # chấm mô phỏng cho các phiếu đang theo dõi gần nhất
+                            if p.get('theo_doi'):
+                                p['cham'] = _cham_phieu(cfg, p)
+                        body = {'ds': ds}
+                    else:
+                        id_ = (q.get('id', [''])[0] or '').strip()
+                        v = (q.get('v', [''])[0] or '').strip()
+                        p = phieu_ke_hoach.doc(_out(cfg), id_, int(v) if v.isdigit() else None) if re.fullmatch(r'KH-[0-9A-Za-z-]{6,40}', id_) else None
+                        if p is None:
+                            return self._gui(404, 'text/plain; charset=utf-8', 'Không có phiếu này.'.encode('utf-8'))
+                        body = {**p, 'cham': _cham_phieu(cfg, p)}
                     return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False, default=str).encode('utf-8'))
                 if path == '/api/giam-sat':                                 # dải cảnh báo rủi ro trên mọi trang: chỉ đọc MT5
                     q = parse_qs(url.query)
@@ -569,7 +643,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     '/api/cac-tai-khoan': 4096, '/api/kiem-tin-hieu': kiem_tin_hieu.TOI_DA_CHU * 4 + 4000,
                     '/api/mau-chi-bao': mau_chi_bao.TOI_DA_BYTE + 4000,
                     '/api/hinh-ve': hinh_ve.TOI_DA_BYTE + 2000, '/api/canh-bao-ve': 8192,
-                    '/api/telegram': 8192, '/api/sao-luu': 4096, '/api/gia-su': 16384,
+                    '/api/telegram': 8192, '/api/sao-luu': 4096, '/api/gia-su': 16384, '/api/phieu': phieu_ke_hoach.TOI_DA_ANH * 4 // 3 + 4096, '/api/ai-giai-thich': 4096,
                 }
                 yc = bao_mat_http.doc_json(self, gioi_han.get(path, 8192))
                 if urlparse(self.path).path == '/api/cai-dat':
@@ -587,6 +661,46 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = 8765, vong=N
                     except ValueError as e:
                         return self._gui(400, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': f'Chưa lưu: {e}'}, ensure_ascii=False).encode('utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(kq, ensure_ascii=False).encode('utf-8'))
+                if path == '/api/ai-giai-thich' and self.headers.get('X-So-Cong-Khai') == '1':   # AI giải thích có bằng chứng (ai_giai_thich.py)
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+
+                    def doc_phieu(id_):
+                        p = phieu_ke_hoach.doc(_out(cfg), id_) if re.fullmatch(r'KH-[0-9A-Za-z-]{6,40}', id_ or '') else None
+                        return {**p, 'cham': _cham_phieu(cfg, p)} if p else None
+                    kq = ai_giai_thich.giai_thich(cfg, _out(cfg), yc if isinstance(yc, dict) else {}, phieu_fn=doc_phieu)
+                    return self._gui(200, LOAI['.json'], json.dumps(kq, ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/phieu' and self.headers.get('X-So-Cong-Khai') == '1':   # lập, sửa, kiểm, theo dõi phiếu kế hoạch; không đặt lệnh
+                    yc = yc if isinstance(yc, dict) else {}
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    viec, out = str(yc.get('viec') or ''), _out(cfg)
+                    try:
+                        if viec == 'tao':
+                            kq = phieu_ke_hoach.tao(out, yc.get('phieu') or {})
+                        elif viec == 'sua':
+                            kq = phieu_ke_hoach.sua_lenh(out, str(yc.get('id') or ''), yc.get('phieu') or {})
+                        elif viec == 'kiem':                                # kiểm bằng chính số trong phiếu, máy chủ tính, không nhận kết quả từ trang
+                            p = phieu_ke_hoach.doc(out, str(yc.get('id') or ''))
+                            if p is None:
+                                raise KeyError('phiếu')
+                            lenh = {'ma': p['ma'], 'chieu': p['chieu'], 'vao': p['vao'], 'sl': p['sl'], 'tp': (p['tp'] or [None])[0], 'rui_ro_pct': p['rui_ro_pct']}
+                            kq = phieu_ke_hoach.gan_kiem(out, p['id'], kiem_lenh.kiem(cfg, bang, lenh))
+                        elif viec == 'theo_doi':
+                            kq = phieu_ke_hoach.bat_dau_theo_doi(out, str(yc.get('id') or ''))
+                        elif viec == 'dung_ngoai':
+                            kq = phieu_ke_hoach.dung_ngoai(out, str(yc.get('id') or ''), str(yc.get('ly_do') or ''))
+                        elif viec == 'ghi_chu':
+                            kq = phieu_ke_hoach.ghi_chu(out, str(yc.get('id') or ''), str(yc.get('noi_dung') or ''),
+                                                        yc.get('tag') if isinstance(yc.get('tag'), list) else [], str(yc.get('loai') or 'ghi_chu'),
+                                                        tuan_thu=str(yc.get('tuan_thu') or ''))
+                        elif viec == 'anh':
+                            kq = phieu_ke_hoach.luu_anh(out, str(yc.get('id') or ''), str(yc.get('anh') or ''))
+                        else:
+                            raise ValueError('việc không hợp lệ')
+                    except KeyError:
+                        return self._gui(404, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': 'Không có phiếu này.'}, ensure_ascii=False).encode('utf-8'))
+                    except ValueError as e:
+                        return self._gui(400, LOAI['.json'], json.dumps({'ok': False, 'thong_bao': str(e)}, ensure_ascii=False).encode('utf-8'))
+                    return self._gui(200, LOAI['.json'], json.dumps({'ok': True, 'phieu': kq}, ensure_ascii=False, default=str).encode('utf-8'))
                 if urlparse(self.path).path == '/api/ai-chi-bao' and self.headers.get('X-So-Cong-Khai') == '1':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     kq = ai_chi_bao.hoi(cfg, _out(cfg), yc if isinstance(yc, dict) else {})

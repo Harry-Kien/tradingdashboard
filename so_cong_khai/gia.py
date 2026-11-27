@@ -396,32 +396,39 @@ _nho_tin: dict = {}
 
 
 def lenh_dang_mo(cfg: dict) -> list[dict]:
-    """Lệnh đang mở để vẽ lên biểu đồ: lệnh gọi còn mở của bot tín hiệu và vị thế còn mở của từng EA demo. Chỉ đọc sổ."""
+    """Lệnh đang mở để vẽ lên biểu đồ và hiện ở Tổng quan. Chỉ đọc.
+    - Vị thế: vi_the.tong_hop (MT5 của tài khoản đang nối là nguồn chính; lệnh còn mở theo nhật ký EA được đối chiếu với MT5,
+      lệnh MT5 xác nhận đã đóng không còn ở đây, lệnh chưa xác minh mang `xac_minh: False`, `luc_nguon` và `ly_do`).
+    - Lệnh gọi còn mở của bot tín hiệu: `nguon: 'bot'`, là tín hiệu chứ không phải vị thế của tài khoản."""
     key = (cfg.get('bot_db'), json.dumps(cfg.get('tai_khoan', []), sort_keys=True))
     now = time.monotonic()
-    if _lenh_nho['key'] == key and now - _lenh_nho['luc'] < 15:
+    if _lenh_nho['key'] == key and now - _lenh_nho['luc'] < 10:
         return _lenh_nho['ds']
     ds = []
     try:
         for r in doc_so.doc_bot(cfg['bot_db']) if cfg.get('bot_db') else []:
             if not r['closed']:
                 ds.append({'nhan': f'Bot {r["call"]} {"MUA" if r["side"] == "BUY" else "BÁN"}', 'ten': f'Bot {r["call"]}', 'huong': r['side'], 'vao': _so(r['entry']),
-                           'sl': _so(r['sl']), 'tp': [_so(x) for x in r['tps'][r['tps_hit']:]], 'loai': 'tin_hieu'})
+                           'sl': _so(r['sl']), 'tp': [_so(x) for x in r['tps'][r['tps_hit']:]], 'loai': 'tin_hieu', 'nguon': 'bot', 'xac_minh': None})
     except Exception:                                                         # noqa: BLE001 - thiếu sổ bot thì bỏ qua phần này
         pass
-    for acc in cfg.get('tai_khoan', []):
-        for e in acc.get('ea', []):
-            try:
-                o = doc_so.doc_ea(e['tep'], e.get('lech_gio_utc', 0))['open']
-            except Exception:                                                 # noqa: BLE001
-                continue
-            if o:
-                # 'ten' và 'lot' riêng để trang ghép nhãn với chữ Mua/Bán của chính nó: bản tiếng Anh dịch được mà không cần khóa riêng cho từng tên EA
-                ds.append({'nhan': f'{e["ten"]} {"MUA" if o["side"] == "BUY" else "BÁN"} {o["lots"]:g}', 'ten': e['ten'], 'lot': o['lots'],
-                           'huong': o['side'], 'vao': _so(o['entry']),
-                           'sl': _so(o['sl']) if o['sl'] else None, 'tp': [_so(o['tp'])] if o['tp'] else [], 'loai': 'demo'})
+    from . import vi_the                                                      # noqa: PLC0415 - vi_the nạp tai_khoan → da_ma → gia
+    try:
+        # 'ten' và 'lot' riêng để trang ghép nhãn với chữ Mua/Bán của chính nó: bản tiếng Anh dịch được mà không cần khóa riêng cho từng tên EA
+        ds += vi_the.tong_hop_nho(cfg)['ds']
+    except Exception:                                                         # noqa: BLE001 - lỗi đối chiếu không làm mất biểu đồ
+        pass
     _lenh_nho.update(luc=now, key=key, ds=ds)
     return ds
+
+
+def lenh_cho_vang(cfg: dict) -> list[dict]:
+    """Đúng mã vàng đã chọn; bot cũ không ghi mã chỉ được coi là tín hiệu vàng."""
+    from . import da_ma  # noqa: PLC0415 - tránh vòng nạp da_ma → gia
+    ma = da_ma.ma_vang(cfg)
+    # lệnh chỉ có trong nhật ký EA (nguon nhat_ky_ea) không ghi mã; các EA trong cấu hình là EA vàng, nên vẫn hiện trên chart vàng, kèm nhãn "chưa xác minh"
+    return [x for x in lenh_dang_mo(cfg) if x.get('ma') == ma or (not x.get('ma') and x.get('loai') == 'tin_hieu')
+            or (not x.get('ma') and x.get('nguon') == 'nhat_ky_ea')]
 
 
 def rsi_wilder(close: pd.Series, n: int = 14) -> pd.Series:
@@ -456,7 +463,8 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
                                  zip(view.index, view['open'], view['high'], view['low'], view['close'])],
            **{k: _day(v.iloc[-n:]) for k, v in over.items()}, 'vung': [], 'tin': [],
            'nguon': fr['nguon'], 'bid': _so(fr.get('bid')), 'ask': _so(fr.get('ask')),
-           'ly_do_khong_song': song.ly_do() if fr['nguon'] != 'mt5' else None, 'lenh': lenh_dang_mo(cfg)}
+           'ly_do_khong_song': song.ly_do() if fr['nguon'] != 'mt5' else None,
+           'lenh': lenh_cho_vang(cfg)}   # so đúng mã; XAUEUR, XAUJPY, XAUUSD247 là những tài sản khác
     try:                                                          # chỉ báo thêm (EMA200, MACD, Stochastic, ATR, SuperTrend, Ichimoku, pivot)
         from . import chi_bao_them                                # noqa: PLC0415
         out.update(chi_bao_them.tinh(bars, n, so_le=2, buoc_giay=KHUNG[tf] * 60))

@@ -173,6 +173,7 @@ def doi_chieu(cfg: dict, ten_ea: set, tom: dict, now: datetime | None = None, le
     thay_doi = float(tom.get('equity_change') or 0.0)
     con_lech = thay_doi - (tong_mt5 + nap + (ls['treo'] or 0.0))
     return {'n_nhat_ky': len(rows), 'tong_nhat_ky': _r(sum(float(r['pnl']) for r in rows)), 'n_mt5': len(cua_ea), 'tong_mt5': _r(tong_mt5),
+            'thang_mt5': sum(1 for x in cua_ea if (x['lai'] or 0) > 0), 'thua_mt5': sum(1 for x in cua_ea if (x['lai'] or 0) < 0),
             'so_cap': len(cap), 'lech_cap': lech_cap, 'thieu_nhat_ky': con, 'thieu_mt5': thieu_mt5, 'nap_rut': _r(nap), 'treo': ls['treo'],
             'von_thay_doi': _r(thay_doi), 'con_lech': _r(con_lech), 'khop': abs(con_lech) < 0.5, 'tu': dau.isoformat()}
 

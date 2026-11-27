@@ -321,15 +321,25 @@ def _khoi_tai_khoan(acc: dict) -> str:
     # --- Tổng quan
     pct = f' ({e["equity_change"] / e["first_equity"]:+.1%})'.replace('.', ',') if e['first_equity'] else ''
     pf0 = e['profit_factor']
+    dc = acc.get('doi_chieu')
+    thieu = bool(e['orphans']) or bool(dc and (dc['thieu_nhat_ky'] or dc['n_mt5'] != dc['n_nhat_ky']))
+    if dc:                                  # có lịch sử MT5 của chính các EA này: số chính lấy từ MT5, số nhật ký chỉ để đối chiếu
+        tu = gio(datetime.fromisoformat(dc['tu']))
+        n_q = dc['thang_mt5'] + dc['thua_mt5']
+        kpi = (_kv(f'Lãi lỗ đã đóng theo lịch sử MT5 (từ {tu})', _mau(dc['tong_mt5'], so(dc['tong_mt5'], 2, True)))
+               + _kv('Lệnh đã đóng theo lịch sử MT5', f'{dc["n_mt5"]} · thắng {dc["thang_mt5"]}, thua {dc["thua_mt5"]}')
+               + _kv('Tỷ lệ thắng (MT5)', f'{dc["thang_mt5"] / n_q:.0%}' if n_q else '—')
+               + _kv('Theo nhật ký EA' + (' (thiếu lệnh)' if thieu else ''), f'{e["n"]} lệnh · ' + _mau(e['pnl'], so(e['pnl'], 2, True))))
+    else:                                   # chưa đối chiếu được: số theo nhật ký, ghi rõ nguồn và mức đầy đủ
+        nhan = 'theo nhật ký EA, chưa đối chiếu MT5' + (', chưa đầy đủ' if thieu else '')
+        kpi = (_kv(f'Lãi lỗ đã đóng ({nhan})', _mau(e['pnl'], so(e['pnl'], 2, True)))
+               + _kv('Lệnh đã đóng (theo nhật ký EA)', f'{e["n"]} · thắng {e["win"]}, thua {e["loss"]}')
+               + _kv('Tỷ lệ thắng (theo nhật ký EA)', (f'{e["win"] / e["n"]:.0%}' if e['n'] else '—') + (' · thiếu lệnh không có dòng đóng' if thieu else '')))
     ben = ('<div class="accs rows"><div class="big"><span>Vốn demo hiện tại (USD)</span>'
            f'<b>{so(e["last_equity"])}</b><small>{_mau(e["equity_change"], so(e["equity_change"], 2, True) + pct)} từ đầu sổ {so(e["first_equity"])}</small></div>'
-           + _kv('Lãi lỗ đã đóng (USD demo)', _mau(e['pnl'], so(e['pnl'], 2, True)))
-           + _kv('Lệnh đã đóng', f'{e["n"]} · thắng {e["win"]}, thua {e["loss"]}')
-           + (_kv('Theo lịch sử MT5', f'{acc["doi_chieu"]["n_mt5"]} lệnh · ' + _mau(acc['doi_chieu']['tong_mt5'], so(acc['doi_chieu']['tong_mt5'], 2, True)))
-              if acc.get('doi_chieu') else '')
-           + _kv('Tỷ lệ thắng', f'{e["win"] / e["n"]:.0%}' if e['n'] else '—')
-           + _kv('Hệ số lợi nhuận', so(pf0) if pf0 is not None else '—')
-           + _kv('Đang mở', f'{len(e["opens"])} lệnh' + (' · lãi lỗ đang treo' if e['opens'] else ''))
+           + kpi
+           + _kv('Hệ số lợi nhuận (theo nhật ký EA)', so(pf0) if pf0 is not None else '—')
+           + _kv('Đang mở theo nhật ký EA', f'{len(e["opens"])} lệnh' + (' · trạng thái MT5 ở mục Đang diễn ra' if e['opens'] else ''))
            + _kv('Sụt vốn lớn nhất', f'{e["max_dd_pct"]:.1%}'.replace('.', ',') + f' · {so(e["max_dd"])} USD') + '</div>')
     hinh = svg_duong(e['curve'], 'USD', 'Đường vốn demo của ' + acc['ten'])
     tq = [f'<div class="acc"><div><h3>Đường vốn demo (USD)</h3>{hinh}</div>{ben}</div>']
@@ -854,15 +864,30 @@ def _khoi_hien_tai(h: dict, live: bool = False) -> str:
     lenh, cb = h.get('lenh') or [], h.get('canh_bao') or []
     tin = h.get('tin')
     out = ['<section class="card" id="hien-tai"><h2>Đang diễn ra</h2>'
-           '<p class="sub">Lệnh còn mở và cảnh báo gần nhất. Lệnh của bot là tín hiệu, lệnh của EA là trên tài khoản demo.</p>'
+           '<p class="sub">Lệnh còn mở và cảnh báo gần nhất. Vị thế lấy từ MT5 của tài khoản đang nối; lệnh chỉ có trong nhật ký EA được ghi rõ là '
+           'chưa xác minh. Lệnh của bot là tín hiệu, không phải vị thế.</p>'
            f'<div class="now{" ba" if tin is not None else ""}">',
            f'<div><h3>Lệnh đang mở ({len(lenh)})</h3>']
+
+    def loai(o):
+        if o.get('loai') == 'tin_hieu':
+            return 'tín hiệu'
+        if o.get('xac_minh') is False:
+            return 'theo nhật ký, chưa xác minh'
+        return 'MT5' + (f' {escape(o["so_tk"])}' if o.get('so_tk') else '')
     if lenh:
         out.append(_table(['Nguồn', 'Loại', 'Giá vào', 'SL', 'TP kế tiếp'],
-                          [[_nhan_lenh(o),'demo' if o.get('loai') == 'demo' else 'tín hiệu', so(o['vao']) if o.get('vao') is not None else '—',
+                          [[_nhan_lenh(o), loai(o), so(o['vao']) if o.get('vao') is not None else '—',
                             so(o['sl']) if o.get('sl') is not None else '—', so(o['tp'][0]) if o.get('tp') else '—'] for o in lenh], right={2, 3, 4}))
+        for o in lenh:
+            if o.get('xac_minh') is False:
+                luc = gio(datetime.fromisoformat(o['luc_nguon'])) if o.get('luc_nguon') else 'không rõ'
+                out.append(f'<p class="small">{_nhan_lenh(o)}: {escape(o.get("ly_do") or "chưa xác minh với MT5")}. Nhật ký ghi lần cuối {luc}.</p>')
     else:
-        out.append('<p class="small">Bot và các EA demo không có lệnh nào đang mở.</p>')
+        out.append('<p class="small">Không có vị thế nào đang mở theo MT5 và nhật ký EA, không có lệnh gọi bot nào đang mở.</p>')
+    for x in h.get('da_dong_mt5') or []:
+        out.append(f'<p class="small">{escape(x["ten"])} {"MUA" if x["huong"] == "BUY" else "BÁN"} {x["lot"]:g}: nhật ký EA còn ghi đang mở nhưng lịch sử MT5 '
+                   f'{escape(x.get("so_tk") or "")} cho thấy đã đóng lúc {gio(datetime.fromisoformat(x["dong"]))} ở {so(x["gia_dong"])}, nên không tính là lệnh đang mở.</p>')
     out.append('</div>')
     if tin is not None:
         out.append(f'<div><h3>Tin USD mạnh sắp tới ({len(tin)})</h3>')
@@ -871,7 +896,8 @@ def _khoi_hien_tai(h: dict, live: bool = False) -> str:
                     for a in tin]
             out.append('<p class="small">Bot và các luật của bạn không vào lệnh trong 15 phút trước và sau mỗi tin.</p>')
         else:
-            out.append('<p class="small">Lịch tin trên máy không còn tin USD mức cao nào sắp tới. Lịch do MT5 xuất ra; mở MT5 để cập nhật.</p>')
+            out.append('<p class="small">Lịch tin (tệp MT5 xuất ra, nối thêm lịch mạng sau chỗ tệp hết) không còn tin USD mức cao nào trong phần nó phủ. '
+                       'Phần sau chỗ lịch phủ tới là chưa có dữ liệu, không phải không có tin; trang Thị trường ghi lịch phủ tới lúc nào. Mở MT5 để cập nhật.</p>')
         out.append('</div>')
     out.append(f'<div><h3>Cảnh báo gần đây ({len(cb)})</h3>')
     if cb:
@@ -1220,7 +1246,10 @@ html.nv-khoa{overflow:hidden}
 .nv .subnav{border-top:1px solid var(--line);background:transparent}.nv .subnav>div{max-width:1560px;padding:0 20px}.nv .subnav a{display:inline-block;padding:8px 0;color:var(--mute);text-decoration:none}
 .nv .subnav a:hover{color:var(--ink)}
 .tt-tabs{top:var(--nv-h)}
-@media(max-width:1180px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd,.nv-tg span{display:none}.nv-tg{padding:0 10px}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}
+/* 27/11/2026: đo thấy ở 1280–1366 px thanh điều hướng tràn (EN, Làm mới, đổi nền bị đẩy ra ngoài mép); thu gọn từ 1440 px, gọn thêm từ 1180 px */
+.nv-phai{flex:none}
+@media(max-width:1440px){.nv-tim-b{min-width:0}.nv-tim-b span,.nv-tim-b kbd,.nv-tg span{display:none}.nv-tg{padding:0 10px}.nv-tn small{display:none}.nv-logo{margin-right:8px}.nv-a{padding:0 9px}}
+@media(max-width:1180px){.nv-tn{display:none}.nv-logo{margin-right:4px}.nv-a{padding:0 7px;font-size:13px}.nv-phai{gap:6px}}
 @media(max-width:960px){.nv-chinh{display:none}.nv-mb{display:inline-flex}.nv-in{padding:0 12px}.nv .subnav>div{padding:0 12px}}
 @media(max-width:420px){.nv-tn b{font-size:13px}}
 /* điện thoại: vùng bấm tối thiểu 24 px cho liên kết trong bảng và ô đánh dấu (WCAG 2.5.8) */

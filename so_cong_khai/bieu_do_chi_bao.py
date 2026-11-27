@@ -411,7 +411,9 @@ return{ve,mo,LIB,KIEU,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLa
 
 from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script
 
+from . import ai_giai_thich_js as _gt  # noqa: E402 - hộp AI giải thích có bằng chứng, gắn cạnh nút "AI đọc chỉ báo"
+
 from . import bieu_do_phat_lai as _pl  # noqa: E402 - phát lại nến, chạy sau công cụ thêm
 
-CSS += _them.CSS + _pl.CSS
-JS += _them.JS + _pl.JS
+CSS += _them.CSS + _gt.CSS + _pl.CSS
+JS += _them.JS + _gt.JS + _pl.JS

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import trang
+from . import phieu_js, trang
 
 CSS = r"""
 main.rong{max-width:1560px}
@@ -74,6 +74,36 @@ async function kiem(){const ma=$('#kl-ma').value,vao=so($('#kl-vao')),sl=so($('#
  try{const r=await fetch('/api/kiem-lenh?'+q,{cache:'no-store'});const t=await r.text();if(n!==lan)return;if(!r.ok)throw new Error(t);ve(JSON.parse(t))}
  catch(e){if(n===lan)$('#kl-kq').innerHTML=`<p class="kl-cho">Không kiểm được: ${esc(e.message)}</p>`}
  finally{if(n===lan)$('#kl-kq').removeAttribute('aria-busy')}}
+// ---- phiếu kế hoạch (?phieu=ID): kiểm đúng phiếu, lưu kết quả kiểm, theo dõi mô phỏng, đứng ngoài, ghi chú. Mỗi việc là một bản mới của phiếu.
+let PK=null,PKBAN=0;const PKID=new URLSearchParams(location.search).get('phieu');
+async function taiPhieu(){if(!PKID)return;try{PK=await PKJ.tai(PKID);const sel=$('#kl-ma'),o=[...sel.options].find(o=>o.value===PK.ma)||[...sel.options].find(o=>o.value.toUpperCase().startsWith(PK.ma.toUpperCase()));
+  if(o)sel.value=o.value;chieu=PK.chieu;boChieu();$('#kl-vao').value=PK.vao;if(PK.sl!=null){$('#kl-sl').value=PK.sl;daSl=true}$('#kl-tp').value=(PK.tp||[])[0]??'';if(PK.rui_ro_pct)$('#kl-rr').value=PK.rui_ro_pct}
+ catch(e){PK={loi:e.message}}}
+const pkCur=()=>({chieu,vao:so($('#kl-vao')),sl:so($('#kl-sl')),tp:so($('#kl-tp'))});
+function pkVe(){const el=$('#kl-pk');if(!el)return;if(!PK){el.innerHTML='';return}const giu=[($('#pk-gc')||{}).value||'',($('#pk-tag')||{}).value||''];setTimeout(()=>{if($('#pk-gc'))$('#pk-gc').value=giu[0];if($('#pk-tag'))$('#pk-tag').value=giu[1]},0);if(PK.loi){el.innerHTML=`<p class="kl-cho">Không mở được phiếu: ${esc(PK.loi)}</p>`;return}
+ const d=PKJ.doi(PK,pkCur()),qd=(PK.quyet_dinh||{}).loai,nut=[];
+ nut.push(d.length?'<button type="button" data-pk="sua">Lưu thành bản mới của phiếu rồi kiểm</button>':'<button type="button" data-pk="kiem">Lưu kết quả kiểm vào phiếu</button>');
+ if(!d.length&&!PK.theo_doi&&qd!=='dung_ngoai')nut.push('<button type="button" class="ghost" data-pk="theo_doi">Theo dõi bằng mô phỏng</button><button type="button" class="ghost" data-pk="dung_ngoai">Ghi: đứng ngoài</button>');
+ const gc=(PK.ghi_chu_nd||[]).slice(-5).map(g=>`<li><small>${PKJ.gio(g.luc)} · ${esc({ghi_chu:'ghi chú',review_truoc:'review trước',review_sau:'review sau'}[g.loai]||g.loai)}</small> ${esc(g.noi_dung)}${g.tag&&g.tag.length?' · <i>'+g.tag.map(esc).join(', ')+'</i>':''}</li>`).join('');
+ el.innerHTML=PKJ.html(PK,pkCur()).replace('</section>',`${PK.anh?`<p class="kh-ghi"><a href="/api/phieu/anh?f=${encodeURIComponent(PK.anh)}" target="_blank" rel="noopener">Ảnh chart lúc lập phiếu</a></p>`:''}
+  ${qd==='dung_ngoai'?`<p class="kh-ghi">Đã ghi đứng ngoài lúc ${PKJ.gio(PK.quyet_dinh.luc)}${PK.quyet_dinh.ly_do?': '+esc(PK.quyet_dinh.ly_do):''}.</p>`:''}
+  <div class="pkj-nut">${nut.join('')}<a class="ghost btn" href="/nhat-ky#phieu">Xem trong nhật ký</a><a class="ghost btn" href="/bieu-do?ma=${encodeURIComponent(PK.ma)}">Về biểu đồ</a></div>
+  <div class="kl-f" style="margin-top:10px"><label>Ghi chú hoặc review (lớp riêng, không đổi dữ kiện phiếu)<input id="pk-gc" maxlength="1000" autocomplete="off"></label>
+   <label>Tag (cách nhau bằng dấu phẩy)<input id="pk-tag" maxlength="200" autocomplete="off" placeholder="ví dụ: vào sớm, đúng kế hoạch"></label>
+   <label>Làm đúng kế hoạch không (cho review sau lệnh, tách khỏi lãi lỗ)<select id="pk-tt"><option value="">—</option><option value="dung">Đúng kế hoạch</option><option value="mot_phan">Một phần</option><option value="lech">Lệch kế hoạch</option></select></label>
+   <div class="pkj-nut"><button type="button" class="ghost" data-pk="ghi_chu" data-loai="ghi_chu">Lưu ghi chú</button><button type="button" class="ghost" data-pk="ghi_chu" data-loai="review_truoc">Lưu review trước lệnh</button><button type="button" class="ghost" data-pk="ghi_chu" data-loai="review_sau">Lưu review sau lệnh</button></div>
+   ${gc?`<ul class="kh-ghi" style="margin:6px 0 0;padding-left:18px">${gc}</ul>`:''}</div>
+  <p class="kh-ghi" id="pk-tb" role="status"></p></section>`)}
+document.addEventListener('click',async e=>{const b=e.target.closest('button[data-pk]');if(!b||!PK||PK.loi||PKBAN)return;const viec=b.dataset.pk,tb=$('#pk-tb');PKBAN=1;
+ document.querySelectorAll('button[data-pk]').forEach(x=>x.disabled=true);if(tb)tb.textContent='Đang lưu…';    // chặn bấm lặp: một việc mỗi lần
+ try{if(viec==='sua'){const c=pkCur();await PKJ.gui('sua',{id:PK.id,phieu:{ma:$('#kl-ma').value,chieu:c.chieu,vao:c.vao,sl:c.sl,tp:c.tp!=null?[c.tp]:[],rui_ro_pct:so($('#kl-rr'))}});await PKJ.gui('kiem',{id:PK.id})}
+  else if(viec==='kiem')await PKJ.gui('kiem',{id:PK.id});
+  else if(viec==='dung_ngoai')await PKJ.gui('dung_ngoai',{id:PK.id,ly_do:($('#pk-gc')||{}).value||''});
+  else if(viec==='ghi_chu'){await PKJ.gui('ghi_chu',{id:PK.id,loai:b.dataset.loai,noi_dung:$('#pk-gc').value,tag:$('#pk-tag').value.split(',').map(s=>s.trim()).filter(Boolean),tuan_thu:b.dataset.loai==='review_sau'?$('#pk-tt').value:''});$('#pk-gc').value='';$('#pk-tag').value=''}
+  else await PKJ.gui(viec,{id:PK.id});
+  PK=await PKJ.tai(PK.id);pkVe();const t=$('#pk-tb');if(t)t.textContent='Đã lưu bản '+PK.phien_ban+' của phiếu.'}
+ catch(er){const t=$('#pk-tb');if(t)t.textContent='Chưa lưu: '+er.message}
+ finally{PKBAN=0;document.querySelectorAll('button[data-pk]').forEach(x=>x.disabled=false)}});
 function ve(D){const t=D.tien||'';const icon={xau:'✕',chu_y:'!',tot:'✓',tin:'i'};
  const so4=[['Khối lượng gợi ý',D.lot!=null?fmt(D.lot,2)+' lot':'—'],['Mất nếu chạm dừng lỗ',D.rui_ro_tien!=null?fmt(D.rui_ro_tien)+' '+t:'—'],
   ['Lời/lỗ',D.rr!=null?'1:'+fmt(D.rr,2):'—'],['Cần thắng để hòa vốn',D.hoa_von_pct!=null?fmt(D.hoa_von_pct,0)+'%':'—'],['Tổng rủi ro đang mở',D.tong_rui_ro_pct!=null?fmt(D.tong_rui_ro_pct,1)+'% vốn':'—']];
@@ -85,7 +115,8 @@ $('#kl-ch').addEventListener('click',e=>{const b=e.target.closest('button[data-v
 $('#kl-ma').addEventListener('change',()=>{$('#kl-sl').value='';$('#kl-tp').value='';daSl=false;datGia()});
 $('#kl-lay').addEventListener('click',datGia);
 document.querySelectorAll('.kl-f input').forEach(el=>el.addEventListener('input',goi));$('#kl-sl').addEventListener('input',()=>{daSl=true});
-taiMa().then(goi)})();
+document.querySelectorAll('.kl-f input').forEach(el=>el.addEventListener('input',()=>{if(PK&&!PK.loi&&el.id&&el.id.startsWith('kl-'))pkVe()}));$('#kl-ch').addEventListener('click',()=>setTimeout(pkVe,0));
+taiMa().then(taiPhieu).then(()=>{pkVe();goi()})})();
 """
 
 
@@ -111,8 +142,8 @@ def trang_kiem_lenh(ten: str) -> str:
         '<label>Rủi ro lệnh này (% vốn)<input id="kl-rr" inputmode="decimal" autocomplete="off" value="1"></label>',
         '<p class="kl-goi">Khối lượng được tính để chạm dừng lỗ chỉ mất đúng % vốn này.</p>',
         f'<details class="kl-qt"><summary>Quy tắc của bạn</summary><div class="kl-f" style="margin-top:10px">{qt}</div></details></form>',
-        '<section class="kl-kq" id="kl-kq" aria-live="polite"><p class="kl-cho">Đang tải giá…</p></section></div>',
+        '<div class="kl-kq"><div id="kl-pk"></div><section class="kl-kq" id="kl-kq" aria-live="polite"><p class="kl-cho">Đang tải giá…</p></section></div></div>',
         '<p class="note" style="margin-top:22px"><b>Chỉ đọc.</b> Trang dùng giá, tài khoản, lệnh đang mở và lịch tin từ MT5 trên máy bạn để kiểm quy tắc '
         'quản lý rủi ro. Đạt các quy tắc không có nghĩa lệnh sẽ thắng; không phải lời khuyên đầu tư.</p>',
         '<footer>' + escape(trang.mien_tru() if hasattr(trang, 'mien_tru') else trang.MIEN_TRU)
-        + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
+        + f'</footer></main><script>{trang.JS}</script><script>{phieu_js.JS}</script><script>{JS}</script></body></html>'])

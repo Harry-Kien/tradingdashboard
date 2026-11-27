@@ -62,7 +62,11 @@ function dai(){if(!T.S)return;const o=(t,b,s,x='')=>`<div class="tl-o"><span>${t
  if(ds.length)h+=o('Đồng thuận kỹ thuật H1',`<span class="gain">${Math.round(m/ds.length*100)}% mua</span> · <span class="loss">${Math.round(b/ds.length*100)}% bán</span>`,`${ds.length} mã, còn lại trung tính`,`<div class="tl-hai"><u style="width:${m/ds.length*100}%"></u><span style="flex:1"></span><s style="width:${b/ds.length*100}%"></s></div>`);
  const sm=T.sucManh('ngay').filter(a=>a.v!=null);if(sm.length)h+=o('Tiền tệ mạnh / yếu hôm nay',`<span class="gain">${sm[0].c}</span> · <span class="loss">${sm[sm.length-1].c}</span>`,`${pct(sm[0].v)} / ${pct(sm[sm.length-1].v)}`);
  const L=T.S.lich,now=Date.now(),tin=L&&L.ds?L.ds.filter(e=>e.muc>=3&&Date.parse(e.t)>now)[0]:null;
- h+=o('Tin mạnh kế tiếp',tin?`${esc(tin.tien)} · ${gon(Date.parse(tin.t)-now)}`:'Không có trong 7 ngày',tin?esc(tin.ten)+' · lúc '+VN(Date.parse(tin.t)):'');
+ // không có tin sắp tới chỉ nói "không có" trong phạm vi lịch thật sự phủ; thiếu lịch hoặc lịch phủ ngắn là trạng thái khác
+ const phu=L&&L.phu_toi?Date.parse(L.phu_toi):null,ngayVN=ms=>new Date(ms).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+ const khong=!L||!L.co?['Chưa có lịch tin','chưa đọc được lịch từ MT5 hoặc lịch mạng']:phu==null?['Chưa rõ độ phủ','lịch không ghi phủ tới lúc nào']
+  :phu<now+7*864e5?['Không có tới '+ngayVN(phu),'lịch chỉ phủ tới lúc đó, chưa đủ 7 ngày']:['Không có trong 7 ngày','lịch phủ tới '+ngayVN(phu)];
+ h+=o('Tin mạnh kế tiếp',tin?`${esc(tin.tien)} · ${gon(Date.parse(tin.t)-now)}`:khong[0],tin?esc(tin.ten)+' · lúc '+VN(Date.parse(tin.t)):khong[1]);
  $('#tl-dai').innerHTML=h}
 // ---- tin tức
 let NHAN=[],nhan='',q='',chiQT=false,TIN=[],cho=[],daXem=0;try{daXem=+localStorage.getItem('tn-xem')||0;nhan=localStorage.getItem('tn-nhan')||''}catch(e){}

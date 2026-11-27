@@ -149,7 +149,8 @@ JS = r"""
 let TRONG=false,TRONG_ON=null;try{TRONG=new URLSearchParams(location.search).get('anh')!=='1'&&localStorage.getItem('so-trong')==='1';TRONG_ON=JSON.parse(localStorage.getItem('so-trong-on')||'null')}catch(e){}   // biểu đồ trống: ẩn mọi lớp của hệ thống, giữ hình vẽ và chỉ báo cá nhân
 let D=null,tf='M15',view={n:160,off:0},mouse=null,drag=null,kieu='toi',plan=null,PTR=null,KC=null,kcHien=null,kcCho=0,kcMo=new Set(),AIR=null,dg=2,ma='',HOC=null,hocCho=0,ppBat={},ictVe=true,planTat=1,ppChon='tat',kyLuat=true,mhLoc=false;try{ictVe=localStorage.getItem('so-ict')!=='0';ppChon=localStorage.getItem('so-ppc')||'tat';kyLuat=localStorage.getItem('so-kl')!=='0';mhLoc=localStorage.getItem('so-mh')==='1';Object.assign(ppBat,JSON.parse(localStorage.getItem('so-pp')||'{}'))}catch(e){}const bat=k=>ppBat[k]!==0,ictOn=()=>!!(PTR&&PTR.ict&&PTR.ict.du&&ictVe&&(ppChon==='ict'||(ppChon==='tat'&&bat('ict')&&(!plan||ppKhoa(plan)==='ict'))));
 const BO={gon:{ema20:1,ema50:1,bb:0,sr:1,fvg:0,ob:0,tin:0,lenh:1,bot:1,rsi:0,ema200:0,st:0,ich:0,pv:0,macd:0,sto:0,atr:0},du:{ema20:1,ema50:1,bb:1,sr:1,fvg:1,ob:1,tin:1,lenh:1,bot:1,rsi:1,ema200:1,st:1,ich:0,pv:1,macd:1,sto:0,atr:0}},on={...BO.gon};
-const lenhHien=()=>((D&&D.lenh)||[]).filter(o=>o.loai==='demo'?on.lenh:on.bot);      // lệnh EA demo theo ô "Lệnh đang mở", lệnh bot tín hiệu theo ô riêng
+const lenhHien=()=>((D&&D.lenh)||[]).filter(o=>o.loai==='tin_hieu'?on.bot:on.lenh);      // vị thế (MT5, hoặc theo nhật ký EA) theo ô "Lệnh đang mở", lệnh bot tín hiệu theo ô riêng
+const lenhNguon=o=>o.loai==='tin_hieu'?' · tín hiệu':o.xac_minh===false?' · theo nhật ký, chưa xác minh':o.nguon==='mt5'?' · MT5':' · demo';   // vi_the.py: nguồn và mức xác minh
 try{kieu=localStorage.getItem('so-kieu3')||'toi';Object.assign(on,JSON.parse(localStorage.getItem('so-on2')||'{}'));ma=new URLSearchParams(location.search).get('ma')||localStorage.getItem('so-ma')||''}catch(e){}
 // chế độ ảnh (?anh=1&nk=<id>&tf=<khung>): chỉ biểu đồ và lệnh trong nhật ký, có nhãn thương hiệu, để anh_lenh.py chụp gửi kèm tin Telegram.
 const ANH=new URLSearchParams(location.search).get('anh')==='1';if(ANH){const q=new URLSearchParams(location.search).get('tf')||'';if(/^(M1|M5|M15|M30|H1|H4|D1)$/.test(q))tf=q;document.documentElement.classList.add('anh')}
@@ -265,7 +266,7 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
   if(on.pv&&D.pivot)for(const[k,col]of[['R3','#ef5350'],['R2','#ef5350'],['R1','#ef5350'],['P','#9e9e9e'],['S1','#26a69a'],['S2','#26a69a'],['S3','#26a69a']])ngang(D.pivot[k],col,k,1,1,undefined,1);                // điểm xoay chiều cổ điển của ngày UTC đã đóng gần nhất
  if(plan){const tps=(plan.tp||[]).slice(0,3);ngang(plan.vao,P.vao,'Vào '+(plan.huong==='MUA'?'MUA':'BÁN')+(plan.hieu_luc===false?(plan.cu?' lúc tín hiệu (đã qua)':' (tham khảo)'):''),3,2);
   ngang(plan.sl,P.sl,'SL −'+fp(plan.rui_ro_gia),3,2);tps.forEach((v,i)=>ngang(v,P.tp,'TP'+(tps.length>1?(i+1):'')+(plan.rr&&plan.rr[i]!=null?' '+f2(plan.rr[i])+'R':''),3,2));if(plan.muc_tieu)ngang(plan.muc_tieu.gia,P.ob,'Mục tiêu lý thuyết '+f2(plan.muc_tieu.r)+'R',1,1)}
- else{const tkv=tkLenh().map(x=>x.vao);for(const o of lenhHien()){if(tkv.some(v=>Math.abs(v-o.vao)<.011))continue;ngang(o.vao,P.vao,o.nhan,4,1);ngang(o.sl,P.sl,'SL '+o.nhan,4,1)}}
+ else{const tkv=tkLenh().map(x=>x.vao);for(const o of lenhHien()){if(tkv.some(v=>Math.abs(v-o.vao)<.011))continue;const cx=o.xac_minh===false,t=o.nhan+(cx?' (chưa xác minh)':'');ngang(o.vao,P.vao,t,cx?1:4,1);ngang(o.sl,P.sl,'SL '+t,cx?1:4,1)}}
  if(on.sr){const cuoi=a=>{if(!a)return null;for(let i=a.length-1;i>=0;i--)if(a[i]!=null)return a[i];return null};
   const kc=cuoi(D.khang_cu),ht=cuoi(D.ho_tro);ngang(kc,P.sr,'',2,1,false);ngang(ht,P.sr,'',2,1,false);if(kc!=null)LW.nhan.push([kc,P.sr,'Kháng cự 2 giờ '+fp(kc),-5,'left']);if(ht!=null)LW.nhan.push([ht,P.sr,'Hỗ trợ 2 giờ '+fp(ht),-5,'left']);
   const lb=D.luat&&D.luat.bot,tr=lb&&lb.trend,c0=!D.khac_vang&&tr&&((D.luat.bot_cho||[]).find(x=>x.tf===tf)||(D.luat.bot_cho||[])[0]);
@@ -416,7 +417,7 @@ function draw(){if(!D||!D.candles.length)return;if(LW){lwDraw();return}const P=p
  // lệnh đang mở: đường giá vào, SL, TP như trên MT5
  const tags=[],tagsP=[],daO=[];if(!plan)for(const o of lenhHien()){const L=(v,col,t)=>{if(v==null||v<lo||v>hi)return;const yy=Math.round(y(v))+.5;X.strokeStyle=col;X.setLineDash([6,3,1,3]);X.beginPath();X.moveTo(0,yy);X.lineTo(W-PR,yy);X.stroke();X.setLineDash([]);
    tags.push([v,col]);if(daO.some(u=>Math.abs(u-yy)<14))return;daO.push(yy);X.fillStyle=col;X.textAlign='left';X.fillText(t,6,yy-7)};
-  L(o.vao,P.vao,nhanL(o)+(o.loai==='demo'?' (demo)':' (tín hiệu)'));L(o.sl,P.sl,'SL · '+nhanL(o))}
+  L(o.vao,P.vao,nhanL(o)+lenhNguon(o));L(o.sl,P.sl,'SL · '+nhanL(o))}
  if(KC&&KC.san_sang&&kcHien&&KC.luat[kcHien]){const t0=D.candles[a][0],t1=D.candles[b-1][0]+dt,sz=Math.max(4,Math.min(7,bw*.9));
   for(const[t,d,v,u]of KC.luat[kcHien].diem){if(t<t0||t>=t1||v<lo||v>hi)continue;let i=a,j=b-1;while(i<j){const m=(i+j+1)>>1;if(D.candles[m][0]<=t)i=m;else j=m-1}
    const xx=x(i),yy=y(v);X.fillStyle=u>0?P.tp:P.sl;X.strokeStyle=P.bg;X.lineWidth=1;X.beginPath();
@@ -499,7 +500,9 @@ function side(){cotVe();const L=D.luat,S=$('#side');let h='';
  if(L.ba_khung){const q=L.ba_khung.quyet_dinh;h+=`<p class="verdict">${q==='MUA'?'MUA':q==='BAN'?'BÁN':'Đứng ngoài'}</p><p class="why">${L.ba_khung.trong_gio?'Nến vừa đóng nằm trong khung giờ của luật.':'Nến vừa đóng nằm ngoài khung giờ của luật (14:00–03:00 giờ Việt Nam, thứ Hai tới thứ Sáu).'} Luật cần thắng trên 80% số lệnh mới hòa vốn.</p>`}
  h+='<h3>Luật đỉnh/đáy 8 giờ</h3>';
  if(L.dinh_day){const d=L.dinh_day,q=d.hanh_dong;h+=`<p class="verdict">${q==='MUA'?'MUA':q==='BAN'?'BÁN':'Đứng ngoài'}</p><p class="why">${esc(d.ly_do||'')}</p>`;if(q==='MUA'||q==='BAN')h+=kv('Giá vào',f2(d.gia_vao))+kv('SL',f2(d.sl))+kv('TP',f2(d.tp1))}
- h+='<h3>Lệnh đang mở</h3>'+((D.lenh||[]).length?D.lenh.map(o=>kv(esc(nhanL(o))+(o.loai==='demo'?' · demo':' · tín hiệu'),'vào '+f2(o.vao)+' · SL '+f2(o.sl))).join(''):'<p class="why">Bot và các EA demo không có lệnh nào đang mở.</p>');
+ h+='<h3>Lệnh đang mở</h3>'+((D.lenh||[]).length?D.lenh.map(o=>kv(esc(nhanL(o))+lenhNguon(o),'vào '+f2(o.vao)+' · SL '+f2(o.sl))
+   +(o.xac_minh===false?'<p class="why" style="margin:-2px 0 6px">'+esc(o.ly_do||'')+(o.luc_nguon?' · nhật ký ghi lần cuối '+new Date(o.luc_nguon).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</p>':'')).join('')
+   :'<p class="why">Không có vị thế nào đang mở theo MT5 và nhật ký EA, không có lệnh gọi bot nào đang mở.</p>');
  h+='<h3>Tin USD mạnh</h3>';
  if(L.tin){h+=L.tin.dang_ne?'<p class="verdict">Đang trong giờ né tin</p>':'';h+=(L.tin.sap_toi.length?L.tin.sap_toi.map(t=>kv('Sắp tới',vn(Date.parse(t)/1000))).join(''):'<p class="why">Không còn tin nào trong lịch.</p>')+kv('Lịch phủ tới',L.tin.phu_toi?vn(Date.parse(L.tin.phu_toi)/1000,1):'—')}
  h+='<h3>Dữ liệu</h3>'+kv('Nguồn giá',D.nguon==='mt5'?'MT5 demo, trực tiếp':'kho nến 1 phút')+(D.nguon==='mt5'&&D.bid?kv('Bid / Ask','<span class="sg-ba">'+fp(D.bid)+' / '+fp(D.ask)+'</span>'):'')+kv('Giá mới nhất lúc','<span class="sg-luc">'+vn(Date.parse(L.het)/1000)+'</span>');
@@ -1256,6 +1259,14 @@ function ptDoi(){if(ptTrangThai()!==ptTT){ptApDung();
   if(PTR&&plan&&!plan.nk&&plan.ma!=='ai'){const q=[...(PTR.phuong_phap||[]),...(PTR.phuong_an||[])].find(x=>x.ma===plan.ma);if(q){plan.hieu_luc=q.hieu_luc;plan.vi_sao_het=q.vi_sao_het}else if(ptTT)plan.hieu_luc=false}
   if(!PTB.hidden)ptVe();dvVe();draw()}
  ptKhung()}
+// phiếu kế hoạch từ phương án đang chọn (phieu_ke_hoach.py): giữ nguyên chiều, giá vào, SL, TP; thiếu thì không tạo, không điền mặc định
+window.BDPK=sym=>{if(!plan||plan.nk||plan.vao==null||!plan.huong)return null;const hv=plan.harrison||{};
+ return{ma:sym||'XAUUSD',chieu:plan.huong,vao:plan.vao,sl:plan.sl,tp:(plan.tp||[]).filter(x=>x!=null),khung:'M15',
+  phuong_phap:{ma:plan.ma,ten:plan.ten_ngan||plan.ten||plan.ma,phien_ban_quy_tac:hv.version||'',kiem_chung:hv.status||(plan.ma==='ai'?'AI gợi ý, chưa kiểm chứng':'thống kê lịch sử của phương pháp')},
+  nen_tin_hieu:plan.nen||null,luc_phan_tich:PTR_GOC&&PTR_GOC.luc||null,snapshot_id:PTR_GOC&&PTR_GOC.luc?'phan-tich@'+PTR_GOC.luc:null,
+  dieu_kien_vo_hieu:['Giá chạm SL '+plan.sl+' trước khi khớp, hoặc lần phân tích sau không còn điều kiện.',...(plan.vi_sao_het||[])].join(' '),
+  ky_thuat:ptTT.includes('dung')?'tk_dung':ptTT.includes('cu')?'chua_cap_nhat':plan.hieu_luc?'con_hieu_luc':plan.hieu_luc===false?'het_hieu_luc':'khong_ro',
+  nguon_gia:PTR_GOC&&PTR_GOC.nguon||null}};
 setInterval(ptDoi,5000);addEventListener('gsr',ptDoi);document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.seg.tf button'))setTimeout(ptKhung,0)});
 document.head.insertAdjacentHTML('beforeend','<style>.ptk{margin:4px 0 6px;font-size:11.5px;line-height:1.4;color:var(--ink2)}.ptk.khac{color:var(--warn)}.ptk.cu{color:var(--loss);font-weight:600}</style>');
 // điện thoại: đưa nến lên màn hình đầu (ghi chú "Đọc trước" xuống dưới khung biểu đồ, dải bot tín hiệu xuống dưới nến)
@@ -1295,7 +1306,13 @@ fit();cb();setInterval(cb,10000);cotTai();setInterval(cotTai,1800000);load().the
 setInterval(()=>{if(!$('#ask')||!$('#ask').textContent.startsWith('Đang'))ai()},60000)})();
 {const lt=document.getElementById('lt');if(lt)for(const ev of['pointerdown','focusin','click'])lt.addEventListener(ev,e=>{   // lối tắt mang theo mã đang xem
  const a=e.target.closest('a[data-lt]'),m=document.getElementById('ma'),o=m&&m.options[m.selectedIndex];   // ô trống = mã vàng mặc định, tên nằm ở đầu chữ của ô
- const v=m&&(m.value||(o?o.textContent.split(' · ')[0].trim():''));if(a&&v)a.href=a.dataset.lt+'?ma='+encodeURIComponent(v)})}
+ const v=m&&(m.value||(o?o.textContent.split(' · ')[0].trim():''));if(a&&v)a.href=a.dataset.lt+'?ma='+encodeURIComponent(v);
+ // phiếu kế hoạch (phieu_ke_hoach.py): phương án đang chọn đi nguyên vẹn sang Kế hoạch và Kiểm tra lệnh, không chỉ mỗi mã
+ if(ev==='click'&&a&&/^\/(ke-hoach|kiem-lenh)$/.test(a.dataset.lt)&&window.BDPK){const pk=BDPK(v);if(pk){e.preventDefault();const dich=a.dataset.lt;
+  fetch('/api/phieu',{method:'POST',headers:{'Content-Type':'application/json','X-So-Cong-Khai':'1'},body:JSON.stringify({viec:'tao',phieu:pk})})
+   .then(r=>r.json()).then(async j=>{if(j.ok)try{localStorage.setItem('so-phieu-cuoi',j.phieu.id);const B=window.BDCB&&BDCB(),cv=B&&B.LW&&B.LW.chart.takeScreenshot();   // ảnh chart lúc quyết định, lưu cùng phiếu
+     if(cv)await fetch('/api/phieu',{method:'POST',headers:{'Content-Type':'application/json','X-So-Cong-Khai':'1'},body:JSON.stringify({viec:'anh',id:j.phieu.id,anh:cv.toDataURL('image/jpeg',.72)})})}catch(er){}
+    location.href=dich+'?'+new URLSearchParams(j.ok?{ma:pk.ma,phieu:j.phieu.id}:{ma:pk.ma})}).catch(()=>{location.href=a.href})}}})}
 """
 
 
