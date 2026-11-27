@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import thi_truong_trang, trang
+from . import da_khung_giao_dien, da_khung_realtime, thi_truong_trang, trang
 
 CSS = r"""
 main.rong{max-width:none;padding-left:16px;padding-right:16px}
@@ -48,128 +48,49 @@ main.rong{max-width:none;padding-left:16px;padding-right:16px}
 /* Máy tính (27/11/2026): tiêu đề và hàng nút gộp một hàng, đoạn mô tả thu vào nút "i", lưới biểu đồ cao vừa phần còn lại của cửa sổ nên màn hình
    đầu là biểu đồ. --tru = mọi thứ phía trên lưới + lề dưới; lưới có chiều cao cố định, các hàng chia đều, vùng nến của mỗi ô lấp phần còn lại
    (đầu ô có xuống dòng ở ô hẹp cũng không làm lưới tràn màn hình). */
-.dk-i{display:none}
+.dk-help{position:relative;flex:none}.dk-help summary{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;color:var(--ink2);cursor:pointer;font-weight:700;list-style:none}.dk-help summary::-webkit-details-marker{display:none}.dk-help summary:focus-visible{outline:2px solid var(--series)}
+.dk-help-content{position:absolute;z-index:12;left:0;top:32px;width:min(480px,calc(100vw - 55px));max-height:55vh;overflow:auto;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 10px 30px #0005;font-size:13px;line-height:1.6}.dk-top .dk-help-content p{display:block;position:static;width:auto;max-width:none;margin:0 0 10px;padding:0;border:0;background:none;box-shadow:none;color:var(--ink2)}.dk-help-content p:last-child{margin-bottom:0}
+.dk-notes{margin-top:12px;color:var(--ink2);font-size:12px;line-height:1.6}.dk-notes summary{cursor:pointer;padding:5px 0}.dk-notes p{margin:6px 0}.dk-notes .dk-ghi{margin:6px 0;font-size:12px}
 @media(min-width:981px) and (min-height:600px){
 main.rong{--tru:calc(var(--nv-h,56px) + 112px);display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:18px;align-items:center;padding-top:10px;padding-bottom:24px}
 main.rong>*{grid-column:1/-1}main.rong>.dk-top{grid-column:1;min-width:0;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:10px;position:relative}
 main.rong>.dk-thanh{grid-column:2;margin:0;justify-content:flex-end;flex-wrap:nowrap}
 .dk-top>div{display:flex;align-items:center;gap:8px;flex:none}.dk-song{min-width:0}.dk-song span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dk-top h1{font-size:18px;white-space:nowrap}
-.dk-i{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);color:var(--ink2);font:italic 700 12px/1 Georgia,serif;cursor:pointer}
-.dk-i:focus-visible{outline:2px solid var(--series);outline-offset:1px}
-.dk-top p{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:8;width:min(520px,80vw);max-width:none;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.dk-i:hover+p,.dk-i:focus+p{display:block}
 .dk-tom{margin:8px 0}
 .dk-luoi{height:calc(100dvh - var(--tru));min-height:420px;grid-auto-rows:minmax(0,1fr)}.dk-luoi .dk-o{min-height:0}
 .dk-luoi .dk-c,.dk-luoi[data-bo] .dk-o .dk-c{height:auto;flex:1 1 0;min-height:0}
 }
 """
 
-JS = r"""
-(()=>{const $=s=>document.querySelector(s),LWC=window.LightweightCharts,G=$('#dk-luoi'),TT=window.TT;if(!G)return;
-if(!LWC){G.innerHTML='<p class="dk-cho">Không nạp được thư viện biểu đồ.</p>';return}
-const TFS={M1:60,M2:120,M3:180,M5:300,M10:600,M15:900,M30:1800,H1:3600,H2:7200,H3:10800,H4:14400,D1:86400,W1:604800,MN1:2592000},TFK=Object.keys(TFS),tz={timeZone:'Asia/Ho_Chi_Minh'},SO={'2':2,'4':4,'1+3':4};
-const ST={bo:'4',o:[],dongMa:1,dongKhung:0,dongTro:1,dongTg:0};
-try{const c=JSON.parse(localStorage.getItem('so-dk')||'{}');Object.assign(ST,c);if(c.tf&&!c.o)ST.o=c.tf.map(tf=>({ma:c.ma||'',tf}))}catch(e){}
-const MAC=['M5','M15','H1','H4'];for(let i=0;i<4;i++)ST.o[i]=Object.assign({ma:'',tf:MAC[i]},ST.o[i]||{});if(!SO[ST.bo])ST.bo='4';
-const U=new URLSearchParams(location.search);if(U.get('ma')){for(const c of ST.o)c.ma=U.get('ma');ST.dongMa=1}
-const luu=()=>{try{localStorage.setItem('so-dk',JSON.stringify({bo:ST.bo,o:ST.o,dongMa:ST.dongMa,dongKhung:ST.dongKhung,dongTro:ST.dongTro,dongTg:ST.dongTg}))}catch(e){}};
-const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let DS=[],VANG='',dongBo=false,ve=0;const O=[];
-const soLe=cs=>{let m=0;for(const c of cs.slice(-60))for(const v of c.slice(1,5)){const s=String(v),i=s.indexOf('.');if(i>=0)m=Math.max(m,s.length-i-1)}return Math.min(m,5)};
-const fpO=(o,v)=>v==null?'—':Number(v).toLocaleString('vi-VN',{minimumFractionDigits:o.dg,maximumFractionDigits:o.dg});
-const mau=()=>({bg:css('--card')||'#111',ink:css('--ink2')||'#999',vien:css('--line')||'#333',len:css('--gain')||'#17935b',xuong:css('--loss')||'#e5532d'});
-const gio=(t,ngay)=>new Date(t*1000).toLocaleString('vi-VN',{...tz,day:'2-digit',month:'2-digit',...(ngay?{year:'numeric'}:{hour:'2-digit',minute:'2-digit'})});
-const timNen=(cs,t)=>{let a=0,b=cs.length-1;if(b<0||t<cs[0][0])return -1;while(a<b){const m=(a+b+1)>>1;if(cs[m][0]<=t)a=m;else b=m-1}return a};
-const maThat=m=>m||VANG;                                                    // ô để trống mã = mã vàng của sàn
-const nenLW=c=>({time:c[0],open:c[1],high:c[2],low:c[3],close:c[4]});
-const optMa=chon=>{const nh={};for(const s of DS)(nh[s.nhom]=nh[s.nhom]||[]).push(s);const ds=Object.keys(nh).map(n=>`<optgroup label="${esc(n)}">`+nh[n].map(s=>`<option value="${esc(s.ma)}"${s.ma===chon?' selected':''}>${esc(s.ma)}</option>`).join('')+'</optgroup>').join('');
- return ds||`<option value="${esc(chon)}">${esc(chon||'XAUUSD')}</option>`};
-// --- một ô biểu đồ
-function taoO(i){const el=document.createElement('section'),c=ST.o[i];el.className='dk-o';el.dataset.i=i;
- el.innerHTML=`<header><select class="dk-ma" aria-label="Mã">${optMa(maThat(c.ma))}</select><select class="dk-tf" aria-label="Khung thời gian">${TFK.map(k=>`<option${k===c.tf?' selected':''}>${k}</option>`).join('')}</select>`
-  +'<span class="dk-xu"></span><b class="dk-gia">—</b><span class="dk-bd"></span><a class="dk-mo" href="/bieu-do" title="Mở biểu đồ đầy đủ. Bấm đúp vào biểu đồ cũng mở được" aria-label="Mở biểu đồ đầy đủ"><span>Mở biểu đồ đầy đủ</span></a></header><div class="dk-c"></div>';
- G.appendChild(el);const M=mau(),o={i,el,cs:[],e20:null,e50:null,ban:0,dg:2,get ma(){return maThat(ST.o[i].ma)},get tf(){return ST.o[i].tf}};
- o.chart=LWC.createChart(el.querySelector('.dk-c'),{autoSize:true,layout:{background:{type:'solid',color:M.bg},textColor:M.ink,attributionLogo:false},
-  grid:{vertLines:{color:'rgba(128,128,128,.1)'},horzLines:{color:'rgba(128,128,128,.1)'}},rightPriceScale:{borderColor:M.vien,scaleMargins:{top:.08,bottom:.06}},
-  timeScale:{borderColor:M.vien,timeVisible:true,secondsVisible:false,rightOffset:4,
-   tickMarkFormatter:(t,l)=>{const d=new Date(t*1000);return l===0?d.toLocaleDateString('vi-VN',{...tz,year:'numeric'}):l===1?d.toLocaleDateString('vi-VN',{...tz,month:'2-digit',year:'numeric'}):l===2?d.toLocaleDateString('vi-VN',{...tz,day:'2-digit',month:'2-digit'}):d.toLocaleTimeString('vi-VN',{...tz,hour:'2-digit',minute:'2-digit'})}},
-  crosshair:{mode:0},localization:{locale:'vi-VN',priceFormatter:p=>fpO(o,p),timeFormatter:t=>gio(t,o.tf==='D1')}});
- o.nen=o.chart.addSeries(LWC.CandlestickSeries,{upColor:M.len,downColor:M.xuong,wickUpColor:M.len,wickDownColor:M.xuong,borderVisible:false});
- o.l20=o.chart.addSeries(LWC.LineSeries,{color:'#4da3ff',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
- o.l50=o.chart.addSeries(LWC.LineSeries,{color:'#ffb020',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
- el.querySelector('.dk-ma').addEventListener('change',e=>{const v=e.target.value;for(const k of(ST.dongMa?O:[o])){ST.o[k.i].ma=v;k.el.querySelector('.dk-ma').value=v;tai(k,1)}luu()});
- el.querySelector('.dk-tf').addEventListener('change',e=>{const v=e.target.value;for(const k of(ST.dongKhung?O:[o])){ST.o[k.i].tf=v;k.el.querySelector('.dk-tf').value=v;tai(k,1)}luu()});
- el.querySelector('.dk-c').addEventListener('dblclick',()=>{location.href=o.el.querySelector('.dk-mo').href});
- // con trỏ đồng bộ: rê chuột ở một ô thì các ô khác chỉ vào nến chứa cùng thời điểm (cùng mức giá nếu cùng mã)
- o.chart.subscribeCrosshairMove(p=>{if(!ST.dongTro||dongBo)return;dongBo=true;try{for(const k of O){if(k===o||!k.cs.length)continue;
-  if(!p||p.time==null||!p.point){k.chart.clearCrosshairPosition();continue}const j=timNen(k.cs,p.time);if(j<0){k.chart.clearCrosshairPosition();continue}
-  const gia=k.ma===o.ma?o.nen.coordinateToPrice(p.point.y):k.cs[j][4];if(gia!=null)k.chart.setCrosshairPosition(gia,k.cs[j][0],k.nen)}}finally{dongBo=false}});
- // đồng bộ thời gian: kéo hoặc phóng một ô thì các ô khác hiện cùng khoảng thời gian
- o.chart.timeScale().subscribeVisibleTimeRangeChange(r=>{if(!ST.dongTg||dongBo||!r)return;dongBo=true;try{for(const k of O)if(k!==o&&k.cs.length)try{k.chart.timeScale().setVisibleRange(r)}catch(e){}}finally{dongBo=false}});
- return o}
-async function tai(o,dau){const ma=o.ma,tf=o.tf,lan=++o.ban;if(!ma){o.el.querySelector('.dk-bd').textContent='Chưa có danh sách mã từ MT5';return}
- try{const r=await fetch('/api/gia?tf='+tf+'&n=400&ma='+encodeURIComponent(ma),{cache:'no-store'});const t=await r.text();if(!r.ok)throw new Error(t);const j=JSON.parse(t);
-  if(lan!==o.ban||tf!==o.tf||ma!==o.ma)return;const cs=(j.candles||[]).map(c=>c.slice());if(!cs.length)throw new Error(j.ly_do_khong_song||'chưa có nến');
-  const x=TT&&TT.by().get(ma);o.dg=x&&x.so_le!=null?x.so_le:soLe(cs);o.cs=cs;o.nen.setData(cs.map(nenLW));
-  const dl=k=>cs.map((c,n)=>j[k]&&j[k][n]!=null?{time:c[0],value:j[k][n]}:{time:c[0]});o.l20.setData(dl('ema20'));o.l50.setData(dl('ema50'));
-  const cuoi=k=>{const a=j[k]||[];for(let n=a.length-1;n>=0;n--)if(a[n]!=null)return a[n];return null};o.e20=cuoi('ema20');o.e50=cuoi('ema50');
-  o.chart.applyOptions({timeScale:{timeVisible:tf!=='D1'}});if(dau)o.chart.timeScale().setVisibleLogicalRange({from:cs.length-(tf==='D1'?120:100),to:cs.length+4});
-  o.el.querySelector('.dk-mo').href='/bieu-do'+(ma===VANG?'':'?ma='+encodeURIComponent(ma));dau_(o)}
- catch(e){o.el.querySelector('.dk-bd').textContent='Chưa tải được: '+e.message}}
-// đầu ô: giá, thay đổi của nến đang chạy, xu hướng EMA20/EMA50
-function dau_(o){const c=o.cs[o.cs.length-1];if(!c)return;const h=o.el.querySelector('header'),xu=h.querySelector('.dk-xu'),len=o.e20!=null&&o.e50!=null?o.e20>=o.e50:null;
- h.querySelector('.dk-gia').textContent=fpO(o,c[4]);const d=c[4]-c[1];h.querySelector('.dk-bd').textContent=(d>=0?'+':'−')+fpO(o,Math.abs(d))+' · '+gio(c[0],o.tf==='D1');
- xu.className='dk-xu '+(len==null?'':len?'len':'xuong');xu.textContent=len==null?'':len?'▲ Tăng':'▼ Giảm';tom()}
-function tom(){const ds=O.filter(o=>o.e20!=null&&o.e50!=null),n=ds.filter(o=>o.e20>=o.e50).length,el=$('#dk-tom');if(!el)return;if(!ds.length){el.innerHTML='';return}
- const motMa=ds.every(o=>o.ma===ds[0].ma);
- el.innerHTML='<span>Xu hướng EMA20/EMA50:</span>'+ds.map(o=>`<span class="chip ${o.e20>=o.e50?'len':'xuong'}">${motMa?'':esc(o.ma)+' '}${o.tf} ${o.e20>=o.e50?'▲':'▼'}</span>`).join('')
-  +`<span><b>${n}/${ds.length}</b> ô tăng · <b>${ds.length-n}/${ds.length}</b> ô giảm</span>`
-  +(motMa?(n===ds.length?'<span class="chip len">Các khung đồng thuận tăng</span>':n===0?'<span class="chip xuong">Các khung đồng thuận giảm</span>':'<span class="chip">Các khung chưa cùng chiều</span>'):'')}
-// --- giá trực tiếp từ luồng dùng chung: cập nhật nến đang chạy; sang nến mới thì tải lại ô đó để nến vừa đóng và EMA khớp MT5
-function apGia(dsMa){const by=TT.by();for(const o of O){if(!dsMa.includes(o.ma))continue;const x=by.get(o.ma);if(!x||!x.q||!o.cs.length)continue;
-  const b=x.q[0],ts=Math.floor(x.q[2]/1000),cs=o.cs,last=cs[cs.length-1],st=TFS[o.tf];if(!isFinite(b)||!isFinite(ts))continue;
-  if(ts>=last[0]+st){cs.push([last[0]+st*Math.floor((ts-last[0])/st),b,b,b,b]);setTimeout(()=>tai(o),1500)}
-  else if(ts>=last[0]){last[2]=Math.max(last[2],b);last[3]=Math.min(last[3],b);last[4]=b}else continue;o.can=1}
- if(!ve){ve=1;requestAnimationFrame(()=>{ve=0;for(const o of O)if(o.can){o.can=0;try{o.nen.update(nenLW(o.cs[o.cs.length-1]))}catch(e){}dau_(o)}})}}
-function trangThai(){const el=$('#dk-song');if(!el||!TT)return;const t=TT.tt;el.className='dk-song '+(t.ok?'ok':'loi');el.querySelector('span').textContent=t.ok?'Trực tiếp theo từng tick':'Chưa có giá trực tiếp: '+(t.ly||'')}
-// --- dựng lưới
-function dung(){for(const o of O)try{o.chart.remove()}catch(e){}O.length=0;G.innerHTML='';G.dataset.bo=ST.bo;for(let i=0;i<SO[ST.bo];i++)O.push(taoO(i));
- O.forEach((o,i)=>setTimeout(()=>tai(o,1),i*120))}
-document.querySelectorAll('#dk-bo button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===ST.bo));b.addEventListener('click',()=>{ST.bo=b.dataset.v;luu();
- document.querySelectorAll('#dk-bo button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));dung()})});
-for(const[id,k]of[['dk-dma','dongMa'],['dk-dkh','dongKhung'],['dk-dtro','dongTro'],['dk-dtg','dongTg']]){const b=$('#'+id);if(!b)continue;b.setAttribute('aria-pressed',String(!!ST[k]));
- b.addEventListener('click',()=>{ST[k]=ST[k]?0:1;luu();b.setAttribute('aria-pressed',String(!!ST[k]));
-  if(k==='dongMa'&&ST[k]&&O[0]){const v=O[0].ma;for(const o of O.slice(1)){ST.o[o.i].ma=v;o.el.querySelector('.dk-ma').value=v;tai(o,1)}}
-  if(k==='dongTro'&&!ST[k])for(const o of O)o.chart.clearCrosshairPosition()})}
-setInterval(()=>{if(document.visibilityState==='visible')O.forEach((o,i)=>setTimeout(()=>tai(o),i*400))},60000);   // mỗi phút đồng bộ lại với MT5
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')O.forEach(o=>tai(o))});
-new MutationObserver(()=>{const M=mau();for(const o of O){o.chart.applyOptions({layout:{background:{type:'solid',color:M.bg},textColor:M.ink},rightPriceScale:{borderColor:M.vien},timeScale:{borderColor:M.vien}});
- o.nen.applyOptions({upColor:M.len,downColor:M.xuong,wickUpColor:M.len,wickDownColor:M.xuong})}}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-if(TT){TT.on((l,ds)=>{if(l==='gia'&&ds)apGia(ds);trangThai()});TT.batDau(60)}
-fetch('/api/ma?gon=1',{cache:'no-store'}).then(r=>r.json()).then(j=>{DS=(j.ds||[]);const v=DS.find(s=>s.la_vang);VANG=v?v.ma:(DS[0]||{}).ma||'';
- for(const c of ST.o)if(c.ma&&!DS.some(s=>s.ma===c.ma))c.ma='';dung()}).catch(()=>{dung()});
-window.DK={O,ST}})();
-"""
+CSS += da_khung_giao_dien.CSS
+
+JS = da_khung_giao_dien.JS
 
 
 def trang_da_khung(ten: str) -> str:
     bo = ''.join(f'<button type="button" data-v="{v}">{t}</button>' for v, t in (('2', '2 biểu đồ'), ('4', '4 biểu đồ'), ('1+3', '1 lớn + 3 nhỏ')))
-    dong = ''.join(f'<button type="button" id="{i}">{t}</button>' for i, t in (('dk-dma', 'Đồng bộ mã'), ('dk-dkh', 'Đồng bộ khung'),
-                                                                            ('dk-dtro', 'Đồng bộ con trỏ'), ('dk-dtg', 'Đồng bộ thời gian')))
+    dong = ''.join(f'<button type="button" id="{i}" title="{ti}">{t}</button>' for i, t, ti in (
+        ('dk-dma', 'Đồng bộ mã', 'Đổi mã ở một ô thì mọi ô đổi theo'), ('dk-dkh', 'Đồng bộ khung', 'Đổi khung ở một ô thì mọi ô đổi theo'),
+        ('dk-dtro', 'Đồng bộ con trỏ', 'Rê chuột ở một ô: mọi ô hiện cùng thời điểm, cùng mức giá và bảng giá của nến tại đó'),
+        ('dk-dtg', 'Liên kết thu phóng', 'Bật: kéo hoặc phóng to một ô thì các ô khác theo cùng khoảng thời gian. Tắt: mỗi ô thu phóng độc lập')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Nhiều biểu đồ · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Nhiều biểu đồ · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'da-khung', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
-        '<div class="dk-top"><div><h1>Nhiều biểu đồ</h1><span class="dk-i" tabindex="0" aria-label="Giới thiệu trang" aria-describedby="dk-gt">i</span><p id="dk-gt">Hai, bốn hoặc một lớn ba nhỏ trên một màn hình, chạy theo từng tick. Mỗi ô chọn mã và khung riêng; '
-        'bật Đồng bộ mã để xem một mã ở nhiều khung. Rê chuột ở một ô thì các ô khác chỉ vào cùng thời điểm; bấm đúp một ô để mở ô đó ở trang Biểu đồ.</p></div>'
+        '<div class="dk-top"><div><h1>Nhiều biểu đồ</h1><details class="dk-help"><summary aria-label="Hướng dẫn nhiều biểu đồ" title="Hướng dẫn nhiều biểu đồ">?</summary><div class="dk-help-content">'
+        '<p>Chọn mã và khung riêng cho từng ô bằng Tách từng ô. Bật Đồng bộ mã hoặc Đồng bộ khung khi muốn các ô đổi cùng nhau.</p>'
+        '<p>Giữ khung nhìn giúp nền lưới và trục đứng yên khi giá đổi. Bấm Hiện tại hoặc Giá ngoài vùng để về nến mới.</p>'
+        '<p>Đồng bộ con trỏ: rê chuột ở một ô thì mọi ô hiện cùng thời điểm; góc trên mỗi ô ghi giá Mở, Cao, Thấp, Đóng của nến khung đó tại thời điểm ấy, và với ô cùng mã thì giá đang trỏ nằm trên đỉnh, dưới đáy hay trong nến. Bấm (không kéo) để ghim điểm: mọi ô có vạch dọc và đường giá ghim, bảng giữ nguyên và ghi quãng giá đã đi từ điểm ghim tới giá hiện tại; Về điểm ghim cuộn mọi ô tới đó, Bỏ ghim hoặc phím Esc để bỏ.</p>'
+        '<p>Liên kết thu phóng: bật thì kéo hoặc phóng to một ô, các ô khác đi theo, mép phải cùng một thời điểm. Chọn kiểu bên cạnh nút: Cùng số nến (mặc định) để khung lớn cũng hiện ngần ấy nến nên vẫn thấy nhiều nến; Cùng khoảng thời gian để mọi ô xem đúng một quãng giờ; Chỉ cuộn theo nhau để mỗi ô giữ độ phóng riêng. Ô thiếu nến cũ bắt đầu ở nến đầu tiên của nó thay vì để trống, và trục giá tự co cho vừa nến. Tắt thì mỗi ô thu phóng riêng.</p>'
+        '<p>Một tick là một lần MT5 cập nhật giá Bid/Ask. Trang hiển thị các thay đổi máy chủ nhận được, không bảo đảm nhận đủ mọi tick của sàn hoặc không có độ trễ.</p>'
+        '</div></details></div>'
         '<span id="dk-song" class="dk-song"><i></i><span>Đang nối…</span></span></div>',
         f'<div class="dk-thanh"><div class="dk-seg" id="dk-bo" role="group" aria-label="Bố cục">{bo}</div>'
         f'<div class="dk-seg" role="group" aria-label="Đồng bộ">{dong}</div></div>',
         '<div class="dk-tom" id="dk-tom" aria-live="polite"></div>',
         '<div class="dk-luoi" id="dk-luoi" data-bo="4"></div>',
-        '<p class="dk-ghi">Xu hướng ở đây chỉ so EMA20 với EMA50 trên nến của từng ô, để nhìn nhanh các ô có cùng chiều không; đây là mô tả, không phải '
+        '<details class="dk-notes"><summary>Nguồn dữ liệu và lưu ý</summary><p class="dk-ghi">Xu hướng ở đây chỉ so EMA20 với EMA50 trên nến của từng ô, để nhìn nhanh các ô có cùng chiều không; đây là mô tả, không phải '
         'tín hiệu vào lệnh. Biểu đồ vẽ bằng <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>. '
         'Copyright (c) 2026 TradingView, Inc.</p>',
-        '<footer>' + escape(trang.mien_tru()) + '</footer></main>'
-        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{thi_truong_trang.JS_CHUNG}</script><script>{JS}</script></body></html>'])
+        '<p>' + escape(trang.mien_tru()) + '</p></details></main>'
+        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{thi_truong_trang.JS_CHUNG}</script><script>{da_khung_realtime.JS}</script><script>{JS}</script></body></html>'])

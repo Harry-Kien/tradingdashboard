@@ -12,6 +12,7 @@ chỉ ghi vào nơi đã chọn, không tự chọn thay.
 from __future__ import annotations
 
 import json
+import hashlib
 import shutil
 import string
 import os
@@ -24,6 +25,7 @@ from html import escape
 from pathlib import Path
 
 from . import trang
+from . import ai_store, tin_hieu_tien_cuu
 from .__main__ import HERE
 
 GIU = 14                                        # số bản giữ lại
@@ -31,6 +33,7 @@ CACH_GIO = 24                                   # tạo bản mới khi bản m�
 TIEN_TO = 'so-cong-khai-'
 BO_THU_MUC = {'__pycache__', '.pytest_cache', '.git', 'kiem-giao-dien', 'dist', 'node_modules', '.venv', 'venv'}
 BO_DUOI = {'.pyc', '.pkl', '.parquet', '.feather', '.zip', '.tmp', '.log', '.mp4'}
+BO_NHAT_KY_DB = ('sqlite3-journal', 'sqlite3-wal', 'sqlite3-shm')
 ANH = {'.png', '.jpg', '.jpeg', '.webp'}         # ảnh chụp trong out/ thì bỏ; logo, ảnh tĩnh của trang thì giữ
 BO_TEN = ('.env', 'token', 'secret', 'credential', 'mat-khau', 'mat_khau', 'password')
 BO_DUOI_KHOA = {'.key', '.pem', '.pfx', '.p12'}
@@ -108,7 +111,7 @@ def nen_chep(p: Path, goc: Path) -> bool:
             or p.is_symlink() or not _trong(p, goc)):
         return False
     ten = p.name.lower()
-    if p.suffix.lower() in BO_DUOI or p.suffix.lower() in BO_DUOI_KHOA:
+    if p.suffix.lower() in BO_DUOI or p.suffix.lower() in BO_DUOI_KHOA or ten.endswith(BO_NHAT_KY_DB):
         return False
     if phan[0] == 'out' and p.suffix.lower() in ANH:
         return False
@@ -135,6 +138,44 @@ def cac_ban(dich: Path) -> list[Path]:
         return []
 
 
+def _nguon_khoi_phuc(goc: Path) -> tuple[list[tuple[Path, str]], dict]:
+    """Bao gồm mã đang chạy và các CSV liên kết ngoài kho dữ liệu; thiếu nguồn đã khai thì báo lỗi."""
+    from . import doc_so, local_runtime
+    ds, meta = [], {}
+    manifest = goc / 'du-lieu' / 'local-release.json'
+    if manifest.is_file():
+        try:
+            selected = json.loads(manifest.read_text(encoding='utf-8'))
+            program = Path(selected['program_root']).resolve()
+            if not (program / 'so_cong_khai' / 'web.py').is_file() or local_runtime.build_id(program / 'so_cong_khai') != selected['build']:
+                raise ValueError('Bản local đã chốt không còn khớp mã.')
+        except (ValueError, KeyError, TypeError) as exc:
+            raise OSError('Không xác minh được mã bản local để sao lưu.') from exc
+        if program != goc.resolve():
+            for folder in ('so_cong_khai', 'tinh'):
+                for p in sorted((program / folder).rglob('*')):
+                    if p.is_file() and nen_chep(p, program):
+                        ds.append((p, 'chuong-trinh/' + p.relative_to(program).as_posix()))
+            meta.update(build=selected['build'], chuong_trinh='chuong-trinh')
+    config = goc / 'cau-hinh.json'
+    try:
+        cfg = json.loads(config.read_text(encoding='utf-8')) if config.is_file() else {}
+    except ValueError as exc:
+        raise OSError('Cấu hình không hợp lệ; chưa thể xác định nguồn nhật ký cần sao lưu.') from exc
+    linked = [(e['tep'], f'nguon-ngoai/tk-{i + 1}/ea-{j + 1}.csv')
+              for i, acc in enumerate(cfg.get('tai_khoan', [])) for j, e in enumerate(acc.get('ea', []))]
+    if (cfg.get('gia') or {}).get('lich_tin'):
+        linked.append((cfg['gia']['lich_tin'], 'nguon-ngoai/lich-tin.csv'))
+    meta['nguon_ngoai'] = []
+    for original, arc in linked:
+        p = Path(doc_so.mo_rong(original))
+        if p.suffix.lower() != '.csv' or not p.is_file() or p.is_symlink() or p.stat().st_size > TOI_DA:
+            raise OSError('Nguồn CSV đã khai không thể đưa vào bản sao: ' + p.name)
+        ds.append((p, arc))
+        meta['nguon_ngoai'].append({'tep_goc': str(p), 'trong_ban_sao': arc})
+    return ds, meta
+
+
 def tao(goc: Path = HERE, dich: Path | None = None, now: datetime | None = None, giu: int = GIU) -> dict:
     """Tạo một bản nén, đọc lại để kiểm, rồi bỏ các bản cũ quá GIU. Trả về trạng thái (ok, tep, so_tep, kich_thuoc hoặc loi)."""
     now = now or datetime.now()
@@ -146,15 +187,29 @@ def tao(goc: Path = HERE, dich: Path | None = None, now: datetime | None = None,
             ten = f'{TIEN_TO}{now:%Y%m%d-%H%M%S}.zip'
             tam = dich / (ten + '.dang-ghi')
             ds = danh_sach_tep(goc)
+            bo_sung, khoi_phuc = _nguon_khoi_phuc(goc)
             with zipfile.ZipFile(tam, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
                 for p in ds:
                     try:
-                        z.write(p, p.relative_to(goc).as_posix())
+                        if p.name in ('ai-platform.sqlite3', tin_hieu_tien_cuu.TEN_TEP):
+                            z.writestr(p.relative_to(goc).as_posix(), ai_store.backup_bytes(p))
+                        else:
+                            z.write(p, p.relative_to(goc).as_posix())
                     except OSError:                              # tệp đang bị chương trình khác giữ: bỏ qua, lần sau chép
                         continue
+                if bo_sung:
+                    khoi_phuc['sha256'] = {}
+                    for p, arc in bo_sung:
+                        raw = p.read_bytes()
+                        z.writestr(arc, raw)
+                        khoi_phuc['sha256'][arc] = hashlib.sha256(raw).hexdigest()
+                    z.writestr('KHOI_PHUC.json', json.dumps(khoi_phuc, ensure_ascii=False, indent=2))
                 z.writestr('DOC_TOI.txt', 'Bản sao lưu của webapp so-cong-khai, tạo lúc ' + now.strftime('%d/%m/%Y %H:%M') + '.\r\n'
                            'Khôi phục: giải nén vào một thư mục mới, kiểm tra, rồi chép các tệp cần lấy lại vào thư mục dự án.\r\n'
-                           'Bản sao không chứa tệp có tên giống khóa hay mật khẩu, bộ nhớ tạm và ảnh chụp.\r\n')
+                           'Bản sao không chứa tệp có tên giống khóa hay mật khẩu, bộ nhớ tạm và ảnh chụp.\r\n'
+                           'Nếu có KHOI_PHUC.json: chuong-trinh/ chứa mã bản local đã chốt; nguon-ngoai/ chứa bản sao các CSV EA/lịch tin đã liên kết.\r\n'
+                           'Khi khôi phục sang máy/thư mục khác: sửa program_root trong du-lieu/local-release.json trỏ tới chuong-trinh/ đã giải nén, '
+                           'và sửa đường dẫn CSV trong cau-hinh.json theo KHOI_PHUC.json. Không ghi đè nhật ký MT5 đang chạy.\r\n')
             with zipfile.ZipFile(tam) as z:
                 hong = z.testzip()
                 so = len(z.namelist()) - 1
@@ -353,7 +408,7 @@ nap();})();
 def trang_sao_luu(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Sao lưu · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Sao lưu · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'sao-luu', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Sao lưu</h1></div><div class="stamp">mã, cấu hình, nhật ký và kết quả đo<br>mỗi ngày một bản</div></div>',
         '<p class="note">Nhật ký điểm vào, sổ của bot, cấu hình và kết quả đo chỉ có trên máy này. Webapp tự nén toàn bộ thành một tệp mỗi ngày và cất ở nơi '

@@ -20,10 +20,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import gia
+from . import gia, duong
 
 HUONG = {'BUY': 'MUA', 'SELL': 'BAN', 'MUA': 'MUA', 'BAN': 'BAN'}
-PHIEN_BAN = 2                                  # đổi cách tính thì tăng số này để bỏ kết quả đã lưu (2: sửa lệch giờ 25/11/2026)
+PHIEN_BAN = 3                                  # 3: phát lại theo giờ đóng nến của từng khung, 27/11/2026
 _tt: dict = {'key': None, 'kq': None, 'dang': False, 'loi': None, 'bat_dau': None}
 _khoa = threading.Lock()
 
@@ -273,7 +273,7 @@ def lay(cfg: dict, out: Path, cho: bool = False) -> dict:
 def main(argv=None) -> int:
     import sys                                                             # noqa: PLC0415
     import time                                                            # noqa: PLC0415
-    here = Path(__file__).resolve().parent.parent
+    here = duong.goc_du_lieu()
     cfg = json.loads((here / 'cau-hinh.json').read_text(encoding='utf-8'))
     t0 = time.time()
     kq = chay(cfg)

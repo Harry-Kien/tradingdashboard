@@ -99,7 +99,8 @@ class HaiTrangBieuDoKia(unittest.TestCase):
         h = da_khung_trang.trang_da_khung('Harry')
         self.assertIn(MOC, da_khung_trang.CSS)
         self.assertRegex(da_khung_trang.CSS.split(MOC)[1], r'\.dk-luoi\{height:calc\(100dvh')
-        self.assertRegex(h, r'<span class="dk-i" tabindex="0"[^>]*aria-describedby="dk-gt">i</span><p id="dk-gt">')   # trình đọc màn hình đọc được mô tả
+        self.assertRegex(h, r'<details class="dk-help"><summary aria-label="Hướng dẫn nhiều biểu đồ"')  # summary gốc có bàn phím và trình đọc màn hình
+        self.assertIn('<details class="dk-notes"><summary>Nguồn dữ liệu và lưu ý</summary>', h)
 
     def test_renko(self):
         from so_cong_khai import renko_trang                           # noqa: PLC0415

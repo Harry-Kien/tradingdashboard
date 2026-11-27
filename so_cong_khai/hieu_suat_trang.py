@@ -237,7 +237,7 @@ def trang_hieu_suat(ten: str) -> str:
     chieu = ''.join(f'<button type="button" data-v="{v}">{n}</button>' for v, n in (('', 'Cả hai chiều'), ('MUA', 'Mua'), ('BAN', 'Bán')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Phân tích hiệu suất · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Phân tích hiệu suất · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'hieu-suat', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="hs-top"><div><h1>Phân tích hiệu suất giao dịch</h1><p>Đọc lịch sử lệnh trong MT5 của bạn và cho biết bạn thắng, thua ở đâu: '
         'chỉ số chính, đường vốn, lịch lãi/lỗ, nhận xét tự động và phân tích theo mã, phiên, giờ, thời gian giữ lệnh.</p></div><span class="hs-tk" id="hs-tk"></span></div>',

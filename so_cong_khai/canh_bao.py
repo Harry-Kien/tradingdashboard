@@ -5,11 +5,12 @@ không đặt lệnh. Mỗi cảnh báo được ghi một lần vào sổ out/c
 from __future__ import annotations
 
 import json
+import sqlite3
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import gia, song
+from . import gia, song, tin_hieu_ngan, tin_hieu_tien_cuu
 from .doc_so import VN
 
 MOI_GIAY = 20 * 60            # nến đóng quá 20 phút thì coi là cũ, không báo (ví dụ khi chỉ có kho nến cập nhật mỗi giờ)
@@ -49,6 +50,23 @@ def tim(luat: dict, now: datetime) -> list[dict]:
         if 0 < (dt - now).total_seconds() <= TRUOC_TIN_GIAY:
             res.append({'khoa': f'tin|{t}', 'tieu_de': 'Sắp có tin USD mạnh',
                         'noi_dung': f'Tin ra lúc {dt.astimezone(VN):%H:%M ngày %d/%m} (giờ Việt Nam). Bot và các luật của bạn né tin theo khung giờ đã đặt trong luật.'})
+    return res
+
+
+def ngan_han(kq: dict) -> list[dict]:
+    """Gom các khung cùng thời điểm đóng và cùng chiều thành một cảnh báo."""
+    ma, digits = kq['ma'], kq.get('so_le', 2)
+    nhom: dict[tuple, list] = {}
+    for a in kq['ds']:
+        if a['trang_thai'] == 'dat':
+            nhom.setdefault((a['dong'], a['huong']), []).append(a)
+    res = []
+    for (dong, huong), ds in nhom.items():
+        noi_dung = ' · '.join(f'{a["tf"]} {tin_hieu_ngan.LOAI[a["loai"]]}: tham chiếu {a["vao"]:.{digits}f}, '
+                             f'SL {a["sl"]:.{digits}f}, TP {a["tp"]:.{digits}f}' for a in ds)
+        res.append({'khoa': f'ngan_han|{kq.get("may_chu") or ""}|{ma}|{dong}|{huong}', 'ma': ma, 'tin_hieu': ds, 'phien_ban': kq['phien_ban'],
+                    'tieu_de': f'Quan sát · {ma} · {huong} · {"/".join(a["tf"] for a in ds)}',
+                    'noi_dung': f'{noi_dung}. Tín hiệu theo điều kiện, chưa chứng minh có lãi.'})
     return res
 
 
@@ -102,10 +120,31 @@ class VongCanh(threading.Thread):
     def mot_vong(self, now: datetime | None = None) -> list[dict]:
         cfg = self.nap()
         g = cfg['gia']
+        luc_thu = now
         now = now or datetime.now(timezone.utc)
         fr = song.khung_song(g) or gia.khung(g)
-        new = ghi_moi(self.out_fn(cfg), tim(gia.luat(fr, g, now), now), now)
-        self.lan_cuoi, self.nguon, self.loi = now, fr.get('nguon'), None
+        alerts = tim(gia.luat(fr, g, now), now)
+        loi = []
+        out = self.out_fn(cfg)
+        cb = cfg.get('canh_bao') or {}
+        if fr.get('nguon') == 'mt5' and cb.get('ngan_han', True):
+            for i, ma in enumerate(tin_hieu_tien_cuu.ma_theo_doi(cfg)):
+                try:
+                    ung_vien = tin_hieu_tien_cuu.cau_hinh_nghien_cuu() if i == 0 and cb.get('tien_cuu', True) else {}
+                    kq = tin_hieu_ngan.doc(cfg, ma, luc_thu, **({'ung_vien': ung_vien} if ung_vien else {}))
+                    alerts.extend(ngan_han(kq))
+                    if cb.get('tien_cuu', True):
+                        tin_hieu_tien_cuu.ghi_cau_hinh(out, cfg, kq, luc_thu)
+                        tin_hieu_tien_cuu.ghi_nghien_cuu(out, cfg, kq)
+                except (ValueError, OSError, RuntimeError, sqlite3.Error) as e:
+                    loi.append(f'{ma} · tín hiệu ngắn hạn: {e}')
+        new = ghi_moi(out, alerts, now)
+        if fr.get('nguon') == 'mt5' and cb.get('tien_cuu', True):
+            try:
+                tin_hieu_tien_cuu.chuyen(out, luc_thu)
+            except (ValueError, OSError, RuntimeError, sqlite3.Error) as e:
+                loi.append(f'Sổ tiến cứu: {e}')
+        self.lan_cuoi, self.nguon, self.loi = now, fr.get('nguon'), '; '.join(loi) or None
         return new
 
     def run(self) -> None:

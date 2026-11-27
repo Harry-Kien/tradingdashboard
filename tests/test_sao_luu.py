@@ -31,6 +31,33 @@ class ChonTep(unittest.TestCase):
 
 
 class TaoBan(unittest.TestCase):
+    def test_recover_selected_program_and_external_csv_with_checksums(self):
+        import hashlib
+        from so_cong_khai.local_runtime import build_id
+        with tempfile.TemporaryDirectory() as tmp:
+            root, program, dest = Path(tmp)/'data', Path(tmp)/'release', Path(tmp)/'backups'
+            _du_an(root)
+            (program/'so_cong_khai').mkdir(parents=True)
+            (program/'so_cong_khai/web.py').write_text('x=1',encoding='utf-8')
+            (program/'so_cong_khai/dich').mkdir()
+            (program/'so_cong_khai/dich/en.json').write_text('{}',encoding='utf-8')
+            (program/'so_cong_khai/api-token.txt').write_text('excluded',encoding='utf-8')
+            source=Path(tmp)/'EA_events.csv';source.write_text('time,event\n1,closed\n',encoding='utf-8')
+            (root/'cau-hinh.json').write_text(json.dumps({'tai_khoan':[{'ea':[{'tep':str(source)}]}]}),encoding='utf-8')
+            (root/'du-lieu/local-release.json').write_text(json.dumps({'program_root':str(program),'build':build_id(program/'so_cong_khai')}),encoding='utf-8')
+            result=S.tao(root,dest);self.assertTrue(result['ok'],result)
+            with zipfile.ZipFile(result['tep']) as z:
+                meta=json.loads(z.read('KHOI_PHUC.json'))
+                for arc, digest in meta['sha256'].items():self.assertEqual(hashlib.sha256(z.read(arc)).hexdigest(),digest)
+                self.assertEqual(z.read('nguon-ngoai/tk-1/ea-1.csv'),source.read_bytes())
+                self.assertIn('chuong-trinh/so_cong_khai/dich/en.json',z.namelist())
+                self.assertNotIn('chuong-trinh/so_cong_khai/api-token.txt',z.namelist())
+                restored=Path(tmp)/'restored'
+                z.extractall(restored)
+                self.assertEqual(build_id(restored/'chuong-trinh/so_cong_khai'),meta['build'])
+            source.unlink()
+            self.assertFalse(S.tao(root,dest,now=datetime(2026,11,28))['ok'])
+
     def test_tao_kiem_va_giu(self):
         with tempfile.TemporaryDirectory() as d:
             goc, dich = Path(d) / 'duan', Path(d) / 'noi-cat'

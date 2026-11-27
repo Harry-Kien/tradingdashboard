@@ -10,12 +10,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from so_cong_khai import renko_trang
+from so_cong_khai import renko_trang, tong_quan
 from so_cong_khai import (bat_dau_trang, bieu_do, cai_dat, da_khung_trang, cong_cu, dich, hieu_suat_trang, hoc_giao_dich, ke_hoach_trang, kien_thuc, kiem_lenh_trang,
                           kiem_tin_hieu_trang, ky_luat_trang, nhat_ky_trang, nhieu_tai_khoan, sao_luu, tai_khoan, telegram_nhom, thi_truong_trang, tin_tuc_trang)
 
 TEN = 'Harry'
 TRANG = {
+    '/': lambda: tong_quan.trang_tong_quan(TEN),
     '/bieu-do': lambda: bieu_do.trang_bieu_do(TEN), '/cai-dat': lambda: cai_dat.trang_cai_dat(TEN), '/cong-cu': lambda: cong_cu.trang_cong_cu(TEN),
     '/hieu-suat': lambda: hieu_suat_trang.trang_hieu_suat(TEN), '/hoc-giao-dich': lambda: hoc_giao_dich.trang_hoc(TEN),
     '/ke-hoach': lambda: ke_hoach_trang.trang_ke_hoach(TEN), '/kien-thuc': lambda: kien_thuc.trang_kien_thuc(TEN),

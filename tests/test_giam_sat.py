@@ -1,4 +1,6 @@
-﻿"""Bài kiểm cho giám sát rủi ro (giam_sat.danh_gia là hàm thuần), đường dẫn /api/giam-sat và dải cảnh báo trên trang."""
+"""Bài kiểm cho giám sát rủi ro (giam_sat.danh_gia là hàm thuần), đường dẫn /api/giam-sat và dải cảnh báo trên trang."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -105,16 +107,17 @@ class WebTest(unittest.TestCase):
             ch = Path(d) / 'cau-hinh.json'
             ch.write_text(json.dumps({'gia': {}}), encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                j = json.loads(urllib.request.urlopen(u + '/api/giam-sat', timeout=60).read())
+                j = json.loads(open_owner(u + '/api/giam-sat', timeout=60).read())
                 self.assertEqual((j['san_sang'], j['ds']), (False, []))                   # không có MT5: báo rõ, không lỗi
                 with self.assertRaises(urllib.error.HTTPError) as c:
-                    urllib.request.urlopen(u + '/api/giam-sat?q_lo_ngay_toi_da_pct=nan', timeout=30)
+                    open_owner(u + '/api/giam-sat?q_lo_ngay_toi_da_pct=nan', timeout=30)
                 self.assertEqual(c.exception.code, 400)
                 for p in ('/ke-hoach', '/thi-truong'):
-                    self.assertIn('id="gsr-dai"', urllib.request.urlopen(u + p, timeout=60).read().decode('utf-8'))
+                    self.assertIn('id="gsr-dai"', open_owner(u + p, timeout=60).read().decode('utf-8'))
             finally:
                 srv.shutdown()
                 srv.server_close()

@@ -85,7 +85,7 @@ def trang_kiem_tin_hieu(ten: str) -> str:
     ma = ''.join(f'<option value="{m}">{m}</option>' for m in ('XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSD', 'US30', 'NAS100'))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Kiểm chứng tín hiệu · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Kiểm chứng tín hiệu · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'kiem-tin-hieu', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="kt-top"><h1>Kiểm chứng tín hiệu nhóm</h1><p>Dán các tin tín hiệu chép từ nhóm Telegram (chọn nhiều tin, chuột phải, Copy). '
         'Trang dò lại từng tín hiệu trên nến 1 phút thật của MT5: giá chạm dừng lỗ hay chốt lời trước, rồi cho tỷ lệ thắng thật và lãi lỗ theo R, '

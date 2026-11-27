@@ -3,6 +3,11 @@ pandas>=2.2
 numpy>=1.26
 MetaTrader5>=5.0.45
 defusedxml>=0.7
-# Không bắt buộc: Pillow (ảnh bài đăng tuần), scikit-learn (mô hình xác suất của nhật ký, mặc định tắt),
+# Không bắt buộc: scikit-learn (mô hình xác suất của nhật ký, mặc định tắt),
 # playwright (ảnh biểu đồ kèm tin Telegram; sau khi cài chạy: python -m playwright install chromium), ruff (dò lỗi mã, chỉ khi sửa mã).
 # Hỏi AI và Học với gia sư không cần thêm thư viện, chỉ cần khóa API (xem HUONG_DAN.md, mục Tính năng tùy chọn).
+# pywebview và pystray chỉ cần cho bản app Windows (cài trong môi trường dựng riêng .venv-dung, không cài vào Python chạy webapp); chạy webapp từ mã nguồn không cần.
+
+# cryptography: mã hóa khóa API các nhà cung cấp AI lưu trên máy (webapp nạp khi khởi động). Pillow: ảnh bài đăng tuần, ảnh Threads, ảnh biểu đồ.
+cryptography>=46.0
+Pillow>=11.0

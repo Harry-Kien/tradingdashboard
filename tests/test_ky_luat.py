@@ -1,4 +1,6 @@
 """Bài kiểm cho Kỷ luật giao dịch: ky_luat.cham (hàm thuần), ky_luat.ghep_lenh (ghép lần khớp MT5 thành lệnh) và đường dẫn /ky-luat."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -150,17 +152,18 @@ class WebTest(unittest.TestCase):
             ch = Path(d) / 'cau-hinh.json'
             ch.write_text(json.dumps({'gia': {}}), encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                html = urllib.request.urlopen(u + '/ky-luat', timeout=30).read().decode('utf-8')
+                html = open_owner(u + '/ky-luat', timeout=30).read().decode('utf-8')
                 self.assertIn('Kỷ luật giao dịch', html)
                 self.assertIn('aria-current="page"', html)
                 for q in ('ngay=0', 'ngay=abc', 'ngay=400', 'q_rui_ro_lenh_toi_da_pct=x', 'q_lo_ngay_toi_da_pct=inf', 'q_so_lenh_ngay_toi_da=nan'):
                     with self.assertRaises(urllib.error.HTTPError) as c:
-                        urllib.request.urlopen(f'{u}/api/ky-luat?{q}', timeout=30)
+                        open_owner(f'{u}/api/ky-luat?{q}', timeout=30)
                     self.assertEqual(c.exception.code, 400, q)
-                j = json.loads(urllib.request.urlopen(u + '/api/ky-luat?ngay=7', timeout=60).read())   # không có MT5: báo rõ, không lỗi máy chủ
+                j = json.loads(open_owner(u + '/api/ky-luat?ngay=7', timeout=60).read())   # không có MT5: báo rõ, không lỗi máy chủ
                 self.assertFalse(j['san_sang'])
             finally:
                 srv.shutdown()

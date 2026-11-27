@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 import time
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 RONG, CAO = 1280, 720            # khung ảnh (điểm ảnh CSS); ảnh thật gấp đôi cho nét
 HAN_GIAY = 20                    # quá thời hạn thì bỏ ảnh
@@ -39,10 +39,14 @@ def _don(thu_muc: Path) -> None:
             pass
 
 
-def chup(dia_chi: str, r: dict, thu_muc: Path, han: float = HAN_GIAY) -> Path | None:
+def chup(dia_chi: str, r: dict, thu_muc: Path, han: float = HAN_GIAY, *, goc=None) -> Path | None:
     """Chụp ảnh lệnh `r` (một dòng nhật ký) thành thu_muc/lenh-<id>.png. Trả đường tệp, hoặc None khi không chụp được trong `han` giây."""
     try:
         from playwright.sync_api import sync_playwright          # noqa: PLC0415 - không bắt buộc: bản chia sẻ có thể không cài
+        from . import tai_khoan_chart                            # noqa: PLC0415
+        u = urlsplit(dia_chi)
+        if u.scheme != 'http' or u.hostname not in ('127.0.0.1', 'localhost', '::1') or u.username or u.password or u.path not in ('', '/') or u.query or u.fragment:
+            return None
     except ImportError:
         return None
     thu_muc.mkdir(parents=True, exist_ok=True)
@@ -50,10 +54,13 @@ def chup(dia_chi: str, r: dict, thu_muc: Path, han: float = HAN_GIAY) -> Path | 
     bat_dau = time.monotonic()
     try:
         con = lambda: max(1.0, han - (time.monotonic() - bat_dau)) * 1000      # noqa: E731 - một hạn chung cho cả lần chụp, không phải cho từng bước
-        with sync_playwright() as p:
+        with tai_khoan_chart.phien_noi_bo(goc) as token, sync_playwright() as p:
+            if not token:
+                return None
             b = p.chromium.launch(timeout=con())
             try:
                 pg = b.new_page(viewport={'width': RONG, 'height': CAO}, device_scale_factor=2)
+                pg.context.add_cookies([{'name': tai_khoan_chart.COOKIE, 'value': token, 'url': dia_chi, 'httpOnly': True, 'sameSite': 'Strict'}])
                 pg.goto(duong_dan(dia_chi, r), timeout=con())
                 pg.wait_for_function('document.documentElement.dataset.anh', timeout=con())
                 if pg.evaluate('document.documentElement.dataset.anh') != 'san':

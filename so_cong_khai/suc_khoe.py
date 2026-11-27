@@ -10,10 +10,11 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import ai_hoi, gia, hoc, kiem_chung, song
+from . import ai_hoi, duong, gia, hoc, kiem_chung, song
 from .doc_so import VN
 
-CHAM_EA_GIO = 6            # nhật ký EA cũ hơn giá gần nhất chừng này giờ thì coi là đứng
+CHAM_EA_GIO = 6            # chỉ cảnh báo độ cũ của số liệu; nhật ký sự kiện không phải nhịp báo sống của EA
+CHAM_GIA_PHUT = 5          # có phiên MT5 nhưng giá cũ vẫn cần ghi rõ; không suy đoán thị trường đang mở
 CHAM_KHO_PHUT = 120        # kho nến chậm hơn giá trực tiếp chừng này phút thì coi là đứng
 LICH_CON_NGAY = 7          # lịch tin còn phủ ít hơn chừng này ngày thì nhắc
 
@@ -27,7 +28,7 @@ def cho_tuan_moi(phu: datetime, now: datetime) -> bool:
     thu_hai = datetime.combine(phu.astimezone(timezone.utc).date() + timedelta(days=7 - phu.astimezone(timezone.utc).weekday()), datetime.min.time(),
                                tzinfo=timezone.utc) + timedelta(hours=6)
     return now < thu_hai
-TEP_DU_LIEU_MOI = Path(__file__).resolve().parent.parent / 'out' / 'du-lieu-moi.json'   # kết quả đo lại trên dữ liệu mới (bài kiểm thay bằng tệp tạm)
+TEP_DU_LIEU_MOI = duong.goc_du_lieu() / 'out' / 'du-lieu-moi.json'   # kết quả đo lại trên dữ liệu mới (bài kiểm thay bằng tệp tạm)
 COT_CU_NGAY = 17           # báo cáo COT mới nhất cũ hơn chừng này ngày thì nhắc (bình thường tối đa khoảng 11 ngày)
 
 
@@ -62,15 +63,15 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
     g = cfg.get('gia') or {}
     muc: list[dict] = []
 
-    def them(ten: str, cap: str, chi_tiet: str, lam: str = '') -> None:
-        muc.append({'ten': ten, 'muc': cap, 'chi_tiet': chi_tiet, 'lam': lam})
+    def them(ten: str, cap: str, chi_tiet: str, lam: str = '', **meta) -> None:
+        muc.append({'ten': ten, 'muc': cap, 'chi_tiet': chi_tiet, 'lam': lam, **meta})
 
     # ---- giá: MT5 trực tiếp và kho nến
     fr_song = fr_kho = None
     try:
         fr_song = song.khung_song(g)
     except Exception as e:                                                 # noqa: BLE001
-        them('Giá trực tiếp từ MT5', 'loi', f'{type(e).__name__}: {e}')
+        them('Giá trực tiếp từ MT5', 'loi', f'{type(e).__name__}: {e}', id='mt5-price', ket_noi=False, gia_moi=False, href='/bat-dau#b-mt5')
     chia_se = gia.ban_chia_se(g)
     if g.get('kho_m1') or not chia_se:                                     # bản chia sẻ không cần kho nến: mọi nến lấy thẳng từ MT5
         try:
@@ -81,11 +82,17 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
         tt = song.thong_tin()
         san = (f' Mã vàng {tt["ma"]}; giờ máy chủ của sàn lệch UTC {tt["lech_gio"]:+g} giờ ({tt["lech_nguon"]}), mọi giờ trên trang đã đổi về UTC.'
                if tt.get('ma') else '')
-        them('Giá trực tiếp từ MT5', 'tot', f'Đang nối MT5. Giá gần nhất lúc {_gio(fr_song["het"])}, cách đây {_khoang((now - fr_song["het"]).total_seconds())}.' + san)
+        tuoi = (now - fr_song['het']).total_seconds()
+        moi = -60 <= tuoi <= CHAM_GIA_PHUT * 60
+        them('Giá trực tiếp từ MT5', 'tot' if moi else 'chu_y',
+             f'Đang nối MT5. Giá gần nhất lúc {_gio(fr_song["het"])}, cách đây {_khoang(tuoi)}.' + san,
+             '' if moi else 'Phiên MT5 đã nối nhưng giá chưa mới. Kiểm tra giờ giao dịch và kết nối của sàn trước khi dùng giá này.',
+             id='mt5-price', ket_noi=True, gia_moi=moi, href='/bat-dau#b-mt5')
     elif not any(m['ten'] == 'Giá trực tiếp từ MT5' for m in muc):
         bat = (g.get('mt5') or {}).get('bat')
         them('Giá trực tiếp từ MT5', 'chu_y' if bat else 'tot', (f'Chưa nối được: {song.ly_do()}.' if bat else 'Đang tắt trong cấu hình; trang dùng kho nến.'),
-             'Mở MT5 demo ở đường dẫn đã khai rồi chờ một phút. Khi chưa nối, trang dùng kho nến và các mã ngoài vàng không đọc được.' if bat else '')
+             'Mở MT5 demo ở đường dẫn đã khai rồi chờ một phút. Khi chưa nối, trang dùng kho nến và các mã ngoài vàng không đọc được.' if bat else '',
+             id='mt5-price', ket_noi=False, gia_moi=False, href='/bat-dau#b-mt5')
     moc = fr_song['het'] if fr_song is not None else (fr_kho['het'] if fr_kho is not None else None)       # thời điểm giá gần nhất
     if fr_kho is not None:
         cham = (fr_song['het'] - fr_kho['het']).total_seconds() / 60 if fr_song is not None else 0
@@ -111,25 +118,42 @@ def kiem(cfg: dict, out: Path, d: dict | None = None, vong: dict | None = None, 
     for ten, err in d.get('loi', []):
         them(ten, 'loi', f'Không đọc được sổ: {err}', 'Kiểm tra đường dẫn của sổ này trong cau-hinh.json.')
     for acc in d.get('tai_khoan', []):
+        href = '/so-cong-khai#' + acc['id']
         for ten, err in acc.get('loi', []):
             them(f'Nhật ký {ten}', 'loi', f'Không đọc được: {err}', 'Kiểm tra đường dẫn tệp nhật ký của EA này trong cau-hinh.json.')
         e = acc.get('tom')
         if not e:
             continue
         cuoi = e.get('last_time')
-        if cuoi and moc and (moc - cuoi) > timedelta(hours=CHAM_EA_GIO):
+        bo_sung = acc.get('bo_sung_mt5') or {}
+        if bo_sung.get('xac_minh'):
+            them(f'Nhật ký EA: {acc["ten"]}', 'tot',
+                 f'Sự kiện cuối lúc {_gio(cuoi)}; đã đối chiếu lệnh với MT5 {bo_sung["so"]} lúc {_gio(datetime.fromisoformat(bo_sung["luc"]))}. '
+                 'Không có sự kiện giao dịch mới bị thiếu; đây là kiểm tra số liệu, không xác nhận nhịp chạy của EA.')
+        elif cuoi and moc and (moc - cuoi) > timedelta(hours=CHAM_EA_GIO):
             them(f'Nhật ký EA: {acc["ten"]}', 'chu_y', f'Sự kiện cuối lúc {_gio(cuoi)}, trước giá gần nhất {_khoang((moc - cuoi).total_seconds())}.',
-                 'EA hoặc MT5 của tài khoản này có thể đã tắt. Số liệu trên trang dừng ở thời điểm đó.')
+                 'Nhật ký chỉ ghi khi có sự kiện, không phải tín hiệu EA còn chạy. Số liệu nhật ký dừng ở mốc này; xem Tài khoản MT5 để biết vị thế hiện tại.', href='/tai-khoan')
         else:
             them(f'Nhật ký EA: {acc["ten"]}', 'tot', f'Sự kiện cuối lúc {_gio(cuoi)}.')
-        if e.get('orphans'):
-            dc = acc.get('doi_chieu')
+        dc = acc.get('doi_chieu')
+        if bo_sung.get('chinh_gio'):
+            them(f'Giờ đóng MT5: {acc["ten"]}', 'tot',
+                 f'Đã dùng giờ khớp đóng thực tế của MT5 cho {bo_sung["chinh_gio"]} lệnh mà EA ghi nhận muộn. Giờ ghi nhật ký gốc vẫn được giữ để đối chiếu.', href=href)
+        if bo_sung.get('bo_sung'):
+            them(f'Đối chiếu MT5: {acc["ten"]}', 'tot' if bo_sung.get('xac_minh') else 'chu_y',
+                 f'Đã bổ sung {bo_sung["bo_sung"]} dòng đóng được xác minh bằng lịch sử MT5. Nhật ký CSV gốc được giữ nguyên.',
+                 '' if bo_sung.get('xac_minh') else 'Một phần giao dịch vẫn chưa xác minh đầy đủ; xem chi tiết trong sổ.', href=href)
+        if e.get('orphans') or (dc and dc.get('thieu_nhat_ky')):
             if dc and dc.get('khop'):
-                them(f'Đối chiếu MT5: {acc["ten"]}', 'chu_y', f'Nhật ký của EA thiếu dòng đóng của {len(e["orphans"])} lệnh; lịch sử MT5 có đủ và vốn đã khớp.',
-                     'Lỗi nằm ở phần ghi nhật ký của EA; nên xem lại trong dự án EA Promax.')
+                n = len(dc.get('thieu_nhat_ky', e.get('orphans') or []))
+                them(f'Đối chiếu MT5: {acc["ten"]}', 'chu_y', f'Có {n} lần khớp đóng trong MT5 chưa ghép được với nhật ký EA; vốn đã khớp.',
+                     'Xem từng giao dịch trong phần đối chiếu. Webapp giữ nguyên nhật ký gốc và hiển thị riêng số liệu MT5.', href=href)
             else:
-                them(f'Đối chiếu: {acc["ten"]}', 'chu_y', f'{len(e["orphans"])} lệnh vào không có dòng đóng trong nhật ký, chưa đối chiếu được với MT5.',
-                     'Tài khoản này nằm ở MT5 khác với MT5 webapp đang nối, hoặc MT5 chưa mở.')
+                them(f'Đối chiếu: {acc["ten"]}', 'chu_y', f'{len(e.get("orphans") or [])} lệnh vào không có dòng đóng trong nhật ký, chưa đối chiếu được đầy đủ với MT5.',
+                     'Kiểm tra đúng tài khoản MT5 và phần chênh lệch trong sổ. Chưa đủ dữ liệu để kết luận nhật ký phản ánh đầy đủ kết quả.', href=href)
+        if dc and (dc.get('thieu_mt5') or dc.get('lech_cap')):
+            them(f'Chênh lệch giao dịch: {acc["ten"]}', 'chu_y', 'Có giao dịch chưa ghép được hoặc lãi lỗ hai nguồn khác nhau.',
+                 'Xem từng dòng đối chiếu trước khi dùng các chỉ số từ nhật ký.', href=href)
     b = d.get('bot')
     if b is not None:
         cuoi = max((r['opened'] for r in b['rows']), default=None)

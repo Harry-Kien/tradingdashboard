@@ -1,0 +1,16 @@
+{
+  "version": "ngan-2",
+  "source_sha256": "d111e3f0c1e869e8b7ae4299ede1a0490056bbce3ecd9a4320fcb752f9d080f5",
+  "locked_at": "2026-11-27T16:50:40.413322+00:00",
+  "scope": "XAUUSD, paper tracking only",
+  "ung_vien": {
+    "M5": "goc-0.35",
+    "M15": "dong_thuan-0.35",
+    "M30": "dong_thuan-0.35"
+  },
+  "backtest_passed": {
+    "M5": false,
+    "M15": false,
+    "M30": false
+  }
+}

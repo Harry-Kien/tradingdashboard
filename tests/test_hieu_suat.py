@@ -1,5 +1,7 @@
 """Bài kiểm cho Phân tích hiệu suất (hieu_suat.py): ghép lần khớp thành lệnh, chỉ số, sụt vốn, vốn đầu kỳ, nhận xét có ngưỡng đủ mẫu,
 dữ liệu minh họa, CSV, và trang /hieu-suat với một MT5 giả (chỉ hàm đọc và hàm tính, không đặt lệnh, chỉ tài khoản demo)."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -181,21 +183,22 @@ class TrangTest(unittest.TestCase):
             ch = Path(d) / 'cau-hinh.json'
             ch.write_text(json.dumps({'ten': 'Thử', 'gia': {}}), encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                html = urllib.request.urlopen(u + '/hieu-suat').read().decode('utf-8')
+                html = open_owner(u + '/hieu-suat').read().decode('utf-8')
                 self.assertIn('Phân tích hiệu suất giao dịch', html)
                 self.assertIn('aria-current="page"', html)
-                j = json.loads(urllib.request.urlopen(u + '/api/hieu-suat?ngay=0&chieu=MUA').read())
+                j = json.loads(open_owner(u + '/api/hieu-suat?ngay=0&chieu=MUA').read())
                 self.assertEqual(j['tong']['n'], 1)
-                j = json.loads(urllib.request.urlopen(u + '/api/hieu-suat?ngay=30&mau=1').read())
+                j = json.loads(open_owner(u + '/api/hieu-suat?ngay=30&mau=1').read())
                 self.assertTrue(j['mau'])
-                r = urllib.request.urlopen(u + '/api/hieu-suat.csv?ngay=0')
+                r = open_owner(u + '/api/hieu-suat.csv?ngay=0')
                 self.assertIn('text/csv', r.headers['Content-Type'])
                 self.assertEqual(len(r.read().decode('utf-8-sig').strip().splitlines()), 3)
                 with self.assertRaises(urllib.error.HTTPError):
-                    urllib.request.urlopen(u + '/api/hieu-suat?ngay=abc')
+                    open_owner(u + '/api/hieu-suat?ngay=abc')
             finally:
                 srv.shutdown()
                 srv.server_close()

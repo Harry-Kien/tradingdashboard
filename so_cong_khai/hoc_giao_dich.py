@@ -334,7 +334,7 @@ def trang_hoc(ten: str) -> str:
                                                          ('chon', 'Chọn phong cách'), ('phong-cach', '16 phong cách giao dịch'), ('rui-ro', 'Quản lý rủi ro')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Học giao dịch · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Học giao dịch · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'hoc', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong hg">',
         '<div class="tt-top"><div><h1>Học giao dịch Forex &amp; CFD</h1><p>Từ khái niệm cơ bản tới các phong cách giao dịch, mỗi phần kèm công cụ trong webapp '
         'để thực hành ngay với giá trực tiếp của sàn.</p></div></div>',

@@ -8,14 +8,19 @@ import threading
 import types
 from datetime import datetime, timedelta
 from html import escape
-from pathlib import Path
 
+from . import duong
 from .doc_so import VN
 
 from .logo import LOGO_NHO  # noqa: E402
 from .thuong_hieu import KENH_TELEGRAM, TEN  # noqa: E402
 
 BIEU_TUONG = f'<link rel="icon" type="image/webp" href="{LOGO_NHO}">'               # logo nhúng sẵn (so_cong_khai/logo.py)
+# Áp dụng nền trước CSS và biểu đồ; chỉ nhận lựa chọn sáng/tối hợp lệ.
+KHOI_TAO_NEN = """<meta name="color-scheme" content="dark light"><meta name="theme-color" content="#090a08">
+<script>(()=>{let t='dark';try{const s=localStorage.getItem('so-theme');if(s==='light'||s==='dark')t=s}catch(e){}
+document.documentElement.dataset.theme=t;document.querySelector('meta[name="theme-color"]').content=t==='dark'?'#090a08':'#f5f6f8'})();</script>"""
+
 MIEN_TRU_GOC = 'Đây là số liệu tín hiệu, tài khoản demo và chạy bóng, không phải kết quả tiền thật, lời hứa lợi nhuận hay lời khuyên đầu tư.'
 # bản chia sẻ chưa khai sổ riêng (máy không có luật của chủ dự án): câu miễn trừ chung
 MIEN_TRU_CHIA_SE = ('Đây là số liệu thị trường và kết quả đo lại trên dữ liệu quá khứ, không phải lời hứa lợi nhuận hay lời khuyên đầu tư. '
@@ -262,9 +267,10 @@ def _gap(tieu_de: str, noi_dung: str, mo: bool = False) -> str:
 def _dong_lenh(t: dict) -> str:
     """Một dòng lệnh kiểu sổ giao dịch: mã, hướng, lot, giá vào; bên phải là lãi lỗ và giờ đóng."""
     side = 'buy' if t['side'] == 'BUY' else 'sell'
+    source = (' · giờ đóng từ MT5' + (f' (EA ghi nhận {gio(t["closed_at_nhat_ky"])})' if t.get('closed_at_nhat_ky') else '')) if t.get('nguon_dong') else ''
     return (f'<div class="deal"><div><b>XAUUSD</b> <span class="{side}">{_huong(t["side"]).lower()} {so(t["lots"])}</span>'
             f'<small>{escape(t["ea"])} · vào {so(t["entry"])} · {escape(t["reason"] or "đóng")} · mở {gio(t["opened"])}</small></div>'
-            f'<div class="r"><b>{_mau(t["pnl"], so(t["pnl"], 2, True))}</b><small>{gio(t["closed_at"])}</small></div></div>')
+            f'<div class="r"><b>{_mau(t["pnl"], so(t["pnl"], 2, True))}</b><small>{gio(t["closed_at"])}{source}</small></div></div>')
 
 
 def _kv(k: str, v: str) -> str:
@@ -274,7 +280,7 @@ def _kv(k: str, v: str) -> str:
 def _doi_chieu_html(dc: dict) -> str:
     """Khối đối chiếu nhật ký của EA với lịch sử khớp lệnh trong MT5 (do tai_khoan.doi_chieu tính)."""
     h = ['<h3>Đối chiếu với lịch sử MT5</h3><div class="kvs">',
-         _kv('Nhật ký của EA', f'{dc["n_nhat_ky"]} lệnh · ' + _mau(dc['tong_nhat_ky'], so(dc['tong_nhat_ky'], 2, True))),
+         _kv('Sổ EA + bổ sung MT5' if dc.get('n_bo_sung_mt5') else 'Nhật ký của EA', f'{dc["n_nhat_ky"]} lệnh · ' + _mau(dc['tong_nhat_ky'], so(dc['tong_nhat_ky'], 2, True))),
          _kv('Lịch sử MT5', f'{dc["n_mt5"]} lệnh · ' + _mau(dc['tong_mt5'], so(dc['tong_mt5'], 2, True))),
          _kv('Số lệnh ghép được giữa hai nguồn', f'{dc["so_cap"]}')]
     if dc['nap_rut']:
@@ -311,6 +317,13 @@ def _khoi_tai_khoan(acc: dict) -> str:
     if e is None:
         return ''.join(out) + '</section>'
     names = ', '.join(p['ten'] + (f' {p["version"]}' if p['version'] else '') for p in e['per_ea'])
+    bo_sung = acc.get('bo_sung_mt5') or {}
+    if bo_sung.get('bo_sung'):
+        out.append(f'<p class="note">Sổ đã bổ sung {bo_sung["bo_sung"]} dòng đóng từ lịch sử MT5, đối chiếu cùng mã, EA, chiều, giờ vào, giá vào và khối lượng. '
+                   'Các chỉ số đã gồm những dòng này. CSV gốc được giữ nguyên; lệnh bổ sung ghi nguồn MT5 trong bảng lệnh.</p>')
+    if bo_sung.get('chinh_gio'):
+        out.append(f'<p class="note">{bo_sung["chinh_gio"]} lệnh được EA ghi nhận đóng muộn. Thống kê theo ngày và tuần đã dùng giờ khớp đóng của MT5; '
+                   'giờ EA ghi nhận vẫn hiện trong từng dòng để kiểm tra.</p>')
     # tên và phiên bản EA nằm trong thẻ riêng: phần câu còn lại là một khóa dịch chung, không phải thêm khóa mỗi lần EA lên phiên bản mới
     out.append(f'<p class="sub"><span>{escape(names)}</span> · EA tự đặt lệnh trên tài khoản demo. Tiền demo, không phải tiền thật. '
                f'Nhật ký đọc tới {gio(e["last_time"])} (giờ Việt Nam).</p>')
@@ -329,7 +342,7 @@ def _khoi_tai_khoan(acc: dict) -> str:
         kpi = (_kv(f'Lãi lỗ đã đóng theo lịch sử MT5 (từ {tu})', _mau(dc['tong_mt5'], so(dc['tong_mt5'], 2, True)))
                + _kv('Lệnh đã đóng theo lịch sử MT5', f'{dc["n_mt5"]} · thắng {dc["thang_mt5"]}, thua {dc["thua_mt5"]}')
                + _kv('Tỷ lệ thắng (MT5)', f'{dc["thang_mt5"] / n_q:.0%}' if n_q else '—')
-               + _kv('Theo nhật ký EA' + (' (thiếu lệnh)' if thieu else ''), f'{e["n"]} lệnh · ' + _mau(e['pnl'], so(e['pnl'], 2, True))))
+               + _kv(('Sổ EA + bổ sung MT5' if bo_sung.get('bo_sung') else 'Theo nhật ký EA') + (' (thiếu lệnh)' if thieu else ''), f'{e["n"]} lệnh · ' + _mau(e['pnl'], so(e['pnl'], 2, True))))
     else:                                   # chưa đối chiếu được: số theo nhật ký, ghi rõ nguồn và mức đầy đủ
         nhan = 'theo nhật ký EA, chưa đối chiếu MT5' + (', chưa đầy đủ' if thieu else '')
         kpi = (_kv(f'Lãi lỗ đã đóng ({nhan})', _mau(e['pnl'], so(e['pnl'], 2, True)))
@@ -495,12 +508,10 @@ def _thanh(ty_le: float, moc: float | None = None, nhan_moc: str = '') -> str:
 
 
 CSS = """
-:root{color-scheme:light;--bg:#f5f6f8;--card:#ffffff;--ink:#1b1f24;--ink2:#5d6673;--mute:#6f7887;--line:#e6e9ee;--gridc:#eef0f3;
---gold:#2e7d0e;--series:#2e7d0e;--gain:#17935b;--loss:#e5532d;--warn:#7a5a00;--warnbg:#fff8e1;--warnline:#f3e3a6;--track:#eef0f3;--meter:#1b1f24;--accent2:#0e9f6e;--btn-ink:#ffffff;--head:#12161b;--card2:#f5f6f8}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#090a08;--card:#111310;--ink:#e3e6dd;--ink2:#cdd1c6;--mute:#8d9286;--line:#23261f;--gridc:#1a1d17;
---gold:#8dff08;--series:#8dff08;--gain:#5fe36a;--loss:#ff6b63;--warn:#f2d94e;--warnbg:#1f1b08;--warnline:#4a3204;--track:#1d1f1b;--meter:#cdd1c6;--accent2:#08ffb5;--btn-ink:#0a0c06;--head:#f4f6f0;--card2:#181a16}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#090a08;--card:#111310;--ink:#e3e6dd;--ink2:#cdd1c6;--mute:#8d9286;--line:#23261f;--gridc:#1a1d17;
+:root{color-scheme:dark;--bg:#090a08;--card:#111310;--ink:#e3e6dd;--ink2:#cdd1c6;--mute:#8d9286;--line:#23261f;--gridc:#1a1d17;
 --gold:#8dff08;--series:#8dff08;--gain:#5fe36a;--loss:#ff6b63;--warn:#f2d94e;--warnbg:#1f1b08;--warnline:#4a3204;--track:#1d1f1b;--meter:#cdd1c6;--accent2:#08ffb5;--btn-ink:#0a0c06;--head:#f4f6f0;--card2:#181a16}
+:root[data-theme="light"]{color-scheme:light;--bg:#f5f6f8;--card:#ffffff;--ink:#1b1f24;--ink2:#5d6673;--mute:#6f7887;--line:#e6e9ee;--gridc:#eef0f3;
+--gold:#2e7d0e;--series:#2e7d0e;--gain:#17935b;--loss:#e5532d;--warn:#7a5a00;--warnbg:#fff8e1;--warnline:#f3e3a6;--track:#eef0f3;--meter:#1b1f24;--accent2:#0e9f6e;--btn-ink:#ffffff;--head:#12161b;--card2:#f5f6f8}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
 main{max-width:1080px;margin:0 auto;padding:28px 16px 64px}
@@ -667,7 +678,7 @@ def _phong_css() -> str:
     """Khai báo @font-face cho phông Be Vietnam Pro đã tải về tinh/phong/ (xem tinh/NGUON.md). Trang lấy phông từ chính webapp, không gọi ra mạng;
     thiếu thư mục phông thì trả chuỗi rỗng và trang dùng phông có sẵn của máy."""
     try:
-        ds = json.loads((Path(__file__).resolve().parent.parent / 'tinh' / 'phong' / 'phong.json').read_text(encoding='utf-8'))
+        ds = json.loads((duong.goc_chuong_trinh() / 'tinh' / 'phong' / 'phong.json').read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return ''
     return ''.join(f'@font-face{{font-family:"Be Vietnam Pro";font-style:normal;font-weight:{x["dam"]};font-display:swap;'
@@ -677,10 +688,10 @@ def _phong_css() -> str:
 CSS += _phong_css()
 
 JS += """
-(()=>{const r=document.documentElement,b=document.getElementById('theme');let s=null;try{s=localStorage.getItem('so-theme')}catch(e){}
-if(s)r.dataset.theme=s;const cur=()=>r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
-const lab=()=>{b.textContent=cur()==='dark'?'Nền sáng':'Nền tối'};lab();
-b.addEventListener('click',()=>{const n=cur()==='dark'?'light':'dark';r.dataset.theme=n;try{localStorage.setItem('so-theme',n)}catch(e){}lab()});
+(()=>{const r=document.documentElement,b=document.getElementById('theme');const cur=()=>r.dataset.theme==='light'?'light':'dark';
+const lab=()=>{if(b){b.textContent=cur()==='dark'?'Nền sáng':'Nền tối';b.setAttribute('aria-label',b.textContent);b.title=b.textContent}
+const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=cur()==='dark'?'#090a08':'#f5f6f8'};lab();
+if(b)b.addEventListener('click',()=>{const n=cur()==='dark'?'light':'dark';r.dataset.theme=n;try{localStorage.setItem('so-theme',n)}catch(e){}lab()});
 document.querySelectorAll('.copy').forEach(c=>c.addEventListener('click',()=>{const el=document.getElementById(c.dataset.for),t=el.textContent;
 const sel=()=>{const g=document.createRange();g.selectNodeContents(el);const x=getSelection();x.removeAllRanges();x.addRange(g);c.textContent='Đã chọn, nhấn Ctrl+C'};
 if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(()=>{c.textContent='Đã chép'},sel);else sel()}));
@@ -966,7 +977,7 @@ MENU = [
         ('nhat-ky', 'Nhật ký điểm vào', '/nhat-ky', 'Mọi điểm vào của các phương pháp, chấm bằng giá thật', 'nk'),
         ('tai-khoan', 'Tài khoản MT5', '/tai-khoan', 'Vốn, lệnh đang mở, lãi lỗ theo ngày', 'tk'),
         ('cac-tai-khoan', 'Các tài khoản đã nối', '/cac-tai-khoan', 'Mọi MT5 bạn đã thêm, demo và tiền thật: vốn, lãi lỗ, thắng thua, rủi ro', 'tk'),
-        ('tong', 'Sổ công khai', '/', 'Kết quả bot, EA demo và chạy bóng', 'so'),
+        ('so-cong-khai', 'Sổ công khai', '/so-cong-khai', 'Kết quả bot, EA demo và chạy bóng', 'so'),
         ('telegram', 'Nhóm Telegram', '/telegram', 'Tín hiệu, kết quả từng lệnh, tin sắp ra gửi vào một nhóm cố định', 'tin'),
         ('sao-luu', 'Sao lưu', '/sao-luu', 'Mỗi ngày một bản sao mã, nhật ký, kết quả đo; chọn nơi cất', 'nk')], 'nk'),
     ('hoc', 'Học', None, [
@@ -1029,14 +1040,14 @@ GIAM_SAT = r"""<div id="gsr-dai" class="gsr" hidden aria-live="polite"></div><st
 @media (max-width:640px){.gsr{margin-top:6px;gap:4px}.gsr-m{padding:6px 10px;gap:8px}.gsr-m span{display:none}.gsr-m b{font-size:12.5px}}
 </style><script>(()=>{if(window.__gs)return;window.__gs=1;const LG=document.documentElement.lang==='en'?'en':'vi',ngay=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const an=()=>{try{const o=JSON.parse(localStorage.getItem('gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
+const an=()=>{try{const o=JSON.parse(localStorage.getItem(window.hgrKey?window.hgrKey('gs-an'):'demo:gs-an')||'{}'),h=ngay();for(const k in o)if(o[k]!==h)delete o[k];return o}catch(e){return{}}};
 function ve(ds){const el=document.getElementById('gsr-dai');if(!el)return;const o=an(),con=ds.filter(a=>!o[a.id]);
  if(!con.length){el.hidden=true;el.innerHTML='';return}el.hidden=false;
  el.innerHTML=con.map(a=>{const c=a[LG]||a.vi;return`<div class="gsr-m ${a.muc==='xau'?'xau':'chu_y'}" role="alert"><i>${a.muc==='xau'?'✕':'!'}</i><div><b>${esc(c.tieu)}</b><span>${esc(c.noi)}</span></div><button type="button" data-gsr="${esc(a.id)}" title="Ẩn tới hết hôm nay" aria-label="Ẩn tới hết hôm nay">×</button></div>`}).join('')}
-async function hoi(){if(document.hidden)return;let q='';try{const t=JSON.parse(localStorage.getItem('kl-qt')||'{}');
+async function hoi(){if(document.hidden)return;let q='';try{const t=JSON.parse(localStorage.getItem(window.hgrKey?window.hgrKey('kl-qt'):'demo:kl-qt')||'{}');
  q=new URLSearchParams(Object.entries(t).filter(([k,v])=>/^q_(rui_ro_lenh_toi_da_pct|lo_ngay_toi_da_pct|tong_rui_ro_toi_da_pct)$/.test(k)&&v!=null&&v!=='')).toString()}catch(e){}
  try{const r=await fetch('/api/giam-sat'+(q?'?'+q:''),{cache:'no-store'});if(!r.ok)return;const j=await r.json();window.GSR={ds:j.ds||[],luc:Date.now()};dispatchEvent(new Event('gsr'));ve(j.ds||[])}catch(e){}}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-gsr]');if(!b)return;const o=an();o[b.dataset.gsr]=ngay();try{localStorage.setItem('gs-an',JSON.stringify(o))}catch(x){}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-gsr]');if(!b)return;const o=an();o[b.dataset.gsr]=ngay();try{localStorage.setItem(window.hgrKey?window.hgrKey('gs-an'):'demo:gs-an',JSON.stringify(o))}catch(x){}
  b.closest('.gsr-m').remove();const el=document.getElementById('gsr-dai');if(el&&!el.children.length)el.hidden=true});
 setTimeout(hoi,1500);setInterval(hoi,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)hoi()})})();</script>"""
 
@@ -1051,8 +1062,8 @@ def trang_html(ten: str, now: datetime, d: dict, tuan: dict | None = None, live:
         links.append(('tinh-trang', 'Tình trạng'))
     nav = ''.join(f'<a href="#{escape(i)}">{escape(n)}</a>' for i, n in links)
     out = [f'<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-           f'{BIEU_TUONG}<title>Sổ công khai · {escape(ten)}</title><style>{CSS}</style></head><body>',
-           (thanh_dau(ten, 'tong', '<button id="refresh" type="button">Làm mới</button><button id="theme" type="button">Nền tối</button>', nav) if live
+           f'{KHOI_TAO_NEN}{BIEU_TUONG}<title>Sổ công khai · {escape(ten)}</title><style>{CSS}</style></head><body>',
+           (thanh_dau(ten, 'so-cong-khai', '<button id="refresh" type="button">Làm mới</button><button id="theme" type="button">Nền tối</button>', nav) if live
             else f'<header class="bar"><div><strong>{escape(ten)}</strong><span class="sec">{nav}<button id="theme" type="button">Nền tối</button></span></div></header>')
            + '<main>',
            '<div class="top"><div><h1>Sổ công khai</h1></div>'
@@ -1318,6 +1329,9 @@ if(LG){LG.textContent=lgNay==='en'?'VI':'EN';LG.setAttribute('aria-label',lgNay=
 addEventListener('keydown',e=>{const go=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')||(e.target&&e.target.isContentEditable);
  if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();hop&&!hop.hidden?dongTim():moTim()}else if(e.key==='/'&&!go&&!e.ctrlKey&&!e.metaKey){e.preventDefault();moTim()}})})();
 """
+
+from .vo_app import JS_DAI_BAO  # noqa: E402 - dải báo bản mới của app (vo_app.py): nối cuối trang.JS để chạy ở mọi trang
+JS += JS_DAI_BAO
 
 
 class _Mod(types.ModuleType):

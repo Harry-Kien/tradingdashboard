@@ -1,0 +1,18 @@
+"""Owner setup for subscription AI hosts; it does not log into or resell subscriptions."""
+HTML = '<section class="aip-admin" id="mcp-admin"><h2>MCP · Kết nối ứng dụng AI</h2><div id="mcp-console">Đang kiểm tra quyền cấu hình…</div></section>'
+
+JS = r'''(()=>{const host=document.getElementById('mcp-console');if(!host)return;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');let state;
+async function load(){try{const r=await fetch('/api/mcp/admin',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error((j.chan||[]).join(' '));state=j;render()}catch(e){host.textContent=e.message}}
+function render(){const code=JSON.stringify(state.claude,null,2),c=state.codex.mcp_servers.harry_market;
+const toml='[mcp_servers.harry_market]\ncommand = '+JSON.stringify(c.command)+'\nargs = '+JSON.stringify(c.args)+'\nstartup_timeout_sec = 20\ntool_timeout_sec = 60';
+host.innerHTML='<p class="aip-muted">Claude Desktop, Codex và ứng dụng hỗ trợ MCP có thể đọc dữ liệu bằng gói của chính tài khoản đã đăng nhập, trong hạn mức của ứng dụng đó. Website tự trả lời khách hàng vẫn cần API hoặc tích hợp thương mại được hỗ trợ. Kết nối này chỉ dành cho chủ máy.</p>'
+ +'<div class="aip-row"><label><input type="checkbox" data-enabled '+(state.enabled?'checked':'')+'> Bật MCP cục bộ</label><label>Cổng webapp <input type="number" min="1" max="65535" step="1" value="'+state.port+'" data-port style="width:110px"></label><button type="button" data-save>Lưu kết nối MCP</button><button type="button" data-rotate>Tạo lại khóa cục bộ</button></div>'
+ +'<p class="aip-muted">MCP cung cấp snapshot đa khung, biểu đồ PNG và mức tham chiếu entry/SL/TP. Nguồn giá và thời hạn được kiểm trên máy chủ. AI chỉ đọc khi ứng dụng gọi công cụ, không tự phân tích mỗi tick. Không dùng mật khẩu/cookie gói ChatGPT hay Claude làm API key.</p>'
+ +'<details><summary>Cấu hình Claude Desktop / ứng dụng nhận mcpServers JSON</summary><textarea readonly rows="10" aria-label="Cấu hình Claude MCP">'+esc(code)+'</textarea></details>'
+ +'<details><summary>Cấu hình Codex (config.toml)</summary><textarea readonly rows="7" aria-label="Cấu hình Codex MCP">'+esc(toml)+'</textarea></details>'
+ +'<details><summary>ChatGPT web và kết nối sau khi hosting</summary><p class="aip-muted">Cầu nối hiện tại là stdio trên máy, chưa phải remote MCP. ChatGPT web cần endpoint MCP HTTPS hoặc cơ chế tunnel được hỗ trợ và quyền tài khoản/workspace phù hợp. Bản thương mại cần OAuth theo từng khách hàng, cô lập dữ liệu và hạn mức. Không chia sẻ một gói AI cá nhân làm backend cho toàn website.</p></details>'
+ +'<p class="aip-muted">Prompt gợi ý: “Dùng phan_tich_realtime cho mã và khung tôi chọn; đọc cùng snapshot_id, nêu điều kiện xác nhận, entry/SL/TP tham chiếu, vô hiệu và rủi ro. Nếu thiếu dữ liệu hoặc không đồng thuận thì đứng ngoài.”</p><p role="status" data-mcp-message></p>';
+host.querySelector('[data-save]').onclick=()=>save(false);host.querySelector('[data-rotate]').onclick=()=>save(true)}
+async function save(rotate){const message=host.querySelector('[data-mcp-message]'),buttons=[...host.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{const r=await fetch('/api/mcp/config',{method:'POST',headers:{'Content-Type':'application/json','X-So-Cong-Khai':'1'},body:JSON.stringify({enabled:host.querySelector('[data-enabled]').checked,port:Number(host.querySelector('[data-port]').value),rotate})}),j=await r.json();if(!r.ok)throw new Error((j.chan||['Không lưu được.']).join(' '));await load();host.querySelector('[data-mcp-message]').textContent='Đã lưu. Nạp lại kết nối MCP trong ứng dụng AI để áp dụng.'}catch(e){message.textContent=e.message}finally{buttons.forEach(b=>b.disabled=false)}}
+load();})();'''

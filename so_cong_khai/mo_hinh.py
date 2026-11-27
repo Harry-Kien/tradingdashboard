@@ -5,8 +5,11 @@ Mức đã kiểm được (cong-cu/huan_luyen.py; học 2015–2021, kiểm tr�
 bằng chung khoảng 0,1R mỗi lệnh ở cả năm năm, nhưng tính chung nhóm đó mới quanh hòa vốn. Vì vậy đây là một con số để tham khảo và để nhật ký
 điểm vào kiểm chứng bằng giá thật, KHÔNG phải tín hiệu vào lệnh. Mô hình chỉ học trên vàng nên chỉ chấm điểm cho vàng.
 
-Ngoài phép tách một lần ở trên, kiem_cheo() kiểm chéo 6 phần theo thời gian, bỏ khỏi phần học các tín hiệu có kết quả chồng lên phần kiểm và
-một vùng cấm sau nó (purged CV). Đo ngày 25/11/2026 trên 69.902 tín hiệu: nhóm 10% cao nhất tốt hơn mặt bằng ở 6/6 phần (−0,02R so với
+Từ 27/11/2026, kiem_cuon_chieu() là phép đánh giá ưu tiên: chỉ học quá khứ, bỏ 4 ngày nhãn sát phần kiểm, rồi kiểm phần kế tiếp.
+Đo trên 69.959 tín hiệu: nhóm điểm cao nhất trung bình −0,038R, có lãi 2/6 phần, AUC 0,519. Chưa đủ bằng chứng để tự gọi lệnh bằng mô hình.
+
+Để đối chiếu, kiem_cheo() kiểm chéo 6 phần theo thời gian, bỏ khỏi phần học các tín hiệu có kết quả chồng lên phần kiểm và
+một vùng cấm sau nó (purged CV). Phép này có học dữ liệu sau phần kiểm, không mô phỏng triển khai theo thời gian. Đo ngày 25/11/2026 trên 69.902 tín hiệu: nhóm 10% cao nhất tốt hơn mặt bằng ở 6/6 phần (−0,02R so với
 −0,15R mỗi lệnh) nhưng chỉ có lãi ở 1/6 phần, AUC 0,524; không loại chồng lấn thì gần như y hệt, tức mô hình không ăn nhờ rò rỉ.
 
 Huấn luyện cần scikit-learn (đã có sẵn trên máy); chấm điểm lúc chạy chỉ cần numpy. Chỉ đọc tệp nến; không nối MT5, không đặt lệnh.
@@ -25,7 +28,7 @@ import pandas as pd
 from . import gia, hoc, phuong_phap as PP
 from .__main__ import HERE
 
-PHIEN_BAN = 10                     # 10: thêm kiểm chéo có loại chồng lấn (purged CV); 9: nến nhiều năm sửa lệch giờ (25/11/2026)
+PHIEN_BAN = 11                     # 11: kiểm cuốn chiếu chỉ học quá khứ; 10: purged CV
 NGUONG = 90                # điểm từ mức này trở lên là "nhóm 10% cao nhất" đã được kiểm ngoài mẫu
 TPS = (0.25, 0.5, 1.0, 1.5, 2.0, 3.0)       # các mức chốt lời được đo, tính theo bội số của khoản rủi ro
 HOC_TOI = 2021             # phép kiểm ngoài mẫu: mô hình chỉ học tới hết năm này, rồi được chấm trên các năm sau
@@ -196,10 +199,57 @@ def kiem_cheo(d: pd.DataFrame, k: int = CV_K, loc: bool = True, hoc_fn=None) -> 
             'so_phan_lai': sum(g['top_r_tb'] > 0 for g in co)}
 
 
+def kiem_cuon_chieu(d: pd.DataFrame, k: int = CV_K, hoc_fn=None) -> dict:
+    """Học trên quá khứ rồi kiểm quãng kế tiếp; bỏ nhãn chưa chắc đã biết tại đầu quãng kiểm.
+
+    Khối đầu chỉ dùng học. Cùng thời điểm luôn nằm cùng phía, chuẩn hóa và ngưỡng top10 chỉ lấy từ phần học.
+    Khác purged CV ở trên: tuyệt đối không dùng dữ liệu sau quãng kiểm để học.
+    """
+    if k < 2:
+        raise ValueError('Cần ít nhất hai phần kiểm.')
+    hoc_fn = hoc_fn or _hoc
+    d = d.sort_values('t', kind='stable').reset_index(drop=True)
+    t = pd.DatetimeIndex(d['t'])
+    gap, bo = [], []
+    for idx in np.array_split(np.arange(len(d)), k + 1)[1:]:
+        if not len(idx):
+            continue
+        a, b = t[idx[0]], t[idx[-1]]
+        # Dùng mốc thời gian để mọi tín hiệu đồng thời không bị chia qua hai tập.
+        kiem = (t >= a) & (t <= b)
+        if gap and a <= pd.Timestamp(gap[-1]['den_luc']):
+            kiem &= t > pd.Timestamp(gap[-1]['den_luc'])
+        hoc_ = t < a - H_NHAN
+        dh, dk = d[hoc_], d[kiem]
+        if len(dh) < 30 or len(dk) == 0 or (dh['r2'] > 0).nunique() < 2:
+            bo.append(a.isoformat())
+            continue
+        th = hoc_fn(dh)
+        ph = _p(dh[cot()].to_numpy(dtype=float), *th)
+        pk = _p(dk[cot()].to_numpy(dtype=float), *th)
+        rk = dk['r2'].to_numpy(dtype=float)
+        top = pk >= np.quantile(ph, 0.9)
+        ac = auc(rk > 0, pk)
+        gap.append({'tu': pd.Timestamp(dk['t'].min()).date().isoformat(), 'tu_luc': pd.Timestamp(dk['t'].min()).isoformat(), 'den': b.date().isoformat(),
+                    'den_luc': b.isoformat(), 'hoc_den': pd.Timestamp(dh['t'].max()).isoformat(),
+                    'n_hoc': len(dh), 'n': len(dk), 'auc': None if ac is None else round(ac, 3),
+                    'r_tb': round(float(rk.mean()), 3), 'n_top': int(top.sum()),
+                    'top_r_tb': round(float(rk[top].mean()), 3) if top.any() else None})
+    co = [g for g in gap if g['top_r_tb'] is not None]
+    nt, n = sum(g['n_top'] for g in co), sum(g['n'] for g in gap)
+    acs = [g['auc'] for g in gap if g['auc'] is not None]
+    return {'k': k, 'chi_hoc_qua_khu': True, 'ngay_chong': H_NHAN.days, 'gap': gap, 'bo_qua': bo,
+            'auc_tb': round(float(np.mean(acs)), 3) if acs else None,
+            'r_tb': round(sum(g['r_tb'] * g['n'] for g in gap) / n, 3) if n else None,
+            'top_r_tb': round(sum(g['top_r_tb'] * g['n_top'] for g in co) / nt, 3) if nt else None,
+            'so_phan_hon': sum(g['top_r_tb'] > g['r_tb'] for g in co), 'so_phan_lai': sum(g['top_r_tb'] > 0 for g in co)}
+
+
 def huan(cfg: dict) -> dict:
     """Huấn luyện và tự kiểm ngoài mẫu. Trả tham số mô hình (dạng số thuần, lưu được thành JSON) cùng kết quả kiểm."""
     d = du_lieu(cfg)
-    hoc_, ngoai = d[d['nam'] <= HOC_TOI], d[d['nam'] > HOC_TOI]
+    ngoai = d[d['nam'] > HOC_TOI]
+    hoc_ = d[(d['nam'] <= HOC_TOI) & (pd.to_datetime(d['t']) < pd.Timestamp(ngoai['t'].min()) - H_NHAN)]
     th = _hoc(hoc_)
     p_ngoai = _p(ngoai[cot()].to_numpy(dtype=float), *th)
     chon = ngoai[p_ngoai >= np.quantile(_p(hoc_[cot()].to_numpy(dtype=float), *th), 0.9)]          # ngưỡng lấy từ quãng học
@@ -212,7 +262,7 @@ def huan(cfg: dict) -> dict:
     nhom = lambda x: [int(len(x)), round(float((x['r2'] > 0).mean() * 100), 1), round(float(x['r2'].mean()), 3)]      # noqa: E731
     dong_thuan = {'cung': [nhom(d[d['dt_cung'] == 0]), nhom(d[d['dt_cung'] == 1]), nhom(d[d['dt_cung'] >= 2])],
                   'nguoc': [nhom(d[d['dt_nguoc'] == 0]), nhom(d[d['dt_nguoc'] >= 1])], 'phut': DT_PHUT}
-    cv = {'loc': kiem_cheo(d, loc=True), 'thuong': kiem_cheo(d, loc=False)}
+    cv = {'loc': kiem_cheo(d, loc=True), 'thuong': kiem_cheo(d, loc=False), 'cuon_chieu': kiem_cuon_chieu(d)}
     tb, lech, he_so, chan = _hoc(d)                                # mô hình dùng thật: học trên toàn bộ dữ liệu
     p = _p(d[cot()].to_numpy(dtype=float), tb, lech, he_so, chan)
     return {'phien_ban': PHIEN_BAN, 'tinh_luc': datetime.now(timezone.utc).isoformat(), 'n': int(len(d)), 'tu_nam': int(d['nam'].min()), 'cot': cot(),

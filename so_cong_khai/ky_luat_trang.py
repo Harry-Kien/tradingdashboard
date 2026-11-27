@@ -54,7 +54,7 @@ const DTF=new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'2-digit',hour:'2
 const ngayGio=s=>{const p={};DTF.formatToParts(new Date(s)).forEach(x=>p[x.type]=x.value);return`${p.day}/${p.month} ${p.hour}:${p.minute}`};
 const QT={q_rui_ro_lenh_toi_da_pct:2,q_lo_ngay_toi_da_pct:3,q_so_lenh_ngay_toi_da:10};
 let ST={ngay:30,nguon:''},hen=null,lan=0;
-try{Object.assign(QT,JSON.parse(localStorage.getItem('kl-qt')||'{}'))}catch(e){}
+try{Object.assign(QT,JSON.parse(localStorage.getItem(window.hgrKey?window.hgrKey('kl-qt'):'demo:kl-qt')||'{}'))}catch(e){}
 try{Object.assign(ST,JSON.parse(localStorage.getItem('kyl')||'{}'))}catch(e){}
 for(const k in QT){const el=$('#'+k);if(el)el.value=QT[k]}
 const so=el=>{const v=parseFloat(String(el.value).replace(',','.'));return isFinite(v)?v:null};
@@ -71,7 +71,7 @@ function boLoc(){document.querySelectorAll('#ky-ngay button').forEach(b=>b.setAt
 function goi(){clearTimeout(hen);hen=setTimeout(tai,250)}
 async function tai(){const q=new URLSearchParams({ngay:ST.ngay});if(ST.nguon)q.set('nguon',ST.nguon);
  for(const k in QT){const el=$('#'+k),v=el?so(el):null;if(v!=null){q.set(k,v);QT[k]=v}}
- try{localStorage.setItem('kl-qt',JSON.stringify(QT));localStorage.setItem('kyl',JSON.stringify(ST))}catch(e){}
+ try{localStorage.setItem(window.hgrKey?window.hgrKey('kl-qt'):'demo:kl-qt',JSON.stringify(QT));localStorage.setItem('kyl',JSON.stringify(ST))}catch(e){}
  const n=++lan;$('#ky-kq').setAttribute('aria-busy','true');
  try{const r=await fetch('/api/ky-luat?'+q,{cache:'no-store'});const t=await r.text();if(n!==lan)return;if(!r.ok)throw new Error(t);ve(JSON.parse(t))}
  catch(e){if(n===lan)$('#ky-kq').innerHTML=`<p class="ky-cho">Không đọc được lịch sử lệnh: ${esc(e.message)}</p>`}
@@ -124,7 +124,7 @@ def trang_ky_luat(ten: str) -> str:
     ngay = ''.join(f'<button type="button" data-v="{n}" aria-pressed="false">{n} ngày</button>' for n in (7, 30, 90))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Kỷ luật giao dịch · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Kỷ luật giao dịch · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'ky-luat', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="ky-top"><h1>Kỷ luật giao dịch</h1><p>Trang chấm lại từng lệnh đã đóng trong MT5 theo quy tắc quản lý rủi ro của bạn: có dừng lỗ không, rủi ro '
         'bao nhiêu % số dư, có vào gấp hay tăng khối lượng sau lệnh thua, có vào thêm khi đã chạm giới hạn lỗ ngày, có vào sát tin mạnh. Rồi tách lãi lỗ '

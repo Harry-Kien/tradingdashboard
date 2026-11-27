@@ -18,9 +18,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import gia, kiem_chung, phuong_phap, qua_khop
+from . import gia, kiem_chung, phuong_phap, qua_khop, duong
 
-PHIEN_BAN = 19                    # 19: lãi lỗ theo năm (số năm có lãi); 18: mô phỏng lại chuỗi lệnh (khoảng tin cậy, sụt giảm xấu); 17: thêm lãi/lỗ trung bình và tỷ lệ thắng hòa vốn; 16: điểm khớp quá khứ (PBO, DSR — qua_khop.py)
+PHIEN_BAN = 20                    # 20: phát lại bot theo giờ đóng nến; 19: lãi lỗ theo năm; 18: mô phỏng chuỗi lệnh
 #                                 15: nến nhiều năm sửa lệch giờ (so_cong_khai/sua_gio.py, 25/11/2026)
 PHIEN = (('Á', 0, 7), ('Âu', 7, 12), ('Mỹ', 12, 20), ('cuối ngày', 20, 24))        # theo giờ UTC của lúc vào lệnh
 MUC = (0.8, 1.25)                                  # ATR14 H1 so với trung vị 720 nến H1: dưới 0,8 là thấp, trên 1,25 là cao
@@ -481,7 +481,7 @@ def lay(cfg: dict, out: Path, cho: bool = False) -> dict:
 def main(argv=None) -> int:
     import sys                                                             # noqa: PLC0415
     import time                                                            # noqa: PLC0415
-    here = Path(__file__).resolve().parent.parent
+    here = duong.goc_du_lieu()
     cfg = json.loads((here / 'cau-hinh.json').read_text(encoding='utf-8'))
     t0 = time.time()
     kq = lay(cfg, here / cfg.get('thu_muc_ra', 'out'), cho=True)

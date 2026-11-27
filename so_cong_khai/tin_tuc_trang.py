@@ -116,7 +116,7 @@ setInterval(()=>{if(document.visibilityState==='visible'&&TIN.length&&!cho.lengt
 def trang_tin_tuc(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Tin tức & tâm lý · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Tin tức & tâm lý · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'tin-tuc', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="tt-top"><div><h1>Tin tức &amp; tâm lý thị trường</h1><p>Tin nhanh Forex, lãi suất, vàng, dầu, chỉ số và thông cáo của ngân hàng trung ương; '
         'vị thế của dòng tiền đầu cơ và tâm lý chung của thị trường, cập nhật theo giá trực tiếp.</p></div><span id="song" class="song-pill"><i></i>Đang nối…</span></div>',

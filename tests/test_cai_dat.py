@@ -10,12 +10,13 @@ from pathlib import Path
 
 GOC = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(GOC))
-from so_cong_khai import cai_dat, song, web  # noqa: E402
+from so_cong_khai import cai_dat, song, tai_khoan_chart, web  # noqa: E402
 
 
 class KiemTest(unittest.TestCase):
     def test_hop_le(self):
         self.assertIs(cai_dat.kiem('gia.mt5.chi_demo', False), False)
+        self.assertIs(cai_dat.kiem('cap_nhat.bat', False), False)
         self.assertEqual(cai_dat.kiem('gia.ma_vang', 'XAUUSD.r'), 'XAUUSD.r')
         self.assertIsNone(cai_dat.kiem('gia.mt5.lech_gio_san', None))
         self.assertEqual(cai_dat.kiem('gia.mt5.lech_gio_san', 2), 2)
@@ -90,6 +91,8 @@ class MayChuTest(unittest.TestCase):
         self.srv = web.tao_may_chu(str(self.p), port=0)
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
         self.port = self.srv.server_address[1]
+        _, token = tai_khoan_chart.vao('settings_owner', 'test-settings-password-01234', True, self.p.parent)
+        self.cookie = tai_khoan_chart.cookie_header(token).split(';')[0]
 
     def tearDown(self):
         self.srv.shutdown()
@@ -99,7 +102,7 @@ class MayChuTest(unittest.TestCase):
     def _post(self, tieu_de):
         c = http.client.HTTPConnection('127.0.0.1', self.port, timeout=30)
         body = json.dumps({'viec': 'luu', 'gia_tri': {'tin_tuc.bat': False}})
-        c.request('POST', '/api/cai-dat', body, {'Content-Type': 'application/json', **tieu_de})
+        c.request('POST', '/api/cai-dat', body, {'Content-Type': 'application/json', 'Cookie': self.cookie, **tieu_de})
         r = c.getresponse()
         return r.status, json.loads(r.read() or b'{}')
 
@@ -113,12 +116,12 @@ class MayChuTest(unittest.TestCase):
 
     def test_doc_va_trang(self):
         c = http.client.HTTPConnection('127.0.0.1', self.port, timeout=30)
-        c.request('GET', '/api/cai-dat')
+        c.request('GET', '/api/cai-dat', headers={'Cookie': self.cookie})
         j = json.loads(c.getresponse().read())
         self.assertNotIn('ten', j['gia_tri'])
         self.assertIn('gia.mt5.terminal', j['gia_tri'])
         self.assertIn('ket_noi', j)
-        c.request('GET', '/cai-dat')
+        c.request('GET', '/cai-dat', headers={'Cookie': self.cookie})
         self.assertIn('id="cd"', c.getresponse().read().decode('utf-8'))
 
 

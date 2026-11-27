@@ -96,8 +96,8 @@ addEventListener('scroll',e=>{if(MN&&!MN.contains(e.target))dong()},true);
 addEventListener('wheel',e=>{if(MN&&!MN.contains(e.target))dong()},{capture:true,passive:true});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&MN)dong()});
 // --- vẽ nhanh tại con trỏ, thử lệnh (chỉ tính, không đặt lệnh)
-function veMoi(k,q){const g=G(),id=g.moiId();g.VE.ds.push({id,k,a:{t:q.t,p:q.p}});g.xong(id)}
-function veVt(p){const g=G(),cur=giaNay(g),cs=g.D.candles;if(cur==null||p===cur)return;const t=cs[cs.length-1][0],id=g.moiId();
+function veMoi(k,q){const g=G();if(g.veDuoc&&!g.veDuoc())return;const id=g.moiId();g.VE.ds.push({id,k,a:{t:q.t,p:q.p}});g.xong(id)}
+function veVt(p){const g=G();if(g.veDuoc&&!g.veDuoc())return;const cur=giaNay(g),cs=g.D.candles;if(cur==null||p===cur)return;const t=cs[cs.length-1][0],id=g.moiId();
  g.VE.ds.push({id,k:'vt',a:{t,p:cur},b:{t:t+buoc(g)*24,p:cur},sl:p,tp:cur+(cur-p)*2});g.xong(id)}
 function tinhLot(p){const g=G(),cur=giaNay(g);if(cur==null)return;const sl=Math.round(Math.abs(cur-p)*100)/100;g.rk.sl=sl;const el=$('#rk-sl');if(el)el.value=sl;
  g.rkLuu();g.rkDraw();g.ctabDat('rk');const o=$('#rko')||$('#rk');if(o)o.scrollIntoView({block:'nearest',behavior:'smooth'});ping('Đã đặt khoảng dừng lỗ '+g.fp(sl)+' vào ô Tính lot')}
@@ -176,7 +176,7 @@ function menuBieuDo(cx,cy,m){const g=G(),D=g.D;if(!D||!D.candles||!D.candles.len
   +mi('fs','fs','Toàn màn hình',{phim:'F'})
   +hr+mi('xoahet','xoa','Xóa tất cả hình vẽ của mã này',{xau:1,tat:!VE.ds.length});
  mo(cx,cy,h,(k,v)=>lamBieuDo(k,v,q,c))}
-function lamBieuDo(k,v,q,c){const g=G(),VE=g.VE;
+function lamBieuDo(k,v,q,c){const g=G(),VE=g.VE;if(['ve','vt','hienan','xoahet'].includes(k)&&g.veDuoc&&!g.veDuoc())return;
  if(k==='chep')chep(v);else if(k==='bao')baoThem(+v);else if(k==='ve'&&q)veMoi(v,q);
  else if(k==='vt'&&q)veVt(q.p);else if(k==='lot'&&q)tinhLot(q.p);else if(k==='kiem'&&q)kiemLenh(q.p,false);else if(k==='cho'&&q)kiemLenh(q.p,true);
  else if(k==='chepnen'&&c)chep(c.slice(1,5).map(x=>so(g,x)).join('\t'));
@@ -201,7 +201,7 @@ function menuHinh(cx,cy,id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h)retur
  s+=hr+mi('xoa','xoa','Xóa',{xau:1,phim:'Del'});
  mo(cx,cy,s,(k,v)=>lamHinh(k,v,id))}
 function lamHinh(k,v,id){const g=G(),VE=g.VE,i=VE.ds.findIndex(x=>x.id===id),h=VE.ds[i];if(!h)return;
- if(k==='chep'){chep(v);return}if(k==='bao'){baoThem(+v);return}if(k==='xoa'){VE.chon=id;g.veXoa();return}if(k==='suachu'){suaChu(id);return}if(k==='cbv'){const c=CBV();if(c)c.mo(id);return}
+ if(k!=='chep'&&k!=='bao'&&g.veDuoc&&!g.veDuoc())return;if(k==='chep'){chep(v);return}if(k==='bao'){baoThem(+v);return}if(k==='xoa'){VE.chon=id;g.veXoa();return}if(k==='suachu'){suaChu(id);return}if(k==='cbv'){const c=CBV();if(c)c.mo(id);return}
  if(k==='nban'){const n=JSON.parse(JSON.stringify(h)),d=buoc(g)*5,dc=pt=>pt&&{...pt,t:pt.t+d};n.id=g.moiId();delete n.khoa;n.a=dc(n.a);if(n.b)n.b=dc(n.b);if(n.c)n.c=dc(n.c);if(n.pts)n.pts=n.pts.map(dc);
   VE.ds.push(n);VE.chon=n.id}
  else if(k==='khoa'){if(h.khoa)delete h.khoa;else h.khoa=1}
@@ -211,7 +211,7 @@ function lamHinh(k,v,id){const g=G(),VE=g.VE,i=VE.ds.findIndex(x=>x.id===id),h=V
  g.veLuu();g.veTb();g.lwPhu()}
 // --- sửa chữ của ghi chú ngay trên biểu đồ (bấm đúp vào ghi chú, hoặc menu → Sửa chữ)
 const laChu=h=>!!h&&(h.k==='chu'||!!(window.VEX&&window.VEX[h.k]&&window.VEX[h.k].chu));   // văn bản và các công cụ chữ của bieu_do_cong_cu.py
-function suaChu(id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h||!laChu(h))return;let x=null,y=null;try{x=g.LW.chart.timeScale().timeToCoordinate(h.a.t);y=g.LW.nen.priceToCoordinate(h.a.p)}catch(e){}
+function suaChu(id){const g=G();if(g.veDuoc&&!g.veDuoc())return;const h=g.VE.ds.find(x=>x.id===id);if(!h||!laChu(h))return;let x=null,y=null;try{x=g.LW.chart.timeScale().timeToCoordinate(h.a.t);y=g.LW.nen.priceToCoordinate(h.a.p)}catch(e){}
  const o=document.createElement('input');o.className='venhap';o.maxLength=80;o.value=h.chu||'';o.style.left=Math.max(4,Math.min(x==null?LWE.clientWidth/2:x,LWE.clientWidth-230))+'px';
  o.style.top=Math.max(4,(y==null?60:y)-14)+'px';ST.appendChild(o);setTimeout(()=>{o.focus();o.select()},0);
  let da=0;const xong=luu=>{if(da)return;da=1;const v=o.value.trim();o.remove();if(luu&&v&&v!==h.chu){h.chu=v;g.veLuu();g.lwPhu()}};

@@ -13,7 +13,9 @@ import threading
 from html import escape
 from pathlib import Path
 
-from . import gia, nhieu_tai_khoan, song, trang
+from . import da_ma, gia, nhieu_tai_khoan, song, trang, vo_app
+from . import ai_ui
+from . import mcp_ui
 
 _khoa = threading.Lock()
 
@@ -32,6 +34,12 @@ TRUONG: dict = {
     'cot.bat': ('bat', True),
     'nhat_ky.bat': ('bat', False),
     'canh_bao.bat': ('bat', False),
+    'canh_bao.ngan_han': ('bat', True),
+    'canh_bao.tien_cuu': ('bat', True),
+    'canh_bao.ma_ngan_han': ('ds_ma', ''),
+    'cap_nhat.bat': ('bat', True),
+    'mcp.bat': ('bat', False),
+    'mcp.cong': ('cong', 8769),
 }
 BO_QUA = {'ten'}                                   # tên hiển thị là tên thương hiệu cố định (thuong_hieu.TEN): gửi lên thì bỏ qua
 KHOA_MT5 = {'gia.mt5.terminal', 'gia.ma_vang', 'gia.mt5.chi_demo', 'gia.mt5.lech_gio_san'}
@@ -76,6 +84,11 @@ def kiem(khoa: str, v):
         if v and not re.fullmatch(r'[A-Za-z0-9._#+\-]{1,32}', v):
             raise ValueError('Mã vàng chỉ gồm chữ, số và . _ # + -, tối đa 32 ký tự')
         return v
+    if kieu == 'ds_ma':
+        ds = list(dict.fromkeys(re.split(r'[\s,]+', str(v or '').strip()))) if str(v or '').strip() else []
+        if len(ds) > 8 or any(not re.fullmatch(r'[A-Za-z0-9._#+\-]{1,32}', ma) for ma in ds):
+            raise ValueError('Nhập tối đa 8 mã MT5, cách nhau bằng dấu phẩy hoặc khoảng trắng.')
+        return ' '.join(ds)
     if kieu == 'duong_mt5':
         v = str(v or '').strip().strip('"')
         if not v:
@@ -89,6 +102,10 @@ def kiem(khoa: str, v):
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not -14 <= v <= 14 or round(v * 2) != v * 2:
             raise ValueError('Giờ sàn lệch UTC phải từ −14 tới +14, bước nửa giờ (để trống là tự đo)')
         return float(v) if v % 1 else int(v)
+    if kieu == 'cong':
+        if type(v) is not int or not 1 <= v <= 65535:
+            raise ValueError('Cổng MCP cần số nguyên từ 1 đến 65535.')
+        return v
     if kieu == 'so':
         lo, hi = TRUONG[khoa][2], TRUONG[khoa][3]
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi:
@@ -138,6 +155,21 @@ def noi_lai(g: dict | None = None, doi_san: bool = False) -> None:
         threading.Thread(target=lambda: song.khung_song(g), name='noi-lai-mt5', daemon=True).start()
 
 
+def them_ma(cfg: dict, ma: str) -> None:
+    """Đăng ký báo giá cho một mã khi chủ máy yêu cầu trong trang Cài đặt."""
+    if not isinstance(ma, str) or not 1 <= len(ma) <= 64 or not ma.isprintable():
+        raise ValueError('Mã không hợp lệ.')
+    mt5 = da_ma._mt5(cfg.get('gia') or {})
+    with song._khoa:
+        if mt5 is None or mt5 is not song._tt.get('mt5'):
+            raise ValueError('MT5 chưa kết nối. Thử lại khi nguồn giá đã sẵn sàng.')
+        if mt5.symbol_info(ma) is None:
+            raise ValueError('Mã này chưa có trong danh mục của MT5 đang kết nối.')
+        if not mt5.symbol_select(ma, True):
+            raise ValueError('MT5 chưa thêm được mã vào Market Watch.')
+        da_ma._nho.pop('ds', None)
+
+
 def ghi(p: Path, gia_tri: dict) -> dict:
     """Kiểm rồi ghi các mục đổi. Trả {'ok', 'doi': [khóa], 'noi_lai': bool, 'thong_bao'}; mục sai thì ValueError, không ghi gì."""
     if not isinstance(gia_tri, dict) or not gia_tri:
@@ -184,7 +216,7 @@ button.phu{padding:7px 12px;border-radius:8px;border:1px solid var(--line);backg
 
 JS = r"""(()=>{const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));let S=null;
 const HDR={'Content-Type':'application/json','X-So-Cong-Khai':'1'};
-async function tai(){try{const r=await fetch('/api/cai-dat',{cache:'no-store'});S=await r.json();ve()}catch(e){$('#cd').innerHTML='<p class="note">Không đọc được cài đặt: '+esc(e.message)+'</p>'}}
+async function tai(){try{const r=await fetch('/api/cai-dat',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.thong_bao||'Không có quyền xem cài đặt.');S=j;ve()}catch(e){$('#cd').innerHTML='<p class="note">'+esc(e.message)+'</p>'}}
 function ttVe(){const k=S.ket_noi||{},t=k.tai_khoan;let h='';
  if(k.co&&t)h=`<b class="ok">Đang nối</b><span>Tài khoản ${esc(t.so)} · ${esc(t.loai)} · ${esc(t.may_chu)} · ${esc(t.tien)}</span><span>Mã vàng: <b>${esc(k.ma||'—')}</b></span><span>Giờ sàn lệch UTC ${k.lech_gio>0?'+':''}${esc(k.lech_gio)} giờ (${esc(k.lech_nguon||'')})</span>`;
  else h=`<b class="loi">Chưa nối được</b><span>${esc(k.ly_do||'đang nối…')}</span>`;
@@ -205,6 +237,12 @@ function ve(){const v=S.gia_tri,mo=S.mt5_dang_mo||[],tu=v['gia.mt5.terminal']||'
  <div class="hang"><label for="ma">Mã vàng<small>${S.chia_se?'tên mã vàng trên sàn của bạn':'máy này dùng mã vàng theo cấu hình EA Promax'}</small></label><div><select id="ma" data-k="gia.ma_vang"${S.chia_se?'':' disabled'}>${optMa.join('')}</select></div></div>
  <div class="hang"><label for="lech">Giờ máy chủ của sàn<small>để trống là tự đo từ tick; chỉ ghi khi giờ trên biểu đồ bị lệch</small></label><div><input type="number" id="lech" data-k="gia.mt5.lech_gio_san" step="0.5" min="-14" max="14" placeholder="tự đo" value="${lech??''}" style="max-width:140px"> giờ so với UTC</div></div>
  <div class="hang"><label></label><div><button type="button" class="phu" id="noi">Nối lại MT5 ngay</button></div></div>
+ <details id="dm-mt5"><summary>Danh mục mã của broker</summary>
+  <div class="hang"><label for="dm-tim">Tìm mã hoặc tên</label><div><input type="text" id="dm-tim" maxlength="80" autocomplete="off"></div></div>
+  <div class="hang"><label for="dm-ma">Mã MT5</label><div><select id="dm-ma"></select>
+   <button type="button" class="phu" id="dm-them" disabled>Thêm vào Market Watch</button></div></div>
+  <p class="small" id="dm-tt" role="status"></p>
+ </details>
 </section>
 <section class="card"><h2>Chi phí giao dịch khi đo phương pháp</h2><p class="sub">Mọi số đo quá khứ (tỷ lệ thắng, hòa vốn, lãi lỗ mỗi lệnh, DSR) đã trừ các chi phí này. Ghi đúng theo sàn của bạn để số đo sát với lệnh thật; đổi xong, phần đo tự tính lại sau vài phút.</p>
  <div class="hang"><label for="sp">Spread vàng<small>chênh lệch Bid/Ask thường gặp, tính bằng USD giá (0,17 là 17 cent)</small></label><div><input type="number" id="sp" data-k="gia.spread" step="0.01" min="0" max="5" value="${v['gia.spread']}" style="max-width:140px"> USD</div></div>
@@ -220,10 +258,45 @@ function ve(){const v=S.gia_tri,mo=S.mt5_dang_mo||[],tu=v['gia.mt5.terminal']||'
 <section class="card"><h2>Cá nhân</h2>
  ${cb('nhat_ky.bat','Nhật ký điểm vào','Tự ghi mọi điểm vào của các phương pháp, rồi chấm bằng giá thật.')}
  ${cb('canh_bao.bat','Vòng canh cảnh báo','Báo khi luật có tín hiệu mới. Cần khởi động lại webapp khi bật/tắt.')}
+ ${cb('canh_bao.ngan_han','Báo tín hiệu M5, M15, M30','Khi vòng cảnh báo hoạt động, luôn theo dõi mã vàng và các mã bổ sung bên dưới.')}
+ ${cb('canh_bao.tien_cuu','Ghi và chấm tín hiệu quan sát','Vòng nền lưu giá tham chiếu khi tín hiệu xuất hiện và đối chiếu tick MT5 sau đó.')}
+ <div class="hang"><label for="ma-ngan">Mã theo dõi bổ sung<small>Tối đa 8 mã đang hiện trong Market Watch, cách nhau bằng khoảng trắng.</small></label><div><input type="text" id="ma-ngan" data-k="canh_bao.ma_ngan_han" value="${esc(v['canh_bao.ma_ngan_han'])}"></div></div>
 </section>
 <div class="luu"><button type="button" id="luu">Lưu cài đặt</button><span class="kq" id="kq"></span></div>`;
  ttVe();
- $('#luu').onclick=luu;$('#noi').onclick=async()=>{if(await gui({viec:'noi_lai'},'Đang nối lại MT5…'))cho()};$('#quet').onclick=tai}
+ $('#luu').onclick=luu;$('#noi').onclick=async()=>{if(await gui({viec:'noi_lai'},'Đang nối lại MT5…'))cho()};$('#quet').onclick=tai;danhMuc()}
+function danhMuc(){
+ const hop=$('#dm-mt5'),tim=$('#dm-tim'),ma=$('#dm-ma'),them=$('#dm-them'),tt=$('#dm-tt');
+ let ds=[],dang=false;
+ function nut(){them.disabled=dang||!ma.value||!ds.some(s=>s.ma===ma.value&&!s.market_watch)}
+ function veMa(){
+  const loc=tim.value.trim().toLocaleLowerCase(),cu=ma.value,khop=ds.filter(s=>[s.ma,s.ten,s.nhom].some(v=>String(v||'').toLocaleLowerCase().includes(loc)));
+  ma.replaceChildren(new Option(khop.length?'Chọn mã':'Không tìm thấy mã',''),...khop.slice(0,100).map(s=>new Option(s.ma+' · '+s.ten+(s.market_watch?' · Đang hiển thị':''),s.ma)));
+  if([...ma.options].some(o=>o.value===cu))ma.value=cu;
+  tt.textContent=ds.length+' mã · '+ds.filter(s=>s.market_watch).length+' trong Market Watch'+(khop.length>100?' · Nhập thêm để lọc kết quả.':'');
+  nut();
+ }
+ hop.ontoggle=async()=>{
+  if(!hop.open||dang)return;dang=true;nut();tt.textContent='Đang đọc danh mục từ MT5…';
+  try{
+   const r=await fetch('/api/ma/danh-muc',{cache:'no-store'}),j=await r.json();
+   if(!r.ok||!j.san_sang)throw Error(j.ly_do||'MT5 chưa sẵn sàng.');
+   ds=j.ds;veMa();
+  }catch(e){ds=[];ma.replaceChildren();tt.textContent=e.message}
+  finally{dang=false;nut()}
+ };
+ tim.oninput=veMa;ma.onchange=nut;
+ them.onclick=async()=>{
+  const chon=ds.find(s=>s.ma===ma.value&&!s.market_watch);if(dang||!chon)return;
+  dang=true;nut();tt.textContent='Đang thêm '+chon.ma+'…';
+  try{
+   const r=await fetch('/api/cai-dat',{method:'POST',headers:HDR,body:JSON.stringify({viec:'them_ma',ma:chon.ma})}),j=await r.json();
+   if(!r.ok)throw Error(j.thong_bao||'Không thêm được mã.');
+   chon.market_watch=true;veMa();tt.textContent=chon.ma+' đã vào Market Watch. Mở lại trang Biểu đồ để chọn mã.';
+  }catch(e){tt.textContent=e.message}
+  finally{dang=false;nut()}
+ }
+}
 function layGT(){const o={};for(const e of document.querySelectorAll('[data-k]')){if(e.disabled)continue;const k=e.dataset.k;let v;
   if(e.type==='checkbox')v=e.checked;else if(e.type==='number')v=e.value===''?null:Number(e.value);else v=e.value;
   if(JSON.stringify(v)!==JSON.stringify(S.gia_tri[k]))o[k]=v}return o}
@@ -242,8 +315,11 @@ tai();setInterval(()=>{if(document.visibilityState==='visible')fetch('/api/cai-d
 def trang_cai_dat(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Cài đặt · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Cài đặt · {escape(ten)}</title><style>{trang.CSS}{CSS}{ai_ui.CSS}</style></head><body>',
         trang.thanh_dau(ten, 'cai-dat', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Cài đặt</h1></div><div class="stamp">lưu vào cau-hinh.json trên máy này<br>bản trước giữ ở cau-hinh.json.bak</div></div>',
         '<div class="cd" id="cd"><p class="small">Đang đọc cài đặt…</p></div>',
-        f'<footer>{escape(trang.MIEN_TRU)}</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
+        ai_ui.ADMIN_HTML,
+        mcp_ui.HTML,
+        vo_app.KHOI_CAI_DAT,                                               # khối "Ứng dụng": phiên bản, thư mục dữ liệu, bản mới
+        f'<footer>{escape(trang.MIEN_TRU)}</footer></main><script>{trang.JS}</script><script>{JS}</script><script>{ai_ui.ADMIN_JS}</script><script>{mcp_ui.JS}</script></body></html>'])

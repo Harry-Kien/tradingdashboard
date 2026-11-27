@@ -1,11 +1,12 @@
 """Bài kiểm cho tin tức (tin_tuc.py), tâm lý thị trường (tam_ly.py) và trang /tin-tuc. Không gọi mạng thật: hàm tải được thay bằng dữ liệu giả."""
+from functools import partial
+from http_owner import owner_urlopen
 import io
 import json
 import sys
 import tempfile
 import threading
 import unittest
-import urllib.request
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -123,21 +124,22 @@ class TrangTinTucTest(unittest.TestCase):
             ch.write_text(json.dumps({'ten': 'Thử', 'gia': {}, 'tin_tuc': {'tep': str(Path(d) / 'tin.json')}, 'tam_ly': {'tep': str(Path(d) / 'tl.json')}}),
                           encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                html = urllib.request.urlopen(u + '/tin-tuc').read().decode('utf-8')
+                html = open_owner(u + '/tin-tuc').read().decode('utf-8')
                 for must in ('Tin tức &amp; tâm lý thị trường', 'aria-current="page">Tin tức', 'id="cot"', 'id="tn"', 'không phải tín hiệu'):
                     self.assertIn(must, html)
-                j = json.loads(urllib.request.urlopen(u + '/api/tin-tuc?nhan=USD&q=fed').read())
+                j = json.loads(open_owner(u + '/api/tin-tuc?nhan=USD&q=fed').read())
                 self.assertEqual(j['ds'], [])
                 self.assertTrue(any(n['k'] == 'XAU' for n in j['nhan']))
-                t = json.loads(urllib.request.urlopen(u + '/api/tam-ly').read())
+                t = json.loads(open_owner(u + '/api/tam-ly').read())
                 self.assertEqual(t['cot'], [])
             finally:
                 srv.shutdown()
                 srv.server_close()
-                trang.MIEN_TRU = trang.MIEN_TRU_GOC                   # máy chủ đổi câu miễn trừ theo cấu hình: trả lại cho bài khác
+                trang.MIEN_TRU = trang.MIEN_TRU_GOC
 
 
 if __name__ == '__main__':

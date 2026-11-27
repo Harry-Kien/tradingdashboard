@@ -1,4 +1,6 @@
 """Bài kiểm cho Kế hoạch vốn và lệnh (ke_hoach.py: hàm thuần) và đường dẫn /ke-hoach."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -140,17 +142,18 @@ class WebTest(unittest.TestCase):
             ch = Path(d) / 'cau-hinh.json'
             ch.write_text(json.dumps({'gia': {}}), encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                html = urllib.request.urlopen(u + '/ke-hoach', timeout=30).read().decode('utf-8')
+                html = open_owner(u + '/ke-hoach', timeout=30).read().decode('utf-8')
                 self.assertIn('Kế hoạch vốn và lệnh', html)
                 self.assertIn('aria-current="page"', html)
                 for q in ('chieu=MUA', 'ma=X&chieu=LEN', 'ma=X&chieu=MUA&khung=D1', 'ma=X&chieu=MUA&von=-5', 'ma=X&chieu=MUA&rui_ro=0',
                           'ma=X&chieu=MUA&thang=150', 'ma=X&chieu=MUA&vao=abc', 'ma=X&chieu=MUA&von=inf', 'ma=X&chieu=MUA&von=1e999',
                           'ma=X&chieu=MUA&sl=nan', 'ma=X&chieu=MUA&rr=inf'):
                     with self.assertRaises(urllib.error.HTTPError) as c:
-                        urllib.request.urlopen(f'{u}/api/ke-hoach?{q}', timeout=30)
+                        open_owner(f'{u}/api/ke-hoach?{q}', timeout=30)
                     self.assertEqual(c.exception.code, 400, q)
             finally:
                 srv.shutdown()

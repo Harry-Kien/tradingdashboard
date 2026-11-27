@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import da_ma, gia, hoc, phuong_phap, song
+from . import da_ma, gia, hoc, phuong_phap, song, duong
 
 PHIEN_BAN = 5                                   # 5: lãi lỗ theo tháng; 4: mô phỏng lại chuỗi lệnh; 3: trừ hoa hồng theo Cài đặt; 2: thêm điểm khớp quá khứ (PBO, DSR)
 TOI_DA_M5 = 99_999         # MT5 từ chối lời đọc từ 100.000 nến trở lên
@@ -168,7 +168,7 @@ def lay(cfg: dict, out: Path, ma: str, cho: bool = False, now: datetime | None =
 
 if __name__ == '__main__':                                                 # python -X utf8 -m so_cong_khai.hoc_ma BTCUSDTp
     import sys
-    cfg_ = json.loads((Path(__file__).resolve().parent.parent / 'cau-hinh.json').read_text(encoding='utf-8'))
+    cfg_ = json.loads((duong.goc_du_lieu() / 'cau-hinh.json').read_text(encoding='utf-8'))
     kq_ = chay(cfg_, sys.argv[1] if len(sys.argv) > 1 else 'BTCUSDTp')
     print(kq_['ma'], kq_['tu'][:10], '→', kq_['den'][:10], 'cắt', kq_['cat'][:10], '·', kq_['so_nen'], 'nến M5 · spread', kq_['spread'], '·', kq_['don_vi'], kq_['loi'])
     for pp_, r_ in kq_['luat'].items():

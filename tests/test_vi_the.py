@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace as N
+from unittest.mock import patch
 
 from so_cong_khai import gia, tai_khoan, trang, vi_the
 
@@ -155,6 +156,45 @@ class ViThe(unittest.TestCase):
         cfg = self.cfg([{'ten': 'Hỏng', 'ea': [{'ten': 'EA X', 'tep': str(self.d / 'khong-co.csv')}]}])
         self.mt5 = MT5Gia()
         self.assertEqual(vi_the.tong_hop(cfg, NOW)['ds'], [])
+
+    def test_loi_doc_vi_the_hoac_lich_su_khong_duoc_xac_minh(self):
+        self.mt5 = MT5Gia()
+        for method in ('positions_get', 'history_deals_get'):
+            with self.subTest(method=method), patch.object(self.mt5, method, return_value=None):
+                self.assertIsNone(vi_the.anh_mt5(self.cfg(), NOW))
+                result = vi_the.tong_hop(self.cfg(), NOW)
+                self.assertFalse(result['mt5']['noi'])
+                self.assertFalse(result['ds'][0]['xac_minh'])
+
+    def test_khong_ghep_lenh_khac_ma_hoac_khong_co_gio_mo(self):
+        cfg = self.cfg()
+        p = self.d / 'EAPromax_M_XAUUSDp_777_12345678_events.csv'
+        p.write_text(Path(cfg['tai_khoan'][0]['ea'][0]['tep']).read_text(encoding='utf-8'), encoding='utf-8')
+        cfg['tai_khoan'][0]['ea'][0]['tep'] = str(p)
+        self.mt5 = MT5Gia(mo=[vt(91, 'SELL', 0.05, 3445.62, MO, 777, ma='XAUEURp')])
+        result = vi_the.tong_hop(cfg, NOW)
+        journal = [x for x in result['ds'] if x['nguon'] == 'nhat_ky_ea']
+        self.assertEqual(len(journal), 1)
+        self.assertFalse(journal[0]['xac_minh'])
+        self.mt5 = MT5Gia(deals=[deal(91, 0, 1, 0.05, 3520.8, MO + timedelta(hours=1), 777)])
+        result = vi_the.tong_hop(cfg, NOW)
+        self.assertEqual(result['da_dong_theo_mt5'], [])
+        self.assertFalse(result['ds'][0]['xac_minh'])
+
+    def test_doi_tai_khoan_khi_dang_doc_khong_xac_minh_nham(self):
+        self.mt5 = MT5Gia()
+        with patch.object(self.mt5, 'account_info', side_effect=[N(login=12345678, trade_mode=0), N(login=888888, trade_mode=0)]):
+            self.assertIsNone(vi_the.anh_mt5(self.cfg(), NOW))
+
+    def test_cache_tach_cau_hinh_nguon_mt5(self):
+        cfg = self.cfg()
+        vi_the._nho.update(luc=0.0, key=None, kq=None)
+        with patch.object(vi_the, 'tong_hop', side_effect=[{'test': 1}, {'test': 2}]) as read:
+            self.assertEqual(vi_the.tong_hop_nho(cfg), {'test': 1})
+            self.assertEqual(vi_the.tong_hop_nho(cfg), {'test': 1})
+            changed = {**cfg, 'gia': {'mt5': {'duong': 'another-terminal'}}}
+            self.assertEqual(vi_the.tong_hop_nho(changed), {'test': 2})
+            self.assertEqual(read.call_count, 2)
 
 
 if __name__ == '__main__':

@@ -49,7 +49,7 @@ JS = r"""
 const NF={},fmt=(v,d=2)=>v==null||!isFinite(v)?'—':(NF[d]||(NF[d]=new Intl.NumberFormat('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d}))).format(v);
 const QT={q_rui_ro_lenh_toi_da_pct:2,q_lo_ngay_toi_da_pct:3,q_tong_rui_ro_toi_da_pct:6};
 let DS=[],chieu='MUA',hen=null,lan=0,daSl=false;const LG=document.documentElement.lang==='en'?'en':'vi';
-try{Object.assign(QT,JSON.parse(localStorage.getItem('kl-qt')||'{}'))}catch(e){}
+try{Object.assign(QT,JSON.parse(localStorage.getItem(window.hgrKey?window.hgrKey('kl-qt'):'demo:kl-qt')||'{}'))}catch(e){}
 for(const k in QT){const el=$('#'+k);if(el)el.value=QT[k]}
 const so=el=>{const v=parseFloat(String(el.value).replace(',','.'));return isFinite(v)?v:null};
 const giaMa=()=>DS.find(x=>x.ma===$('#kl-ma').value);
@@ -69,7 +69,7 @@ async function kiem(){const ma=$('#kl-ma').value,vao=so($('#kl-vao')),sl=so($('#
  if(!ma||vao==null){$('#kl-kq').innerHTML='<p class="kl-cho">Chọn mã và nhập giá vào để bắt đầu.</p>';return}
  if(sl==null&&!daSl){$('#kl-kq').innerHTML='<p class="kl-cho">Nhập mức dừng lỗ (SL) để tính khối lượng và kiểm lệnh.</p>';return}
  const q=new URLSearchParams({ma,chieu,vao});if(sl!=null)q.set('sl',sl);if(tp!=null)q.set('tp',tp);if(rr!=null)q.set('rui_ro',rr);
- for(const k in QT){const el=$('#'+k),v=el?so(el):null;if(v!=null){q.set(k,v);QT[k]=v}}try{localStorage.setItem('kl-qt',JSON.stringify(QT))}catch(e){}
+ for(const k in QT){const el=$('#'+k),v=el?so(el):null;if(v!=null){q.set(k,v);QT[k]=v}}try{localStorage.setItem(window.hgrKey?window.hgrKey('kl-qt'):'demo:kl-qt',JSON.stringify(QT))}catch(e){}
  const n=++lan;$('#kl-kq').setAttribute('aria-busy','true');
  try{const r=await fetch('/api/kiem-lenh?'+q,{cache:'no-store'});const t=await r.text();if(n!==lan)return;if(!r.ok)throw new Error(t);ve(JSON.parse(t))}
  catch(e){if(n===lan)$('#kl-kq').innerHTML=`<p class="kl-cho">Không kiểm được: ${esc(e.message)}</p>`}
@@ -126,7 +126,7 @@ def trang_kiem_lenh(ten: str) -> str:
                               ('q_tong_rui_ro_toi_da_pct', 'Tổng rủi ro tối đa đang mở (% vốn)')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Kiểm tra lệnh · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Kiểm tra lệnh · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'kiem-lenh', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="kl-top"><h1>Kiểm tra trước khi vào lệnh</h1><p>Nhập lệnh bạn định vào. Trang tính khối lượng đúng theo % rủi ro và kiểm từng quy tắc quản lý '
         'rủi ro bằng dữ liệu thật từ MT5 của bạn: dừng lỗ, lời/lỗ, biến động, spread, tin mạnh sắp ra, lỗ trong ngày, tổng rủi ro đang mở, '

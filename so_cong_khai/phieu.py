@@ -21,6 +21,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from . import duong
 from . import phuong_phap as PP
 
 THI_TRUONG = ('pha_vo', 'elliott', 'wyckoff', 'price_action', 'ema_hoi')       # các phương pháp mà luật gốc vào ngay khi nến tín hiệu đóng
@@ -96,7 +97,7 @@ def muc_sl(s: dict, ma: str, sl: str, gia_khop: float, spread_luc: float) -> flo
 
 def so_do(ma: str, tep: Path | None = None) -> dict | None:
     """{'goc': …, 'phieu': …, 'so_phep_so': …} đọc từ out/diem-vao.json (do cong-cu/diem_vao.py ghi); chưa có tệp thì None. Nhớ theo giờ sửa tệp."""
-    tep = tep or Path(__file__).resolve().parent.parent / 'out' / 'diem-vao.json'
+    tep = tep or duong.goc_du_lieu() / 'out' / 'diem-vao.json'
     try:
         key = (str(tep), tep.stat().st_mtime_ns)
         if _nho.get('key') != key:
@@ -136,7 +137,7 @@ BOT_KHOANG = (10.0, 35.0)        # khoảng rủi ro (giá) được nhận khi 
 
 def so_do_bot(tep: Path | None = None) -> dict | None:
     """{'goc': bản hiện tại của bot, 'phieu': bản cuối theo cổng} đọc từ out/diem-vao-bot.json (cong-cu/diem_vao_bot.py); chưa có tệp thì None."""
-    tep = tep or Path(__file__).resolve().parent.parent / 'out' / 'diem-vao-bot.json'
+    tep = tep or duong.goc_du_lieu() / 'out' / 'diem-vao-bot.json'
     try:
         key = ('bot', str(tep), tep.stat().st_mtime_ns)
         if _nho.get('key_bot') != key:

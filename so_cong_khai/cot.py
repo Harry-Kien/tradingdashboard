@@ -19,6 +19,8 @@ import zipfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from . import duong
+
 MA_VANG = '088691'                                             # mã hợp đồng vàng COMEX trong báo cáo của CFTC
 URL_TUAN = 'https://www.cftc.gov/dea/newcot/f_disagg.txt'      # báo cáo tuần mới nhất (bản tách nhóm, chỉ hợp đồng tương lai)
 URL_NAM = 'https://www.cftc.gov/files/dea/history/fut_disagg_txt_{nam}.zip'
@@ -111,7 +113,7 @@ def can_tai(ds: list[dict], thu_luc: datetime | None, now: datetime) -> bool:
 
 def tep(cfg: dict) -> Path:
     t = (cfg.get('cot') or {}).get('tep')
-    return Path(t) if t else Path(__file__).resolve().parent.parent / 'du-lieu' / 'cot-vang.json'
+    return Path(t) if t else duong.goc_du_lieu() / 'du-lieu' / 'cot-vang.json'
 
 
 def _doc(p: Path) -> dict:

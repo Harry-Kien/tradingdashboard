@@ -1,6 +1,8 @@
 """Bài kiểm cho bảng giá trực tiếp (thi_truong.py) và ba trang mới: dùng một MT5 giả, không nối MT5 thật.
 Kiểm phân loại mã, kích thước pip, chỉ thêm mã vào Market Watch khi cấu hình bật, luồng SSE chỉ gửi mã có giá mới,
 lời gọi tính toán không phải lời gọi đặt lệnh, lịch tin, và các đường dẫn của webapp."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -312,33 +314,34 @@ class WebTest(unittest.TestCase):
             b = T.BangGia(lambda: json.loads(ch.read_text(encoding='utf-8')), mt5_fn=lambda g: mt5)
             b.doc_gia()
             srv = web.tao_may_chu(str(ch), port=0, bang=b)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
                 for p, chu in (('/thi-truong', 'Thị trường Forex'), ('/cong-cu', 'Công cụ giao dịch'), ('/hoc-giao-dich', '16 phong cách')):
-                    html = urllib.request.urlopen(u + p).read().decode('utf-8')
+                    html = open_owner(u + p).read().decode('utf-8')
                     self.assertIn(chu, html)
                     self.assertIn('href="/thi-truong#bang-gia"', html)
                     self.assertIn('class="nv-tim-b"', html)                       # ô tìm nhanh Ctrl+K có ở mọi trang
-                ma = json.loads(urllib.request.urlopen(u + '/api/thi-truong/ma').read())
+                ma = json.loads(open_owner(u + '/api/thi-truong/ma').read())
                 self.assertEqual({x['ma'] for x in ma['ds']}, {'EURUSDp', 'GBPUSDp', 'XAUUSDp'})
                 b.doc_moc(bat_buoc=True)
-                kt = json.loads(urllib.request.urlopen(u + '/api/thi-truong/ky-thuat?ma=EURUSDp').read())
+                kt = json.loads(open_owner(u + '/api/thi-truong/ky-thuat?ma=EURUSDp').read())
                 self.assertEqual(set(kt['khung']), {'M15', 'H1', 'H4', 'D1'})
                 self.assertIn(kt['khung']['H1']['nhan'], ('Mua mạnh', 'Mua', 'Trung tính', 'Bán', 'Bán mạnh'))
-                bd = json.loads(urllib.request.urlopen(u + '/api/thi-truong/bien-dong?ma=EURUSDp').read())
+                bd = json.loads(open_owner(u + '/api/thi-truong/bien-dong?ma=EURUSDp').read())
                 self.assertEqual(len(bd['gio']), 24)
                 with self.assertRaises(urllib.error.HTTPError):
-                    urllib.request.urlopen(u + '/api/thi-truong/ky-thuat?ma=KHONG')
-                j = json.loads(urllib.request.urlopen(u + '/api/thi-truong').read())
+                    open_owner(u + '/api/thi-truong/ky-thuat?ma=KHONG')
+                j = json.loads(open_owner(u + '/api/thi-truong').read())
                 self.assertTrue(j['san_sang'])
                 self.assertEqual(len(j['ds']), 3)
                 self.assertIn('lich', j)
-                t = json.loads(urllib.request.urlopen(u + '/api/tinh?ma=EURUSDp&loai=mua&lot=1&vao=1.1&ra=1.2').read())
+                t = json.loads(open_owner(u + '/api/tinh?ma=EURUSDp&loai=mua&lot=1&vao=1.1&ra=1.2').read())
                 self.assertAlmostEqual(t['lai'], 10000.0)
                 with self.assertRaises(urllib.error.HTTPError):
-                    urllib.request.urlopen(u + '/api/tinh?ma=EURUSDp&loai=mua&lot=abc&vao=1')
-                r = urllib.request.urlopen(u + '/api/thi-truong/luong', timeout=5)
+                    open_owner(u + '/api/tinh?ma=EURUSDp&loai=mua&lot=abc&vao=1')
+                r = open_owner(u + '/api/thi-truong/luong', timeout=5)
                 self.assertIn('text/event-stream', r.headers['Content-Type'])
                 dong = b''
                 while b'event: gia' not in dong:
@@ -347,7 +350,7 @@ class WebTest(unittest.TestCase):
             finally:
                 srv.shutdown()
                 srv.server_close()
-                trang.MIEN_TRU = trang.MIEN_TRU_GOC                   # máy chủ đổi câu miễn trừ theo cấu hình: trả lại cho bài khác
+                trang.MIEN_TRU = trang.MIEN_TRU_GOC
 
 
 if __name__ == '__main__':

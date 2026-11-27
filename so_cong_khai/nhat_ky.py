@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import da_ma, gia, phuong_phap, song
+from . import da_ma, diem_vao_rt, gia, phuong_phap, song
 from .__main__ import HERE
 
 SONG = ('cho_khop', 'dang_mo')            # hai trạng thái "còn sống"
@@ -201,9 +201,12 @@ def ghi(cfg: dict, pt: dict, now: datetime | None = None) -> list[dict]:
             if f and f.get('trang_thai') == 'con_hieu_luc':
                 phieu.append({'ma': 'phieu:' + f['ma'], 'ten': 'Phiếu · ' + f.get('ten', f['ma']), 'nhom': 'phieu', 'co': True, 'hieu_luc': True, 'huong': f['huong'],
                               'kieu': f.get('ten_loai', ''), 'loai': f.get('loai'), 'vao': f['vao'], 'sl': f['sl'], 'tp': f['tp'], 'rr': f.get('rr'),
-                              'nen': f.get('nen'), 'con_phut': f.get('con_phut'), 'ly_do': f.get('ly_do', ''), 'i_chinh': f.get('i_chinh')})
+                              'nen': f.get('nen'), 'con_phut': f.get('con_phut'), 'ly_do': f.get('ly_do', ''), 'i_chinh': f.get('i_chinh'),
+                              'thuc_thi': {'loai': f['loai']} if f.get('loai') and pt.get('nguon') == 'mt5' else None})
         for pa in list(pt.get('phuong_an') or []) + list(pt.get('phuong_phap') or []) + phieu:
             if not (pa.get('co') and pa.get('hieu_luc')) or pa.get('sl') is None or not pa.get('tp'):
+                continue
+            if not diem_vao_rt.ghi_duoc(pa, pt, now):
                 continue
             cung = [x for x in ds if x['sym'] == sym and x['ma'] == pa['ma'] and x['huong'] == pa['huong']]
             if pa.get('nhom') in ('pp', 'phieu') and pa.get('nen') and not any(x.get('nen') == pa['nen'] for x in cung):
@@ -405,11 +408,32 @@ class VongGhi(threading.Thread):
             try:
                 pt = da_ma.phan_tich(cfg, ma) if ma else phan_tich.phan_tich(cfg)
                 self.tt['da_ghi'] += len(ghi(cfg, pt))
+                if not ma:
+                    self._tien_cuu(cfg, pt, loi)
             except Exception as e:                                             # noqa: BLE001 - một mã hỏng không chặn mã khác
                 loi.append(f'{ma or "vàng"}: {type(e).__name__}: {e}')
         if self.tt.get('su_co'):
             loi.append(self.tt.pop('su_co'))
         self.tt.update(lan=self.tt['lan'] + 1, luc=datetime.now(timezone.utc).isoformat(), loi='; '.join(loi) or None)
+
+    _cham_luc = 0.0
+
+    def _tien_cuu(self, cfg: dict, pt: dict, loi: list) -> None:
+        """Sổ tiến cứu riêng của Harrison (harrison_tien_cuu.py): ghi tín hiệu ngay lúc đạt điều kiện, chấm trên nến M5 đã đóng mỗi 5 phút."""
+        from . import gia, harrison_tien_cuu as HT                             # noqa: PLC0415
+        try:
+            base = Path(cfg.get('thu_muc_ra', 'out'))
+            out = base if base.is_absolute() else HERE / base
+            hv = next((p for p in pt.get('phuong_phap') or [] if p.get('ma') == 'harrison'), None)
+            if hv:
+                HT.ghi_tin_hieu(out, hv, pt.get('bid'), pt.get('ask'))
+            if time.monotonic() - self._cham_luc > 300:
+                self._cham_luc = time.monotonic()
+                d = gia.goi(cfg, 'M5', 1500)
+                cs, live = d.get('candles') or [], d.get('live')
+                HT.cham(out, cs[:live] if isinstance(live, int) and 0 <= live < len(cs) else cs)
+        except Exception as e:                                                 # noqa: BLE001 - sổ tiến cứu hỏng không chặn nhật ký
+            loi.append(f'tiến cứu Harrison: {type(e).__name__}: {e}')
 
     def run(self) -> None:
         time.sleep(5)

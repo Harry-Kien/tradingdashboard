@@ -24,7 +24,10 @@
   },
   "canh_bao": {
     "bat": false,
-    "giay": 15
+    "giay": 15,
+    "ngan_han": true,
+    "tien_cuu": true,
+    "ma_ngan_han": ""
   },
   "ai": {
     "bat": false,
@@ -59,6 +62,9 @@
     "phut": 5
   },
   "tam_ly": {
+    "bat": true
+  },
+  "cap_nhat": {
     "bat": true
   }
 }

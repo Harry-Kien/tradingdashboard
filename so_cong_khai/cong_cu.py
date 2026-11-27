@@ -126,7 +126,7 @@ function pivot(){const x=X();if(!x)return;const q=x.hom_qua,el=$('#pv-kq');if(!q
  if(b!=null&&!chen)h+=`<tr class="hien"><td>Giá hiện tại</td><td class="r">${gp(b)}</td><td></td></tr>`;
  el.innerHTML=h+`</tbody></table><p class="nho">Tính từ nến ngày trước của sàn: cao ${gp(H)}, thấp ${gp(L)}, đóng ${gp(C)}. Mức tô xanh là mức gần giá nhất. Pivot là mức tham chiếu nhiều người cùng nhìn, không phải điểm vào lệnh.</p>`}
 // ---- 6. Fibonacci
-function fibo(){const x=X();if(!x)return;let H=v('fb-cao'),L=v('fb-thap');const h=x.hom_nay;
+function fibo(){const x=X()||{q:null,so_le:5};let H=v('fb-cao'),L=v('fb-thap');const h=x.hom_nay;
  if(H==null&&h){H=Math.max(h.cao,x.q?x.q[0]:h.cao);dat('fb-cao',H.toFixed(x.so_le))}if(L==null&&h){L=Math.min(h.thap,x.q?x.q[0]:h.thap);dat('fb-thap',L.toFixed(x.so_le))}
  if(H==null||L==null||H<=L){$('#fb-kq').innerHTML='<p class="small">Nhập đỉnh cao hơn đáy.</p>';return}
  const R=H-L,tang=chieu.fb==='tang',b=x.q&&x.q[0],u=don(x);
@@ -135,21 +135,23 @@ function fibo(){const x=X();if(!x)return;let H=v('fb-cao'),L=v('fb-thap');const 
  $('#fb-kq').innerHTML='<table><thead><tr><th>Mức</th><th class="r">Giá</th><th class="r">Cách giá hiện tại</th></tr></thead><tbody>'+hoi_.map(a=>dong(a,'Hồi')).join('')+mo.map(a=>dong(a,'Mở rộng')).join('')+
   `</tbody></table><p class="nho">${tang?'Sóng tăng từ đáy lên đỉnh: mức hồi đo từ đỉnh xuống; mức mở rộng là mục tiêu phía trên đỉnh.':'Sóng giảm từ đỉnh xuống đáy: mức hồi đo từ đáy lên; mức mở rộng là mục tiêu phía dưới đáy.'} Mặc định lấy đỉnh và đáy hôm nay.</p>`}
 // ---- 7. R:R và kỳ vọng
-function rrKyVong(){const x=X();if(!x)return;let vao=v('rk-vao');if(vao==null&&x.q){vao=x.q[1];dat('rk-vao',vao.toFixed(x.so_le))}const sl=v('rk-sl'),tp=v('rk-tp'),w=(v('fb-w')??40)/100,u=don(x);
+function rrKyVong(){const x=X()||{q:null};let vao=v('rk-vao');if(vao==null&&x.q){vao=x.q[1];dat('rk-vao',vao.toFixed(x.so_le))}const sl=v('rk-sl'),tp=v('rk-tp'),w=(v('fb-w')??40)/100,u=X()?don(x):{k:1,n:'đơn vị giá'};
  if(vao==null||sl==null||tp==null||sl===vao){$('#rk-kq').innerHTML='<p class="small">Nhập giá vào, dừng lỗ và chốt lời.</p>';return}
+ if(!((sl<vao&&tp>vao)||(sl>vao&&tp<vao))||w<0||w>1){$('#rk-kq').innerHTML='<p class="small">SL và TP cần nằm hai phía khác nhau của giá vào; tỷ lệ thắng từ 0 đến 100%.</p>';return}
  const rui=Math.abs(vao-sl),lai=Math.abs(tp-vao),rr=lai/rui,hv=1/(1+rr),kv=w*rr-(1-w),von=v('von'),p=v('rr-pct')||1;
  $('#rk-kq').innerHTML=`<div><span>Tỷ lệ lời : lỗ</span><b>1 : ${fmt(rr,2)}</b><small>${fmt(lai/u.k,u.n==='pip'?1:0)} / ${fmt(rui/u.k,u.n==='pip'?1:0)} ${u.n}</small></div>
   <div><span>Tỷ lệ thắng hòa vốn</span><b>${fmt(hv*100,1)}%</b><small>chưa tính spread, phí</small></div>
   <div><span>Kỳ vọng mỗi lệnh</span><b class="${T.cls(kv)}" style="color:var(--${kv>=0?'gain':'loss'})">${kv>=0?'+':'−'}${fmt(Math.abs(kv),2)}R</b><small>${von?'≈ '+(kv>=0?'+':'−')+tn(Math.abs(kv)*von*p/100)+' mỗi lệnh ở '+fmt(p,1)+'% rủi ro':''}</small></div>
   <div><span>Sau 100 lệnh như vậy</span><b>${kv>=0?'+':'−'}${fmt(Math.abs(kv)*100,0)}R</b><small>nếu tỷ lệ thắng thật là ${fmt(w*100,0)}%</small></div>`}
 // ---- 8. sụt vốn và chuỗi thua
-function chuoiThua(){const p=(v('rr-pct')||1)/100,w=(v('fb-w')??40)/100,n=Math.max(1,Math.round(v('ct-n')||5)),m=Math.max(n,Math.round(v('ct-m')||100));
+function chuoiThua(){const p=(v('rr-pct')??1)/100,w=(v('fb-w')??40)/100,n=Math.round(v('ct-n')??5),m=Math.round(v('ct-m')??100);
+ if(n<1||n>500||m<1||m>10000||p<0||p>=1||w<0||w>1){$('#ct-kq').innerHTML='<p class="small">Nhập chuỗi thua 1–500, tổng số lệnh 1–10.000, rủi ro dưới 100% và tỷ lệ thắng 0–100%.</p>';return}
  let a=new Array(n).fill(0);a[0]=1;for(let i=0;i<m;i++){const b=new Array(n).fill(0);let s=0;for(let k=0;k<n;k++){b[0]+=a[k]*w;if(k+1<n)b[k+1]+=a[k]*(1-w)}a=b}
- const khong=a.reduce((s,x)=>s+x,0),con=Math.pow(1-p,n);
- $('#ct-kq').innerHTML=`<div><span>Xác suất gặp ít nhất ${n} lệnh thua liên tiếp trong ${m} lệnh</span><b>${fmt((1-khong)*100,1)}%</b><small>với tỷ lệ thắng ${fmt(w*100,0)}%</small></div>
-  <div><span>Sau ${n} lệnh thua liền, mỗi lệnh rủi ro ${fmt(p*100,1)}%</span><b>${fmt(con*100,1)}% vốn</b><small>cần lãi ${fmt((1/con-1)*100,1)}% để về lại</small></div>`;
+ const khong=a.reduce((s,x)=>s+x,0),con=Math.pow(1-p,n),xacSuat=Math.min(1,Math.max(0,1-khong));
+ $('#ct-kq').innerHTML=`<div><span>Xác suất gặp ít nhất ${n} lệnh thua liên tiếp trong ${m} lệnh</span><b>${fmt(xacSuat*100,1)}%</b><small>với tỷ lệ thắng ${fmt(w*100,0)}%</small></div>
+  <div><span>Sau ${n} lệnh thua liền, mỗi lệnh rủi ro ${fmt(p*100,1)}%</span><b>${fmt(con*100,1)}% vốn</b><small>${con>0?'cần lãi '+fmt((1/con-1)*100,1)+'% để về lại':'vốn còn lại quá nhỏ để tính mức hồi phục'}</small></div><p class="small">Giả định các lệnh độc lập và cùng xác suất thắng, chưa tính phí.</p>`;
  $('#ct-bang').innerHTML='<table><thead><tr><th>Sụt vốn</th>'+[10,20,30,40,50,60,75,90].map(x=>`<th class="r">${x}%</th>`).join('')+'</tr></thead><tbody><tr><td>Cần lãi để hồi</td>'+[10,20,30,40,50,60,75,90].map(x=>`<td class="r">${fmt((1/(1-x/100)-1)*100,0)}%</td>`).join('')+'</tr></tbody></table>'}
-function tinh(){if(!X())return;dau();for(const f of[khoiLuong,giaTriPip,laiLo,kyQuy,pivot,fibo,rrKyVong,chuoiThua])try{f()}catch(e){console.error(e)}}
+function tinh(){if(X())dau();for(const f of[khoiLuong,giaTriPip,laiLo,kyQuy,pivot,fibo,rrKyVong,chuoiThua])try{f()}catch(e){console.error(e)}}
 document.querySelectorAll('.cc input').forEach(el=>el.addEventListener('input',()=>{if(el.id==='rr-vao')$('#rr-song').checked=false;tinh()}));
 $('#rr-song').addEventListener('change',()=>{if($('#rr-song').checked)dat('rr-vao','');tinh()});
 $('#fb-hq').addEventListener('click',()=>{const x=X();if(x&&x.hom_qua){$('#fb-cao').value=x.hom_qua.cao.toFixed(x.so_le);$('#fb-thap').value=x.hom_qua.thap.toFixed(x.so_le);fibo()}});
@@ -206,7 +208,7 @@ def trang_cong_cu(ten: str) -> str:
     cards = ''.join(f'<section class="cc"><h2>{t}</h2><p class="sub">{s}</p>{b}</section>' for t, s, b in the)
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Công cụ · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Công cụ · {escape(ten)}</title><style>{trang.CSS}{TTT.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'cong-cu', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="tt-top"><div><h1>Công cụ giao dịch</h1><p>Tính khối lượng, rủi ro, ký quỹ và các mức giá cho bất kỳ cặp tiền hay CFD nào của sàn, '
         'theo thông số hợp đồng và giá trực tiếp.</p></div><span id="song" class="song-pill"><i></i>Đang nối…</span></div>',

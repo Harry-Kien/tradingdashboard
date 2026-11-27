@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
 
-from . import trang
+from . import duong, trang
 
 # (nhóm, [(thuật ngữ, nghĩa là gì, trong hệ thống của bạn)])
 # Bản chia sẻ: chỉ phần giải thích chung.
@@ -164,7 +164,7 @@ CSS = """
 """
 
 
-TEP_DU_LIEU_MOI = Path(__file__).resolve().parent.parent / 'out' / 'du-lieu-moi.json'
+TEP_DU_LIEU_MOI = duong.goc_du_lieu() / 'out' / 'du-lieu-moi.json'
 TEN_KET = {'chua_du': 'chưa đủ lệnh', 'co_lai': 'vẫn có lãi', 'lo_ro': 'đang lỗ rõ', 'chua_ro': 'chưa phân định'}
 
 
@@ -225,7 +225,7 @@ def trang_kien_thuc(ten: str, chia_se: bool = False) -> str:
            '<p class="note"><b>Đọc trước:</b> mỗi mục gồm hai phần: thuật ngữ nghĩa là gì, và nó đang được dùng thế nào trong hệ thống của bạn, kèm con số từ chính báo cáo của bạn. '
            'Đây là giải thích, không phải lời khuyên đầu tư.</p>')
     out = ['<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-           f'{trang.BIEU_TUONG}<title>Kiến thức · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+           f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Kiến thức · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
            trang.thanh_dau(ten, 'kien-thuc', '<button id="theme" type="button">Nền tối</button>') + '<main>',
            f'<div class="top"><div><h1>Kiến thức</h1></div><div class="stamp">{sum(len(m) for _, m in ds)} mục' + ('' if chia_se else '<br>số liệu theo tài liệu tới 20/11/2026') + '</div></div>',
            doc,

@@ -56,6 +56,14 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30) -> dict:
         out = {'san_sang': True, 'luc': now.isoformat(), 'loai': 'DEMO', 'so': '•••' + so[-3:], 'may_chu': a.server, 'tien': a.currency, 'don_bay': int(a.leverage),
                'so_du': _r(a.balance), 'von': _r(a.equity), 'treo': _r(a.profit), 'ky_quy': _r(a.margin), 'ky_quy_con': _r(a.margin_free),
                'muc_ky_quy': _r(a.margin_level, 1) if a.margin else None, 'lenh': [], 'cho': [], 'da_dong': [], 'nap_rut': [], 'theo_ngay': []}
+        positions = mt5.positions_get()
+        orders = mt5.orders_get()
+        deals = mt5.history_deals_get(now - timedelta(days=ngay), now + timedelta(days=1))
+        if positions is None or orders is None or deals is None:
+            return {'san_sang': False, 'ly_do': 'MT5 chưa trả đủ vị thế, lệnh chờ hoặc lịch sử. Chưa thể xác nhận số lệnh và rủi ro; hãy thử cập nhật lại.'}
+        current = mt5.account_info()
+        if current is None or current.login != a.login or current.trade_mode != a.trade_mode:
+            return {'san_sang': False, 'ly_do': 'Tài khoản MT5 thay đổi trong lúc đọc. Cập nhật lại để nhận dữ liệu của cùng một tài khoản.'}
         tt_ma: dict = {}
 
         def ma(ten):
@@ -64,7 +72,7 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30) -> dict:
             return tt_ma[ten]
 
         rui_ro, khong_sl, khong_tinh = 0.0, 0, 0
-        for p in mt5.positions_get() or []:
+        for p in positions:
             s = ma(p.symbol)
             d = int(s.digits) if s else 2
             mua = int(p.type) == 0
@@ -85,12 +93,11 @@ def doc(cfg: dict, now: datetime | None = None, ngay: int = 30) -> dict:
                                 'mo': _gio(p.time), 'nguon': _ea(cfg, int(p.magic)), 'rui_ro': _r(rr) if rr is not None else None,
                                 've': int(getattr(p, 'ticket', 0) or 0)})              # số vé: phân biệt các lệnh cùng mã mở cùng giây
         out['rui_ro'] = {'tong': _r(rui_ro), 'pct': _r(rui_ro / a.equity * 100, 2) if a.equity else None, 'khong_sl': khong_sl, 'khong_tinh': khong_tinh}
-        for o in mt5.orders_get() or []:
+        for o in orders:
             s = ma(o.symbol)
             d = int(s.digits) if s else 2
             out['cho'].append({'ma': o.symbol, 'loai': LOAI_CHO.get(int(o.type), f'kiểu {int(o.type)}'), 'lot': _r(o.volume_current), 'gia': _r(o.price_open, d),
                                'sl': _r(o.sl, d) if o.sl else None, 'tp': _r(o.tp, d) if o.tp else None, 'dat': _gio(o.time_setup), 'nguon': _ea(cfg, int(o.magic)), 'so_le': d})
-        deals = mt5.history_deals_get(now - timedelta(days=ngay), now + timedelta(days=1)) or []
     ngay_vn: dict = {}
     for x in sorted(deals, key=lambda x: x.time):
         t = datetime.fromtimestamp(int(x.time), timezone.utc)
@@ -127,9 +134,14 @@ def lich_su(cfg: dict, tu: datetime, now: datetime | None = None) -> dict | None
         a = mt5.account_info()
         if a is None or int(getattr(a, 'trade_mode', -1)) != int(getattr(mt5, 'ACCOUNT_TRADE_MODE_DEMO', 0)):
             return None
-        deals = mt5.history_deals_get(tu, now + timedelta(days=1)) or []
+        deals = mt5.history_deals_get(tu, now + timedelta(days=1))
+        if deals is None:
+            return None
+        current = mt5.account_info()
+        if current is None or current.login != a.login or current.trade_mode != a.trade_mode:
+            return None
         treo = float(a.profit)
-    out = {'da_dong': [], 'nap_rut': [], 'treo': _r(treo)}
+    out = {'da_dong': [], 'nap_rut': [], 'treo': _r(treo), 'so_cuoi': str(a.login)[-3:]}
     for x in sorted(deals, key=lambda x: x.time):
         t = datetime.fromtimestamp(int(x.time), timezone.utc)
         if int(x.type) not in (0, 1):
@@ -141,7 +153,7 @@ def lich_su(cfg: dict, tu: datetime, now: datetime | None = None) -> dict | None
     return out
 
 
-def doi_chieu(cfg: dict, ten_ea: set, tom: dict, now: datetime | None = None, lech_giay: int = 300) -> dict | None:
+def doi_chieu(cfg: dict, ten_ea: set, tom: dict, now: datetime | None = None, lech_giay: int = 300, so_cuoi: str | None = None) -> dict | None:
     """So nhật ký sự kiện của các EA trong một tài khoản (`tom` của tong_hop.tom_tai_khoan) với lịch sử khớp lệnh của MT5.
     Ghép từng lệnh theo chiều, khối lượng và giờ đóng (lệch tối đa `lech_giay`). Trả None khi không đọc được MT5, hoặc khi MT5 đang nối
     không có lệnh nào của các EA này (tức là đang nối một tài khoản khác)."""
@@ -152,6 +164,8 @@ def doi_chieu(cfg: dict, ten_ea: set, tom: dict, now: datetime | None = None, le
     ls = lich_su(cfg, dau - timedelta(days=1), now)
     if ls is None:
         return None
+    if so_cuoi and str(so_cuoi).strip() != ls.get('so_cuoi'):
+        return None
     cua_ea = [x for x in ls['da_dong'] if x['nguon'] in ten_ea]
     if not cua_ea:
         return None
@@ -159,7 +173,8 @@ def doi_chieu(cfg: dict, ten_ea: set, tom: dict, now: datetime | None = None, le
     cap, thieu_mt5 = [], []
     for r in sorted(rows, key=lambda r: r['closed_at']):
         huong = 'MUA' if r['side'] == 'BUY' else 'BAN'
-        ung = [x for x in con if x['huong'] == huong and abs(x['lot'] - float(r['lots'])) < 0.0051
+        ung = [x for x in con if x['nguon'] == r.get('ea', x['nguon']) and (not r.get('ma') or x['ma'] == r['ma'])
+               and x['huong'] == huong and abs(x['lot'] - float(r['lots'])) < 0.0051
                and abs((datetime.fromisoformat(x['luc']) - r['closed_at']).total_seconds()) <= lech_giay]
         if ung:
             x = min(ung, key=lambda x: abs((datetime.fromisoformat(x['luc']) - r['closed_at']).total_seconds()))
@@ -230,7 +245,7 @@ tai();setInterval(()=>{if(document.visibilityState==='visible'&&!getSelection().
 def trang_tai_khoan(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Tài khoản MT5 · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Tài khoản MT5 · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'tai-khoan', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Tài khoản MT5</h1></div><div class="stamp">tài khoản demo đang mở trong MT5<br><span id="tk-luc">đang đọc…</span></div></div>',
         '<p class="note"><b>Chỉ đọc.</b> Trang lấy số liệu từ MT5 demo đang mở trên máy này. Trang không đặt, sửa hay đóng lệnh, không lưu mật khẩu, '

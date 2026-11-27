@@ -7,8 +7,8 @@ setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 title Harry Gold Research (dong cua so nay la tat webapp)
 
-netstat -ano | findstr /R /C:"127\.0\.0\.1:8765 .*LISTENING" >nul && (
-  start "" http://127.0.0.1:8765
+netstat -ano | findstr /R /C:"127\.0\.0\.1:8769 .*LISTENING" >nul && (
+  start "" http://127.0.0.1:8769
   exit /b 0
 )
 
@@ -65,8 +65,8 @@ if not exist "%USERPROFILE%\Desktop\Harry Gold Research.lnk" (
 rem ---- 4. Mo webapp
 echo.
 echo  Mo MetaTrader 5 va dang nhap tai khoan DEMO neu chua mo. Trang se tu mo trong trinh duyet.
-start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 120;$i++){try{(New-Object Net.Sockets.TcpClient('127.0.0.1',8765)).Close();break}catch{Start-Sleep -Milliseconds 500}}; Start-Process 'http://127.0.0.1:8765'"
-%PY% -X utf8 -m so_cong_khai.web --port 8765
+start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 120;$i++){try{(New-Object Net.Sockets.TcpClient('127.0.0.1',8769)).Close();break}catch{Start-Sleep -Milliseconds 500}}; Start-Process 'http://127.0.0.1:8769'"
+%PY% -X utf8 -m so_cong_khai.launch_local
 pause
 exit /b 0
 

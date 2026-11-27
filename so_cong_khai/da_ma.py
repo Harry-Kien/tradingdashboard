@@ -1,7 +1,7 @@
 """Nhiều mã CFD: đọc giá và nến của các mã ĐANG HIỆN trong Market Watch của MT5 demo, và tính phần phân tích không phụ thuộc
 thang giá của từng mã: xu hướng D1/H4/H1, ATR, RSI, hỗ trợ/kháng cự, khoảng trống giá, khối lệnh.
 
-Chỉ đọc. Mô-đun không chọn thêm mã vào Market Watch (muốn thêm thì chủ máy tự thêm trong MT5), không đặt lệnh, và dùng chung
+Chỉ đọc. Chủ máy quản lý Market Watch trong MT5 hoặc Cài đặt. Mô-đun dùng chung
 phiên nối an toàn của song.py (chỉ nối vào MT5 đang mở, chỉ nhận tài khoản demo).
 
 Bốn luật ra điểm vào của hệ thống (hai kiểu của bot, luật ba khung, luật đỉnh/đáy) được viết và đo riêng cho vàng: khoảng dừng lỗ
@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
-from . import gia, phuong_phap, song
+from . import gia, harrison, phuong_phap, song
 
 NHOM = {'Forex': 'Ngoại hối', 'Commodities': 'Hàng hóa', 'Indices': 'Chỉ số', 'Crypto': 'Tiền mã hóa'}
 SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 600, 'H1': 900, 'H4': 900, 'D1': 900,
@@ -128,7 +128,7 @@ def danh_sach(cfg: dict, now: datetime | None = None) -> dict:
     return out
 
 
-def ten_ma(cfg: dict) -> dict:
+def ten_ma(cfg: dict, *, toan_bo: bool = False) -> dict:
     """Chỉ tên các mã đang hiện trong Market Watch, cho các ô chọn mã (/api/ma?gon=1): một lần đọc MT5 (đo được 1 ms với 88 mã), cùng thứ tự với
     danh_sach. Không tính xu hướng, ATR, RSI của từng mã như danh_sach (gần 0,5 giây, và trong lúc đó mọi yêu cầu khác của webapp chậm theo)."""
     mt5 = _mt5(cfg['gia'])
@@ -136,8 +136,17 @@ def ten_ma(cfg: dict) -> dict:
         return {'san_sang': False, 'ly_do': song.ly_do() or 'chưa nối được MT5', 'ds': []}
     vang = ma_vang(cfg)
     with song._khoa:
-        hien = _hien(mt5)
+        if toan_bo:
+            danh_muc = mt5.symbols_get()
+            if danh_muc is None:
+                return {'san_sang': False, 'ly_do': 'MT5 chưa trả danh mục mã.', 'ds': []}
+            hien = {s.name: s for s in danh_muc}
+        else:
+            hien = _hien(mt5)
     ds = [{'ma': ten, 'ten': s.description, 'nhom': _nhom(s.path), 'so_le': int(s.digits), 'la_vang': ten == vang} for ten, s in hien.items()]
+    if toan_bo:
+        for row in ds:
+            row['market_watch'] = bool(getattr(hien[row['ma']], 'visible', False))
     ds.sort(key=lambda r: (not r['la_vang'], r['nhom'], r['ma']))
     return {'san_sang': True, 'ds': ds}
 
@@ -216,7 +225,8 @@ def goi(cfg: dict, ma: str, tf: str = 'M15', n: int = 600, now: datetime | None 
            'candles': [[gia._giay(t), *(_lam_tron(v, d) for v in (o, h, l, c))] for t, o, h, l, c in
                        zip(view.index, view['open'], view['high'], view['low'], view['close'])],
            **{k: day(v) for k, v in over.items()}, 'rsi': day(gia.rsi_wilder(close), 2), 'vung': [], 'tin': [], 'lenh': [],
-           'nguon': 'mt5', 'bid': _lam_tron(bid, d), 'ask': _lam_tron(tick.ask, d) if tick and tick.ask else None, 'ly_do_khong_song': None}
+           'nguon': 'mt5', 'bid': _lam_tron(bid, d), 'ask': _lam_tron(tick.ask, d) if tick and tick.ask else None, 'ly_do_khong_song': None,
+           'tick_ms': int(getattr(tick, 'time_msc', 0) or getattr(tick, 'time', 0) * 1000) if tick else None}
     try:                                                          # chỉ báo thêm, cùng công thức với vàng (chi_bao_them.py)
         from . import chi_bao_them                                # noqa: PLC0415
         out.update(chi_bao_them.tinh(bars, n, _lam_tron, d, gia.KHUNG[tf] * 60))
@@ -263,6 +273,7 @@ def phan_tich(cfg: dict, ma: str, now: datetime | None = None) -> dict:
     out = {'ma': ma, 'ten': s.description, 'so_le': d, 'khac_vang': True, 'chia_se': cs, 'giai_thich': GIAI_CHIA_SE if cs else GIAI_THICH,
            'luc': now.isoformat(), 'het': het.isoformat(),
            'tuoi_phut': tuoi, 'nguon': 'mt5', 'bid': _lam_tron(bid, d), 'ask': _lam_tron(ask, d), 'phuong_an': [], 'canh_bao': [], 'loi': loi,
+           'tick_ms': int(getattr(tick, 'time_msc', 0) or tick.time * 1000) if tick and tick.bid and tick.ask else None,
            'dong_thuan': {'MUA': 0, 'BAN': 0, 'khong': 0}, 'con_hieu_luc': 0,
            'boi_canh': {'xu_huong': {k: snap[k] for k in ('D1', 'H4', 'H1', 'trend') if k in snap}, 'atr_m15': snap.get('atr'),
                         'ho_tro': snap.get('support'), 'khang_cu': snap.get('resistance'), 'spread': _lam_tron(ask - bid, d),
@@ -289,4 +300,9 @@ def phan_tich(cfg: dict, ma: str, now: datetime | None = None) -> dict:
             out['phuong_phap'].append(phuong_phap.phuong_an(pp, fr['M15'], fr['H1'], bid, ask, now, chung, d))
         except Exception as e:                                             # noqa: BLE001
             out['loi'].append(f'{phuong_phap.DS[pp]["ten"]}: {type(e).__name__}: {e}')
+    if cs:  # ngưỡng TP/SL cố định chỉ được đo trên vàng, không suy rộng sang BTC/forex
+        try:
+            out['phuong_phap'].append(harrison.analyze(fr, bid, ask, now, chung))
+        except Exception as e:                                             # noqa: BLE001
+            out['loi'].append(f'Harrison 3 Khung: {type(e).__name__}: {e}')
     return out

@@ -1,4 +1,6 @@
 """Bài kiểm cho Kiểm tra trước khi vào lệnh (kiem_lenh.cham là hàm thuần) và đường dẫn /api/kiem-lenh."""
+from functools import partial
+from http_owner import owner_urlopen
 import json
 import sys
 import tempfile
@@ -145,16 +147,17 @@ class WebTest(unittest.TestCase):
             ch = Path(d) / 'cau-hinh.json'
             ch.write_text(json.dumps({'gia': {}}), encoding='utf-8')
             srv = web.tao_may_chu(str(ch), port=0)
+            open_owner = partial(owner_urlopen, root=ch.parent)
             threading.Thread(target=srv.serve_forever, daemon=True).start()
             u = f'http://127.0.0.1:{srv.server_address[1]}'
             try:
-                html = urllib.request.urlopen(u + '/kiem-lenh', timeout=30).read().decode('utf-8')
+                html = open_owner(u + '/kiem-lenh', timeout=30).read().decode('utf-8')
                 self.assertIn('Kiểm tra trước khi vào lệnh', html)
                 self.assertIn('aria-current="page"', html)
                 for q in ('chieu=MUA&vao=1', 'ma=X&chieu=LEN&vao=1', 'ma=X&chieu=MUA&vao=abc', 'ma=X&chieu=MUA&vao=1&rui_ro=500',
                           'ma=X&chieu=MUA&vao=inf', 'ma=X&chieu=BAN&vao=1&sl=nan', 'ma=X&chieu=MUA&vao=1e999', 'ma=X&chieu=MUA&vao=-5'):
                     with self.assertRaises(urllib.error.HTTPError) as c:
-                        urllib.request.urlopen(f'{u}/api/kiem-lenh?{q}', timeout=30)
+                        open_owner(f'{u}/api/kiem-lenh?{q}', timeout=30)
                     self.assertEqual(c.exception.code, 400, q)
             finally:
                 srv.shutdown()

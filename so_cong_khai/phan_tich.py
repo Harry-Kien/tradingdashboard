@@ -13,9 +13,10 @@ from __future__ import annotations
 import time
 from datetime import datetime, timedelta, timezone
 
-from . import gia, giu_lenh, phieu, phuong_phap, song
+from . import chat_luong_call, gia, giu_lenh, harrison, phieu, phuong_phap, song, tin_hieu_ngan
 
 THONG_KE = {
+    'bot:xu_huong': 'Nhánh theo yêu cầu chưa có kiểm định riêng. Số đo của bot chờ nến phá vỡ không áp dụng cho nhánh này. Chỉ tham khảo, không tự ghi lệnh hay phát tín hiệu Telegram.',
     'bot': 'MUA cần H1 và H4 cùng tăng, BÁN cần H1, H4 và D1 cùng giảm (từ đêm 24/11/2026); tối đa 6 lệnh mở cùng lúc (từ sáng 25/11/2026, trước là 3). Bot tự đo 2024–26: 1.249 lệnh, +4,38 giá mỗi lệnh, sụt giảm 621 giá; phần tăng chủ yếu do nhiều lệnh cùng chiều mở chồng lên nhau. Webapp đo độc lập với chi phí thật, trên nến đã sửa lệch giờ (3.522 lệnh): −0,002R mỗi lệnh ở 2015–2021, +0,174R ở 2022–2026. Vàng tăng gần suốt 2015–2026 nên phép đo ưu ái lệnh MUA, và cấu hình chọn khi đã nhìn dữ liệu nên con số lạc quan.',
     'ba_khung': 'Kiểm bản né tin 2023–10/2026: 2.610 lệnh, thắng 81,8%, hòa vốn cần 80,7%. 2016–2022 lỗ nhẹ. Đang đo, cần 300 lệnh mới kết luận.',
     'dinh_day': 'Khi kiểm lại có lãi mỏng năm 2026 nhưng lỗ cả 2023–2025. Sổ chạy bóng mới có vài lệnh.',
@@ -31,12 +32,42 @@ def _phuong_an(ma: str, ten: str, kieu: str, huong: str, vao: float, sl: float, 
     rui_ro = abs(vao - sl)
     return {'ma': ma, 'ten': ten, 'kieu': kieu, 'co': True, 'huong': HUONG[huong], 'vao': _r(vao), 'sl': _r(sl), 'tp': [_r(t) for t in tps],
             'vung': [_r(vung[0]), _r(vung[1])] if vung else None, 'rui_ro_gia': _r(rui_ro),
-            'rr': [_r(abs(t - vao) / rui_ro) if rui_ro else None for t in tps], 'ly_do': ly_do, 'thong_ke': THONG_KE[ma.split(':')[0]],
+            'rr': [_r(abs(t - vao) / rui_ro) if rui_ro else None for t in tps], 'ly_do': ly_do, 'thong_ke': THONG_KE.get(ma, THONG_KE[ma.split(':')[0]]),
             'ghi_chu': ghi_chu or []}
 
 
 def _khong(ma: str, ten: str, kieu: str, vi_sao: str) -> dict:
-    return {'ma': ma, 'ten': ten, 'kieu': kieu, 'co': False, 'vi_sao': vi_sao, 'thong_ke': THONG_KE[ma.split(':')[0]]}
+    return {'ma': ma, 'ten': ten, 'kieu': kieu, 'co': False, 'vi_sao': vi_sao, 'thong_ke': THONG_KE.get(ma, THONG_KE[ma.split(':')[0]])}
+
+
+def ngan(cfg: dict, ma: str, tf: str) -> dict:
+    """Kịch bản quan sát trên đúng khung, dùng bộ quét đã có cho M5/M30."""
+    data = tin_hieu_ngan.doc(cfg, ma, khung=tf)
+    a = next((r for r in data['ds'] if r['tf'] == tf), {})
+    trang_thai = a.get('trang_thai')
+    co = trang_thai == 'dat'
+    cho_tick = trang_thai in ('gia_cu', 'gia_di_xa', 'spread', 'muc_gia')
+    p = []
+    for loai, chip in (('pha_vo', 'pha_vo'), ('hoi_ema', 'ema_hoi')):
+        co_loai = (co or cho_tick) and a.get('loai') == loai
+        row = {'ma': f'ngan:{tf}:{loai}', 'ten': tin_hieu_ngan.LOAI[loai] + f' · {tf}', 'chip': chip, 'nhom': 'pp', 'khung': tf,
+               'co': co_loai, 'hieu_luc': co and co_loai, 'quan_sat': True,
+               'kieu': f'Quan sát nến {tf} đã đóng', 'thong_ke': 'Bộ quét ngắn hạn đang được theo dõi tiến cứu.'}
+        if co_loai:
+            row.update(huong='BAN' if a['huong'] == 'BÁN' else a['huong'], vao=a.get('vao'), sl=a.get('sl'),
+                       tp=[a['tp']] if co else [], rr=[a['rr']] if co else [],
+                       rui_ro_gia=abs(a['vao'] - a['sl']) if co else None, nen=a['dong'],
+                       thuc_thi={'loai': 'tt', 'tu': a['dong'], 'het': a['het'], 'atr': a['atr'], 'moc': a['moc'], 'cho_tick': cho_tick,
+                                  'ngan': {'day': a['day'], 'dinh': a['dinh'], 'buoc': data['buoc_gia']}})
+        else:
+            row['vi_sao'] = data.get('ly_do') or (
+                tin_hieu_ngan.TRANG_THAI.get(a.get('trang_thai'), 'Chưa có dữ liệu.') if a.get('loai') in (None, loai)
+                else 'Nến này không xác nhận phương pháp.')
+        p.append(row)
+    return {**{k: data[k] for k in ('ma', 'luc', 'nguon', 'bid', 'ask', 'tick_ms', 'so_le') if k in data},
+            'het': datetime.fromtimestamp(data['tick_ms'] / 1000, timezone.utc).isoformat() if data.get('tick_ms') else None,
+            'khung_phan_tich': tf, 'quy_trinh_ngan': True, 'phuong_an': [], 'phuong_phap': p, 'con_hieu_luc': int(co),
+            'boi_canh': {}, 'canh_bao': [], 'loi': [], 'ms': {}}
 
 
 def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
@@ -56,6 +87,7 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     bid = float(fr.get('bid') or m5['close'].iloc[-1])
     ask = float(fr.get('ask') or bid + float(g.get('spread', 0.17)))
     out: dict = {'luc': now.isoformat(), 'het': het.isoformat(), 'tuoi_phut': tuoi, 'nguon': fr.get('nguon', 'kho'), 'bid': _r(bid), 'ask': _r(ask),
+                 'tick_ms': int(het.timestamp() * 1000) if fr.get('nguon') == 'mt5' and fr.get('bid') and fr.get('ask') else None,
                  'phuong_an': [], 'canh_bao': [], 'loi': [], 'ms': ms}
     if tuoi > 20:
         out['canh_bao'].append(f'Giá đã cũ {tuoi} phút (thị trường nghỉ, MT5 mất kết nối, hoặc đang dùng kho nến). Các mức dưới đây tính trên giá cũ, không dùng để vào lệnh.')
@@ -79,7 +111,10 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
 
     def han(p, index, phut, gioi_han, vi):
         """Nến tín hiệu đóng quá hạn thì phương án chỉ còn để tham khảo: luật thật không vào lệnh muộn như vậy."""
-        qua = (now - (index[-1].to_pydatetime() + timedelta(minutes=phut))).total_seconds() / 60
+        dong = index[-1].to_pydatetime() + timedelta(minutes=phut)
+        qua = (now - dong).total_seconds() / 60
+        if p.get('co'):
+            p['thuc_thi'] = {'loai': 'tt', 'tu': dong.isoformat(), 'het': (dong + timedelta(minutes=gioi_han)).isoformat()}
         if p.get('co') and qua > gioi_han:
             p.setdefault('_ly', []).append(f'Nến tín hiệu đã đóng {int(qua)} phút trước; {vi}.')
         return p
@@ -143,16 +178,22 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
             return _khong(ma, 'Luật bot tín hiệu', kieu, f'Luật có điều kiện trên {tf} nhưng dừng lỗ theo vùng hỗ trợ/kháng cự nằm ngoài khoảng {R.SL_MIN:g}–{R.SL_MAX:g} giá, nên luật không ra lệnh.')
         return _phuong_an(ma, 'Luật bot tín hiệu', kieu, sig.side, sig.entry, sig.sl, list(sig.tps), f'{sig.reason} Khung {tf}.'.strip(),
                           vung=(sig.zone_low, sig.zone_high), ghi_chu=['Thang TP theo R: ' + ' · '.join(f'{x:g}R'.replace('.', ',') for x in LV.TP_R) + '.' if LV.TP_R else 'Thang TP cố định.',
-                                                                       'Bot giữ lệnh tối đa 24 giờ.'] + ([giu_lenh.cau()] if giu_lenh.cau() else []))
+                                                                       'Bot giữ lệnh tối đa 24 giờ.'] + ([giu_lenh.cau()] if ma == 'bot:nen' and giu_lenh.cau() else []))
 
     xu_luat = R.trend_rule_text() if hasattr(R, 'trend_rule_text') else 'H1, H4 và D1 phải cùng chiều'      # lọc xu hướng của bot đang chạy
 
     def bot_nen():
         for tf in ('M5', 'M15'):
-            s = R.evaluate(fr[tf].iloc[-320:], h1, h4, d1, tf)
-            if s is not None:
-                pa = han(tu_setup('bot:nen', 'nến tín hiệu vừa đóng', s, tf), fr[tf].index, 5 if tf == 'M5' else 15, han_bot,
+            for s in R.candidates(fr[tf].iloc[-320:], h1, h4, d1, tf):
+                pa = tu_setup('bot:nen', 'nến tín hiệu vừa đóng', s, tf)
+                if not pa['co']:
+                    continue                            # như bot riêng: thử vùng SL tiếp theo, không bỏ cả nến vì vùng đầu không khớp
+                pa = han(pa, fr[tf].index, 5 if tf == 'M5' else 15, han_bot,
                          f'bot bỏ tín hiệu khi nến đã đóng quá {han_bot:g} phút')
+                pa.update(nen=s.bar_time.isoformat(), khung=tf)
+                ly_gia = chat_luong_call.kiem(pa, fr, now)
+                pa.setdefault('_ly', []).extend(ly_gia)
+                pa['chat_luong_call'] = {'phien_ban': chat_luong_call.PHIEN_BAN, 'gia_dat': not ly_gia, 'ly_do': ly_gia}
                 try:                                                   # phiếu: chờ phá đỉnh/đáy nến tín hiệu (kiểu vào đã qua cổng, cong-cu/diem_vao_bot.py)
                     k = fr[tf]
                     nen_dong = (k.index[-1] + timedelta(minutes=5 if tf == 'M5' else 15)).to_pydatetime()
@@ -169,7 +210,10 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
         if s is None:
             return _khong('bot:xu_huong', 'Luật bot tín hiệu', 'theo xu hướng, không chờ nến',
                           f'Xu hướng chưa đủ điều kiện ({xu_luat}), hoặc không có vùng hỗ trợ/kháng cự cho dừng lỗ trong khoảng cho phép.')
-        return tu_setup('bot:xu_huong', 'theo xu hướng, không chờ nến', s, 'M5')
+        p = tu_setup('bot:xu_huong', 'theo xu hướng, không chờ nến', s, 'M5')
+        if p['co']:
+            p['_ly'] = ['Nhánh theo yêu cầu chưa được kiểm định riêng; chỉ tham khảo, không tự phát tín hiệu.']
+        return p
 
     def ba_khung():
         last = m15.iloc[-1]
@@ -209,6 +253,11 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
         ly = (chung + p.pop('_ly', [])) if p['co'] else []
         p['hieu_luc'] = bool(p['co']) and not ly
         p['vi_sao_het'] = ly
+        f = p.get('phieu')
+        ly_phieu = chung + (p.get('chat_luong_call') or {}).get('ly_do', [])
+        if f and ly_phieu and f.get('trang_thai') == 'con_hieu_luc':
+            f['trang_thai'] = 'bi_loc'
+            f['loc_hong'] = list(dict.fromkeys(list(f.get('loc_hong') or []) + ly_phieu))
     out['con_hieu_luc'] = sum(p['hieu_luc'] for p in out['phuong_an'])
     # ---- các phương pháp tùy chọn (không phải luật trong sổ): cùng dạng phương án, để riêng một danh sách
     out['phuong_phap'] = []
@@ -228,6 +277,9 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
         return mo_hinh.gan(cfg, fr, out['phuong_phap'])
     out['mo_hinh'] = thu('Điểm mô hình', cham_mo_hinh)
     out['ict'] = thu('Bản đồ ICT', lambda: phuong_phap.ban_do_ict(m15, fr['H1'], bid, now))
+    hp = thu('Harrison 3 Khung', lambda: harrison.analyze(fr, bid, ask, now, chung))
+    if hp:
+        out['phuong_phap'].append(hp)
     co = [p for p in out['phuong_an'] if p['co']]
     ms['Tổng'] = round((time.perf_counter() - t_dau) * 1000)
     out['dong_thuan'] = {'MUA': sum(p['huong'] == 'MUA' for p in co), 'BAN': sum(p['huong'] == 'BAN' for p in co), 'khong': len(out['phuong_an']) - len(co)}

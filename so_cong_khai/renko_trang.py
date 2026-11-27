@@ -133,7 +133,7 @@ def trang_renko(ten: str) -> str:
     tfs = ''.join(f'<option>{t}</option>' for t in ('M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Renko và Điểm &amp; Hình · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Renko và Điểm &amp; Hình · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'renko', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="rk-top"><h1>Renko và Điểm &amp; Hình</h1><span class="rk-i" tabindex="0" aria-label="Giới thiệu trang" aria-describedby="rk-gt">i</span><p id="rk-gt">Hai kiểu biểu đồ chỉ theo giá, bỏ thời gian: giá phải đi đủ một ô mới có gạch hay dấu mới, '
         'nên nhiễu nhỏ biến mất và xu hướng, vùng đảo chiều hiện rõ hơn. Tính trên giá đóng của nến đã đóng trong MT5 của bạn.</p></div>',

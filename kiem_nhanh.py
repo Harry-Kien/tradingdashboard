@@ -4,7 +4,8 @@ Không cần MetaTrader 5: bật webapp với cấu hình mẫu trên một cổ
 - không trang nào lỗi máy chủ (5xx), các trang chính trả 200;
 - tên hiển thị cố định "Harry · Gold Research" có trên mọi trang, logo có trong thanh điều hướng;
 - bản tiếng Anh có <html lang="en">;
-- Host lạ bị chặn (chống DNS rebinding) và có tiêu đề chống nhúng khung.
+- Host lạ bị chặn (chống DNS rebinding) và có tiêu đề chống nhúng khung;
+- khách chưa đăng nhập không đọc được API dữ liệu MT5 (401); các trang được mở bằng tài khoản chủ tạo trong thư mục tạm.
 Thoát mã 0 khi đạt, 1 khi có lỗi."""
 from __future__ import annotations
 
@@ -25,19 +26,22 @@ TRANG = ['/', '/thi-truong', '/tin-tuc', '/bieu-do', '/cong-cu', '/hoc-giao-dich
 API = ['/api/thi-truong', '/api/tin-tuc', '/api/tam-ly', '/api/hieu-suat?ngay=90&mau=1', '/api/hieu-suat.csv?ngay=90&mau=1', '/api/gia-su',
        '/api/telegram', '/api/canh-bao-ve', '/api/hinh-ve?ma=XAU', '/api/mau-chi-bao']
 TEN = 'Harry · Gold Research'
+PHIEN = ''                                                             # cookie phiên của tài khoản chủ tạm
 
 
-def goi(u: str, host: str | None = None, lang: str = 'vi') -> tuple[int, str, dict]:
-    rq = urllib.request.Request(u, headers={'Cookie': f'lang={lang}', **({'Host': host} if host else {})})
+def goi(u: str, host: str | None = None, lang: str = 'vi', khach: bool = False) -> tuple[int, str, dict]:
+    ck = f'lang={lang}' + ('' if khach or not PHIEN else '; ' + PHIEN)
+    rq = urllib.request.Request(u, headers={'Cookie': ck, **({'Host': host} if host else {})})  # noqa: S310 - chỉ gọi webapp tạm trên 127.0.0.1
     try:
-        with urllib.request.urlopen(rq, timeout=60) as r:
+        with urllib.request.urlopen(rq, timeout=60) as r:  # noqa: S310 - chỉ gọi webapp tạm trên 127.0.0.1
             return r.status, r.read().decode('utf-8', 'replace'), dict(r.headers)
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode('utf-8', 'replace'), dict(e.headers)
 
 
 def main() -> int:
-    from so_cong_khai import thuong_hieu, trang, web                     # noqa: PLC0415
+    global PHIEN
+    from so_cong_khai import tai_khoan_chart, thuong_hieu, trang, web    # noqa: PLC0415
     loi: list[str] = []
     if thuong_hieu.TEN != TEN:
         loi.append(f'tên hiển thị bị đổi: {thuong_hieu.TEN!r}')
@@ -47,6 +51,8 @@ def main() -> int:
         cfg = json.loads(ch.read_text(encoding='utf-8'))
         cfg['ten'] = 'Ten Gia Mao'                                        # thử đổi tên qua cấu hình: phải không có tác dụng
         ch.write_text(json.dumps(cfg, ensure_ascii=False), encoding='utf-8')
+        _, token = tai_khoan_chart.vao('kiem-nhanh-chu', 'chi-de-kiem-nhanh-12345', True, d)   # tài khoản chủ chỉ có trong thư mục tạm
+        PHIEN = tai_khoan_chart.cookie_header(token).split(';')[0]
         srv = web.tao_may_chu(str(ch), port=0)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         u = f'http://127.0.0.1:{srv.server_address[1]}'
@@ -70,6 +76,9 @@ def main() -> int:
                 print(f'   {p:34s} {ma}')
                 if ma >= 500:
                     loi.append(f'{p} {ma}')
+            ma, _, _ = goi(u + '/api/thi-truong', khach=True)
+            if ma != 401:
+                loi.append(f'khách chưa đăng nhập đọc được API dữ liệu MT5 (trả {ma})')
             ma, _, _ = goi(u + '/api/thi-truong', host='evil.example')
             if ma != 403:
                 loi.append(f'Host lạ không bị chặn (trả {ma})')

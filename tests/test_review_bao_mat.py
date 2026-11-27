@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from so_cong_khai import ai_chi_bao, ai_hoi, bao_mat_http, gia_su, hieu_suat, sao_luu, tin_tuc, web
+from so_cong_khai import ai_chi_bao, ai_hoi, bao_mat_http, gia_su, hieu_suat, sao_luu, tai_khoan_chart, tin_tuc, web
 
 
 class HttpReview(unittest.TestCase):
@@ -23,6 +23,8 @@ class HttpReview(unittest.TestCase):
         cls.port = cls.srv.server_port
         cls.thread = threading.Thread(target=cls.srv.serve_forever, daemon=True)
         cls.thread.start()
+        _, token = tai_khoan_chart.vao('review_owner', 'test-review-password-01234', True, cls.cfg.parent)
+        cls.cookie = tai_khoan_chart.cookie_header(token).split(';')[0]
 
     @classmethod
     def tearDownClass(cls):
@@ -35,7 +37,7 @@ class HttpReview(unittest.TestCase):
         c = http.client.HTTPConnection('127.0.0.1', self.port, timeout=2)
         try:
             c.putrequest('POST', path, skip_host=True)
-            h = {'Host': f'127.0.0.1:{self.port}', 'X-So-Cong-Khai': '1', 'Content-Length': str(len(body)), **(headers or {})}
+            h = {'Host': f'127.0.0.1:{self.port}', 'X-So-Cong-Khai': '1', 'Content-Length': str(len(body)), 'Cookie': self.cookie, **(headers or {})}
             for k, v in h.items():
                 c.putheader(k, v)
             for k, v in raw_headers or []:
@@ -70,7 +72,7 @@ class HttpReview(unittest.TestCase):
     def test_khong_chap_nhan_than_cat_cut(self):
         c = socket.create_connection(('127.0.0.1', self.port), timeout=2)
         try:
-            c.sendall(f'POST /api/cai-dat HTTP/1.1\r\nHost: 127.0.0.1:{self.port}\r\nX-So-Cong-Khai: 1\r\nContent-Length: 30\r\n\r\n{{}}'.encode())
+            c.sendall(f'POST /api/cai-dat HTTP/1.1\r\nHost: 127.0.0.1:{self.port}\r\nX-So-Cong-Khai: 1\r\nContent-Length: 30\r\nCookie: {self.cookie}\r\n\r\n{{}}'.encode())
             c.shutdown(socket.SHUT_WR)
             self.assertIn(b' 400 ', c.recv(4096).split(b'\r\n')[0])
         finally:

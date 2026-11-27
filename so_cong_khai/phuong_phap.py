@@ -424,25 +424,29 @@ def hien_tai(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, bid: float, ask: floa
         tre = max(0, int((now - s['t'].to_pydatetime()).total_seconds() // 60))
         return ({'huong': s['huong'], 'vao': vao, 'sl': s['sl'], 'tp': [vao + (1 if mua else -1) * k * rui for k in (1.0, TP_R)], 'vung': None,
                  'ly_do': s['ly_do'], 'kieu': DS[ma]['kieu'], 'nen': s['t'].isoformat(), 'tre_phut': tre, 'con_phut': None,
-                 'muc_tieu': s.get('muc_tieu'), 'muc_tieu_ten': s.get('muc_tieu_ten', ''), 'song': s.get('song')}, '')
+                 'muc_tieu': s.get('muc_tieu'), 'muc_tieu_ten': s.get('muc_tieu_ten', ''), 'song': s.get('song'), 'atr': s['atr'], 'moc': s['vao']}, '')
     s = next((x for x in reversed(th) if x['i'] >= n - CHO_NEN), None)
     if s is None:
         return None, DS[ma]['khong']
     mua, sau = s['huong'] == 'MUA', m.iloc[s['i'] + 1:]
-    thap = min(float(sau['low'].min()), bid) if len(sau) else bid
-    cao = max(float(sau['high'].max()), bid) if len(sau) else bid
-    if (mua and thap <= s['sl']) or (not mua and cao >= s['sl']):
-        return None, 'Tín hiệu gần nhất đã hỏng: giá đã chạm mức dừng lỗ trước khi khớp lệnh chờ.'
-    if (mua and (thap <= s['vao'] or ask <= s['vao'])) or (not mua and cao >= s['vao']):
-        return None, 'Tín hiệu gần nhất đã qua: giá đã quay về mức chờ rồi (lệnh chờ coi như đã khớp).'
+    # Nến MT5 ở phía Bid. Chỉ ước lượng Ask trên nến lịch sử bằng spread vừa đọc.
+    # Với tick hiện tại dùng đúng hai phía và chỉ ghi nhận giá chạm, không suy ra lệnh đã khớp.
+    thap, cao = (float(sau['low'].min()), float(sau['high'].max())) if len(sau) else (float('inf'), float('-inf'))
+    sp = max(0., ask - bid)
+    if (mua and min(thap, bid) <= s['sl']) or (not mua and max(cao + sp, ask) >= s['sl']):
+        return None, 'Tín hiệu gần nhất đã qua mức dừng lỗ.'
+    if (mua and min(thap + sp, ask) <= s['vao']) or (not mua and max(cao, bid) >= s['vao']):
+        return None, 'Tín hiệu gần nhất đã qua mức chờ theo dữ liệu giá.'
     rui = abs(s['vao'] - s['sl'])
+    if (mua and cao >= s['vao'] + TP_R * rui) or (not mua and thap + sp <= s['vao'] - TP_R * rui):
+        return None, 'Tín hiệu gần nhất đã qua mục tiêu 2R trước khi có điểm vào mới.'
     con = CHO_NEN * 15 - int((now - s['t'].to_pydatetime()).total_seconds() // 60)
     if con <= 0:
         return None, 'Tín hiệu gần nhất đã quá 4 giờ mà giá chưa quay về mức chờ: lệnh chờ hết hạn.'
     d = 1 if mua else -1
     return ({'huong': s['huong'], 'vao': s['vao'], 'sl': s['sl'], 'tp': [s['vao'] + d * k * rui for k in (1.0, TP_R)], 'vung': s.get('vung'), 'ly_do': s['ly_do'],
              'kieu': DS[ma]['kieu'], 'nen': s['t'].isoformat(), 'tre_phut': 0, 'con_phut': con,
-             'muc_tieu': s.get('muc_tieu'), 'muc_tieu_ten': s.get('muc_tieu_ten', ''), 'song': s.get('song')}, '')
+             'muc_tieu': s.get('muc_tieu'), 'muc_tieu_ten': s.get('muc_tieu_ten', ''), 'song': s.get('song'), 'atr': s['atr']}, '')
 
 
 def phuong_an(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, bid: float, ask: float, now: datetime, chung: list, so_le: int = 2) -> dict:
@@ -466,9 +470,15 @@ def phuong_an(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, bid: float, ask: flo
         ghi.append(f'Mục tiêu theo lý thuyết của phương pháp: {mt["ten"]}, cách điểm vào {str(mt["r"]).replace(".", ",")}R. Số đo khi chốt ở mức này nằm trong phần bằng chứng.')
     if pa['con_phut'] is not None:
         ghi.append(f'Lệnh chờ còn hiệu lực khoảng {pa["con_phut"]} phút; hủy nếu giá chạm dừng lỗ trước khi về mức chờ.')
+    cho_khop = pa['con_phut'] is not None
+    thuc_thi = {'loai': 'gh' if cho_khop else 'tt', 'tu': pa['nen'], 'atr': float(pa['atr']), 'theo_r': not cho_khop,
+                'het': (pd.Timestamp(pa['nen']) + pd.Timedelta(minutes=CHO_NEN * 15 if cho_khop else TRE_PHUT)).isoformat()}
+    if pa.get('moc') is not None:
+        thuc_thi['moc'] = r(pa['moc'])
     return {'ma': ma, 'ten': tt['ten'], 'ten_ngan': tt['ngan'], 'chip': tt.get('chip', ma), 'truong_phai': tt['truong_phai'], 'kieu': pa['kieu'], 'co': True, 'huong': pa['huong'], 'vao': r(pa['vao']), 'sl': r(pa['sl']), 'tp': [r(t) for t in pa['tp']],
             'vung': [r(v) for v in pa['vung']] if pa['vung'] else None, 'rui_ro_gia': r(abs(pa['vao'] - pa['sl'])), 'rr': [1.0, TP_R], 'ly_do': re.sub(r'(\d)\.(\d)', r'\1,\2', pa['ly_do']),
             'thong_ke': tt['mo_ta'], 'ghi_chu': ghi, 'nhom': 'pp', 'hieu_luc': not ly, 'vi_sao_het': ly, 'muc_tieu': mt, 'nen': pa.get('nen'), 'con_phut': pa.get('con_phut'),
+            'khung': 'M15', 'thuc_thi': thuc_thi,
             'song': [{'t': q['t'], 'gia': r(q['gia']), 'nhan': q['nhan']} for q in pa['song']] if pa.get('song') else None}
 
 

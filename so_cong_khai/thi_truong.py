@@ -345,8 +345,16 @@ class BangGia:
                 t = mt5.symbol_info_tick(ten)
                 if t is None or not t.bid:
                     continue
+                try:
+                    v = [float(t.bid), float(t.ask or t.bid), int(getattr(t, 'time_msc', 0) or int(t.time) * 1000)]
+                except (TypeError, ValueError, OverflowError):
+                    continue
+                if not all(math.isfinite(z) for z in v) or v[0] <= 0 or v[1] < v[0] or v[2] <= 0:
+                    continue
                 co += 1
-                v = [float(t.bid), float(t.ask or t.bid), int(getattr(t, 'time_msc', 0) or int(t.time) * 1000)]
+                old = self.gia.get(ten)
+                if old and v[2] < old[2]:
+                    continue
                 if self.gia.get(ten) != v:
                     moi[ten] = v
         if self.dac_ta and not co:                                   # MT5 không trả tick nào: có thể vừa mất kết nối; để song.py soát và nối lại

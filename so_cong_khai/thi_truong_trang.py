@@ -157,11 +157,12 @@ const NF={},fmt=(v,d)=>{if(v==null||!isFinite(v))return'—';d=Math.max(0,Math.m
 const pct=(v,d=2)=>v==null||!isFinite(v)?'—':(v>0?'+':v<0?'−':'')+fmt(Math.abs(v),d)+'%',cls=v=>v>0?'gain':v<0?'loss':'';
 const CHINH=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD'],LOPS=['fx_chinh','fx_cheo','fx_ngoai_lai','kim_loai','nang_luong','chi_so','crypto','khac'];
 const KY={'1h':'1 giờ','4h':'4 giờ','ngay':'Hôm nay','tuan':'Tuần này','thang':'Tháng này'};
-let S=null,by=new Map(),subs=[],lan=0,lanTai=0,es=null,tt={ok:false,ly:'đang nối với webapp…'};
+let S=null,by=new Map(),subs=[],lan=0,lanTai=0,es=null,loading=null,started=null,maxStamp=0,luongDaNhan=false,luongLoi=false,tt={ok:false,ly:'đang nối với webapp…'};
+const hopGia=q=>Array.isArray(q)&&q.length>=3&&q.slice(0,3).every(v=>typeof v==='number'&&Number.isFinite(v))&&q[0]>0&&q[1]>=q[0]&&q[2]>0&&Number.isFinite(new Date(q[2]).getTime());
 const phat=(l,d)=>{for(const f of subs)try{f(l,d)}catch(e){console.error(e)}};
 const doi=(x,k)=>{const q=x&&x.q,r=x&&x.ref&&x.ref[k];return q&&r?(q[0]/r-1)*100:null};
-const maxT=()=>{let m=0;for(const x of by.values())if(x.q&&x.q[2]>m)m=x.q[2];return m};
-const nghi=x=>!x.q||maxT()-x.q[2]>5*60000;
+const maxT=()=>maxStamp;
+const nghi=x=>!x||!hopGia(x.q)||Date.now()-x.q[2]>5*60000;
 const spread=x=>{if(!x.q)return null;const s=x.q[1]-x.q[0];return x.pip?{v:s/x.pip,dv:'pip',d:1}:{v:s/x.diem,dv:'điểm',d:0}};
 const spTxt=x=>{const s=spread(x);return s?fmt(s.v,s.d)+' '+s.dv:'—'};
 const bien=x=>{const h=x.hom_nay;if(!h||!x.q)return null;const b=x.q[0],lo=Math.min(h.thap,b),hi=Math.max(h.cao,b),r=hi-lo;return{lo,hi,vt:r>0?(b-lo)/r:.5,adr:x.adr?r/x.adr*100:null}};
@@ -169,31 +170,33 @@ function sucManh(k){const s={},n={};for(const c of CHINH){s[c]=0;n[c]=0}
  for(const x of by.values()){if(!x.cap)continue;const[a,b]=x.cap;if(!(a in s&&b in s))continue;const v=doi(x,k);if(v==null)continue;s[a]+=v;n[a]++;s[b]-=v;n[b]++}
  return CHINH.map(c=>({c,v:n[c]?s[c]/n[c]:null,n:n[c]})).sort((p,q)=>(q.v??-1e9)-(p.v??-1e9))}
 function capTien(a,b){for(const x of by.values()){if(!x.cap)continue;if(x.cap[0]===a&&x.cap[1]===b)return{x,dao:false};if(x.cap[0]===b&&x.cap[1]===a)return{x,dao:true}}return null}
-async function tai(){const r=await fetch('/api/thi-truong',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json(),cu=by;S=j;by=new Map();
- for(const x of j.ds){const o=cu.get(x.ma);if(o&&o.q&&(!x.q||o.q[2]>x.q[2]))x.q=o.q;by.set(x.ma,x)}tt={ok:j.san_sang,ly:j.ly_do};if(!lan&&j.san_sang)lan=Date.now();phat('anh');return j}
+function tai(){if(loading)return loading;loading=(async()=>{const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),15000);try{const r=await fetch('/api/thi-truong',{cache:'no-store',signal:ctl.signal});if(!r.ok)throw new Error((await r.text()).slice(0,240));const j=await r.json(),cu=by,next=new Map();if(!Array.isArray(j.ds))throw Error('Bảng giá không hợp lệ.');
+ const changes=[];for(const raw of j.ds){if(!raw||typeof raw.ma!=='string')continue;const x={...raw,q:hopGia(raw.q)?raw.q.slice(0,3):null},o=cu.get(x.ma);if(o&&hopGia(o.q)&&(!x.q||o.q[2]>=x.q[2]))x.q=o.q;if(x.q&&(!o||!o.q||x.q[2]>o.q[2]||x.q[0]!==o.q[0]||x.q[1]!==o.q[1]))changes.push(x.ma);next.set(x.ma,x)}by=next;S={...j,ds:[...by.values()]};maxStamp=Math.max(0,...[...by.values()].map(x=>x.q?.[2]||0));tt={ok:!!j.san_sang&&!luongLoi,ket_noi:(es===-2||luongDaNhan)&&!luongLoi,kieu:es===-2?'poll':'stream',ly:luongLoi?'mất kết nối với webapp, đang nối lại…':j.ly_do};phat('anh');if(changes.length)phat('gia',changes);return S;
+ }finally{clearTimeout(timer)}})().finally(()=>{loading=null});return loading}
 // Luồng giá DÙNG CHUNG cho mọi tab của webapp. Trình duyệt chỉ cho mỗi máy chủ 6 kết nối cùng lúc; nếu mỗi tab Thị trường/Công cụ giữ
 // một luồng thì mở tới tab thứ 7 là cả webapp treo (đo ngày 25/11/2026: tab thứ 7 chờ hơn 5 phút không tải được trang). Nên chỉ một tab
 // "trưởng" (giữ khóa Web Locks) mở ĐÚNG MỘT kết nối và chuyển từng gói giá cho các tab khác qua BroadcastChannel, kể cả tab đang ẩn
 // (cảnh báo giá vẫn chạy). Tab trưởng đóng thì khóa nhả và một tab khác tự lên thay. Trình duyệt thiếu hai API này: mỗi tab tự mở luồng.
-function nhanGia(j){const ds=[];let la=0;for(const m in j.q){const x=by.get(m);if(!x){la++;continue}x.q0=x.q;x.q=j.q[m];ds.push(m)}
+function nhanGia(j){if(!j||!j.q||typeof j.q!=='object'||Array.isArray(j.q))return;const ds=[];let la=0;for(const m in j.q){const q=j.q[m];if(!hopGia(q))continue;const x=by.get(m);if(!x){la++;continue}if(x.q&&(q[2]<x.q[2]||(q[2]===x.q[2]&&q[0]===x.q[0]&&q[1]===x.q[1])))continue;x.q0=x.q;x.q=q.slice(0,3);maxStamp=Math.max(maxStamp,q[2]);ds.push(m)}
  if(la&&Date.now()-lanTai>3000){lanTai=Date.now();tai().catch(()=>{})}                  // có mã bảng chưa biết (bộ máy vừa sẵn sàng, hoặc sàn thêm mã): nạp lại bảng
- if(ds.length)lan=Date.now();tt={ok:j.s,ly:j.ly};phat('gia',ds)}
+ if(ds.length)lan=Date.now();luongDaNhan=true;luongLoi=false;tt={ok:!!j.s,ket_noi:true,ly:j.ly};phat('gia',ds)}
+function tuAnh(ma,q){const x=by.get(ma);if(!x||!hopGia(q)||(x.q&&(q[2]<x.q[2]||(q[2]===x.q[2]&&q[0]===x.q[0]&&q[1]===x.q[1]))))return false;x.q0=x.q;x.q=q.slice(0,3);maxStamp=Math.max(maxStamp,q[2]);phat('gia',[ma]);return true}
 function moLuong(bc){es=new EventSource('/api/thi-truong/luong');
  es.addEventListener('gia',e=>{let j;try{j=JSON.parse(e.data)}catch(_){return}nhanGia(j);if(bc)bc.postMessage({t:'gia',j})});
- es.onerror=()=>{tt={ok:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai');if(bc)bc.postMessage({t:'loi'})}}
-function noi(){if(es)return;if(!window.EventSource){setInterval(()=>tai().catch(()=>{}),3000);return}
+ es.onerror=()=>{luongLoi=true;tt={ok:false,ket_noi:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai');if(bc)bc.postMessage({t:'loi'})}}
+function noi(){if(es||(S&&S.tat))return;if(!window.EventSource){es=-2;setInterval(()=>tai().catch(()=>{}),3000);return}
  if(!window.BroadcastChannel||!(navigator.locks&&navigator.locks.request)){moLuong(null);return}
  es=-1;const bc=new BroadcastChannel('so-cong-khai-gia');
- bc.onmessage=e=>{const m=e.data||{};if(m.t==='gia')nhanGia(m.j);else if(m.t==='loi'){tt={ok:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai')}};
+ bc.onmessage=e=>{const m=e.data||{};if(m.t==='gia')nhanGia(m.j);else if(m.t==='loi'){luongLoi=true;tt={ok:false,ket_noi:false,ly:'mất kết nối với webapp, đang nối lại…'};phat('trang_thai')}};
  navigator.locks.request('so-cong-khai-luong-gia',()=>new Promise(()=>moLuong(bc)))}                    // giữ khóa tới khi tab đóng
-function batDau(moiGiay=30){const lam=()=>tai().catch(e=>{tt={ok:false,ly:'không đọc được bảng giá: '+e.message};phat('trang_thai')});
- const p=lam();noi();setInterval(()=>{if(document.visibilityState==='visible')lam()},moiGiay*1000);return p}
-function pill(el){const ve=()=>{if(!el)return;const n=[...by.values()].filter(x=>x.q).length,giay=lan?Math.round((Date.now()-lan)/1000):null;
- el.className='song-pill '+(tt.ok?'ok':'loi');
- el.innerHTML=tt.ok?`<i></i><b>Trực tiếp</b> · ${n} mã · ${giay==null?'chờ giá':giay<3?'vừa cập nhật':giay<90?'cập nhật '+giay+' giây trước':'thị trường đang tĩnh'}`:`<i></i><b>Chưa có giá trực tiếp</b> · ${esc(tt.ly||'')}`};
+function batDau(moiGiay=30){if(started)return started;const lam=()=>tai().then(j=>{if(!j.tat)noi();return j}).catch(e=>{tt={ok:false,ket_noi:false,ly:'không đọc được bảng giá: '+e.message};phat('trang_thai')});
+ started=lam();setInterval(()=>{if(document.visibilityState==='visible')lam()},Math.max(3,moiGiay)*1000);addEventListener('online',lam);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')lam()});return started}
+function pill(el){const ve=()=>{if(!el)return;const n=[...by.values()].filter(x=>x.q).length,giay=maxStamp?Math.max(0,Math.round((Date.now()-maxStamp)/1000)):null,live=tt.ok&&tt.ket_noi&&giay!=null&&giay<15;
+ el.className='song-pill '+(live?'ok':tt.ok?'':'loi');
+ el.innerHTML=tt.ok?`<i></i><b>${live?(tt.kieu==='poll'?'Cập nhật định kỳ':'Trực tiếp'):'Chờ giá mới'}</b> · ${n} mã · ${giay==null?'chờ giá':giay<3?'vừa cập nhật':'cập nhật '+giay+' giây trước'}`:`<i></i><b>Chưa có giá trực tiếp</b> · ${esc(tt.ly||'')}`};
  subs.push(ve);setInterval(ve,1000);ve()}
 const gioVN=ms=>new Date(ms).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',second:'2-digit',day:'2-digit',month:'2-digit'});
-const tia=(a,b,w=110,h=28)=>{const v=(a||[]).concat(b!=null?[b]:[]).filter(x=>x!=null);if(v.length<2)return'';const lo=Math.min(...v),hi=Math.max(...v),sp=(hi-lo)||1;
+const tia=(a,b,w=110,h=28)=>{const v=(Array.isArray(a)?a:[]).concat(b!=null?[b]:[]).filter(x=>typeof x==='number'&&Number.isFinite(x)).slice(-120);if(v.length<2)return'';const lo=Math.min(...v),hi=Math.max(...v),sp=(hi-lo)||1;
  return `<svg class="tia ${v[v.length-1]>=v[0]?'gain':'loss'}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${v.map((x,i)=>(i/(v.length-1)*w).toFixed(1)+','+(h-3-(x-lo)/sp*(h-6)).toFixed(1)).join(' ')}"/></svg>`};
 const tenMa=x=>x.biet_danh?x.biet_danh+' · '+x.ten:x.ten;
 const nhomOpt=(chon)=>{const g={};for(const x of by.values())(g[x.lop]=g[x.lop]||[]).push(x);
@@ -215,16 +218,17 @@ let khay=null;function toast(t,nd){if(!khay){khay=document.createElement('div');
 function bip(){try{const A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.value=.08;o.connect(g);g.connect(a.destination);o.start();
  g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.35);o.stop(a.currentTime+.36)}catch(e){}}
 // ---- cảnh báo giá: lưu trong trình duyệt; kiểm ở mỗi tick khi có trang Thị trường hoặc Công cụ đang mở
-const CB={ds(){try{return JSON.parse(localStorage.getItem('tt-canh')||'[]')}catch(e){return[]}},luu(a){try{localStorage.setItem('tt-canh',JSON.stringify(a))}catch(e){}phat('canh')},
- them(ma,muc,ghi){const x=by.get(ma);if(!x||!x.q||!(muc>0))return null;const a=CB.ds(),c={id:Date.now().toString(36),ma,goc:x.goc,muc,huong:muc>=x.q[0]?'tren':'duoi',ghi:ghi||'',luc:Date.now(),da:null};
-  a.push(c);CB.luu(a);if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}return c},
- xoa(id){CB.luu(CB.ds().filter(c=>c.id!==id))},xoaDa(){CB.luu(CB.ds().filter(c=>!c.da))}};
+const fired=new Map();
+const CB={loi:'',khoLoi:false,ds(){try{const a=JSON.parse(localStorage.getItem('tt-canh')||'[]');if(!Array.isArray(a))throw Error();CB.khoLoi=false;return a.filter(c=>c&&typeof c.id==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(c.id)&&typeof c.ma==='string'&&Number.isFinite(c.muc)&&c.muc>0&&['tren','duoi'].includes(c.huong)).map(c=>fired.has(c.id)?{...c,da:fired.get(c.id)}:c)}catch(e){CB.khoLoi=true;CB.loi='Kho cảnh báo chưa đọc được; giữ nguyên dữ liệu để phục hồi.';return[]}},luu(a){if(CB.khoLoi)return false;try{localStorage.setItem('tt-canh',JSON.stringify(a));CB.loi=''}catch(e){CB.loi='Chưa lưu được cảnh báo trên trình duyệt.';return false}phat('canh');return true},
+ them(ma,muc,ghi){CB.loi='';const x=by.get(ma);if(!x||!hopGia(x.q)||!Number.isFinite(muc)||!(muc>0)){CB.loi='Nhập mức giá hợp lệ.';return null}const a=CB.ds(),c={id:Date.now().toString(36)+Math.random().toString(36).slice(2,12),ma,goc:x.goc,muc,huong:muc>=x.q[0]?'tren':'duoi',ghi:String(ghi||'').slice(0,500),luc:Date.now(),da:null};
+  a.push(c);if(!CB.luu(a))return null;if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}return c},
+ xoa(id){if(!CB.luu(CB.ds().filter(c=>c.id!==id)))toast(CB.loi)},xoaDa(){if(!CB.luu(CB.ds().filter(c=>!c.da)))toast(CB.loi)}};
 subs.push((l,ds)=>{if(l!=='gia'||!ds||!ds.length)return;const a=CB.ds();let doi=0;
- for(const c of a){if(c.da||!ds.includes(c.ma))continue;const x=by.get(c.ma);if(!x||!x.q)continue;const b=x.q[0];
-  if((c.huong==='tren'&&b>=c.muc)||(c.huong==='duoi'&&b<=c.muc)){c.da=Date.now();doi=1;const t=`${c.goc} ${c.huong==='tren'?'lên tới':'xuống tới'} ${fmt(c.muc,x.so_le)}`,nd=`Giá lúc này ${fmt(b,x.so_le)}.${c.ghi?' '+c.ghi:''}`;
+ for(const c of a){if(c.da||!ds.includes(c.ma))continue;const x=by.get(c.ma);if(!x||!x.q||nghi(x))continue;const b=x.q[0];
+  if((c.huong==='tren'&&b>=c.muc)||(c.huong==='duoi'&&b<=c.muc)){c.da=Date.now();fired.set(c.id,c.da);doi=1;const t=`${c.goc} ${c.huong==='tren'?'lên tới':'xuống tới'} ${fmt(c.muc,x.so_le)}`,nd=`Giá lúc này ${fmt(b,x.so_le)}.${c.ghi?' '+c.ghi:''}`;
    toast(t,nd);bip();if(window.Notification&&Notification.permission==='granted')try{new Notification(t,{body:nd,tag:'tt-'+c.id})}catch(e){}}}
- if(doi)CB.luu(a)});
-return{esc,fmt,pct,cls,CHINH,LOPS,KY,doi,maxT,nghi,spread,spTxt,bien,sucManh,capTien,tai,noi,batDau,pill,gioVN,tia,tenMa,nhomOpt,nhan,kbc,kb,khauVi,toast,CB,
+ if(doi&&!CB.luu(a))toast(CB.loi)});
+return{esc,fmt,pct,cls,CHINH,LOPS,KY,doi,maxT,nghi,spread,spTxt,bien,sucManh,capTien,tai,noi,batDau,pill,gioVN,tia,tenMa,nhomOpt,nhan,kbc,kb,khauVi,toast,CB,tuAnh,
  on:f=>subs.push(f),by:()=>by,get S(){return S},get tt(){return tt}}})();
 """
 
@@ -232,10 +236,12 @@ return{esc,fmt,pct,cls,CHINH,LOPS,KY,doi,maxT,nghi,spread,spTxt,bien,sucManh,cap
 JS = r"""
 (()=>{const T=TT,$=s=>document.querySelector(s),esc=T.esc,fmt=T.fmt,pct=T.pct,cls=T.cls;
 let tab=(location.hash||'').slice(1),loc='tat',tim='',sx={k:'',d:-1},ky='ngay',kyHm='ngay',calCao=false,spLoc='tat',spTim='';
-let sao=new Set();try{sao=new Set(JSON.parse(localStorage.getItem('tt-sao')||'[]'))}catch(e){}
+let sao=new Set();try{sao=new Set(JSON.parse(localStorage.getItem(window.hgrKey?window.hgrKey('tt-sao'):'demo:tt-sao')||'[]'))}catch(e){}
 try{const k=localStorage.getItem('tt-ky');if(k)ky=kyHm=k}catch(e){}
 const TABS=['bang-gia','ky-thuat','suc-manh','ban-do-nhiet','tuong-quan','bien-dong','phien','thong-so'];if(!TABS.includes(tab))tab='bang-gia';
-const luuSao=()=>{try{localStorage.setItem('tt-sao',JSON.stringify([...sao]))}catch(e){}};
+try{const c=JSON.parse(localStorage.getItem('tt-bang-gia')||'{}');if(typeof c.tim==='string')tim=c.tim.slice(0,100);if(['tat','sao',...T.LOPS].includes(c.loc))loc=c.loc;if(c.sx&&['','ten','1h','ngay','tuan','spread','adr'].includes(c.sx.k))sx={k:c.sx.k,d:c.sx.d===1?1:-1}}catch(e){}
+const luuBang=()=>{try{localStorage.setItem('tt-bang-gia',JSON.stringify({loc,tim,sx}))}catch(e){}};$('#bg-tim').value=tim;
+const luuSao=()=>{try{localStorage.setItem(window.hgrKey?window.hgrKey('tt-sao'):'demo:tt-sao',JSON.stringify([...sao]))}catch(e){}};
 T.pill($('#song'));
 // ---- thẻ
 function moTab(t){tab=t;document.querySelectorAll('#tt-tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
@@ -263,25 +269,27 @@ function chips(){const dem={tat:T.by().size,sao:[...T.by().keys()].filter(m=>sao
  const ds=[['tat','Tất cả'],['sao','★ Theo dõi']].concat(T.LOPS.filter(l=>dem[l]).map(l=>[l,T.S.lop[l]]));
  $('#bg-loc').innerHTML=ds.map(([k,n])=>`<button type="button" data-l="${k}" aria-pressed="${k===loc}">${esc(n)}<small>${dem[k]||0}</small></button>`).join('')}
 function dongHtml(x){const b=T.bien(x),n=T.nghi(x);return`<tr data-ma="${esc(x.ma)}"><td><button type="button" class="sao" aria-pressed="${sao.has(x.ma)}" title="Thêm vào danh sách theo dõi">★</button></td>
- <td class="ma"><span class="dot${n?' nghi':''}" title="${n?'Không có giá mới hơn 5 phút: thị trường của mã này đang nghỉ':'Đang có giá'}"></span><a href="/bieu-do?ma=${encodeURIComponent(x.ma)}">${esc(x.goc)}</a><small>${esc(T.tenMa(x))}</small></td>
+ <td class="ma"><span class="dot${n?' nghi':''}" title="${n?'Chưa có tick mới trong 5 phút; có thể đang nghỉ hoặc mất nguồn giá':'Có giá gần đây'}"></span><a href="/bieu-do?ma=${encodeURIComponent(x.ma)}">${esc(x.goc)}</a><small>${esc(T.tenMa(x))}</small></td>
  <td class="r gia">${x.q?fmt(x.q[0],x.so_le):'—'}</td><td class="r ask">${x.q?fmt(x.q[1],x.so_le):'—'}</td><td class="r sp">${T.spTxt(x)}</td>
  <td class="r c1"></td><td class="r cd"></td><td class="r cw"></td>
  <td class="rg">${b?`<div class="rgb"><i style="left:${(b.vt*100).toFixed(1)}%"></i></div><small><span>${fmt(b.lo,x.so_le)}</span><span>${b.adr!=null?fmt(b.adr,0)+'% ADR':''}</span><span>${fmt(b.hi,x.so_le)}</span></small>`:''}</td>
- <td class="tia-c">${T.tia(x.tia,x.q&&x.q[0])}</td><td class="hd"><button type="button" class="chuong${coCB.has(x.ma)?' co':''}" title="Đặt cảnh báo giá" aria-label="Đặt cảnh báo giá ${esc(x.goc)}">🔔</button><a href="/cong-cu?ma=${encodeURIComponent(x.ma)}">Tính</a></td></tr>`}
+ <td class="tia-c">${T.tia(x.tia,x.q&&x.q[0])}</td><td class="hd"><button type="button" class="chuong${coCB.has(x.ma)?' co':''}" title="Đặt cảnh báo giá" aria-label="Đặt cảnh báo giá ${esc(x.goc)}">🔔</button><a href="/cong-cu?ma=${encodeURIComponent(x.ma)}">Tính</a><a href="/da-khung?ma=${encodeURIComponent(x.ma)}" aria-label="Xem nhiều khung ${esc(x.goc)}">4 ô</a></td></tr>`}
 function oCap(x,o,nhay){if(!o)return;const q=x.q;if(q){o.gia.textContent=fmt(q[0],x.so_le);o.ask.textContent=fmt(q[1],x.so_le);o.sp.textContent=T.spTxt(x);
   if(nhay&&x.q0&&x.q0[0]!==q[0]){o.gia.classList.remove('up','dn');void o.gia.offsetWidth;o.gia.classList.add(q[0]>x.q0[0]?'up':'dn');clearTimeout(o.tm);o.tm=setTimeout(()=>o.gia.classList.remove('up','dn'),450)}}
  for(const[k,el]of[['1h',o.c1],['ngay',o.cd],['tuan',o.cw]]){const v=T.doi(x,k);el.textContent=pct(v);el.className='r '+el.dataset.c+' '+cls(v)}
- const b=T.bien(x);if(b&&o.rgi)o.rgi.style.left=(b.vt*100).toFixed(1)+'%';const n=T.nghi(x);o.dot.classList.toggle('nghi',n)}
+ const b=T.bien(x);if(b&&o.rgi){o.rgi.style.left=(b.vt*100).toFixed(1)+'%';if(o.rgl)o.rgl.textContent=fmt(b.lo,x.so_le);if(o.rgh)o.rgh.textContent=fmt(b.hi,x.so_le);if(o.rgp)o.rgp.textContent=b.adr!=null?fmt(b.adr,0)+'% ADR':''}if(o.spark&&Date.now()-(o.sparkTime||0)>500){o.spark.innerHTML=T.tia(x.tia,x.q&&x.q[0]);o.sparkTime=Date.now()}const n=T.nghi(x);o.dot.classList.toggle('nghi',n)}
+function soSanh(a,b){const p=khoa(a,sx.k),q=khoa(b,sx.k);if(p==null&&q==null)return a.ma.localeCompare(b.ma);if(p==null)return 1;if(q==null)return-1;return(typeof p==='string'?p.localeCompare(q):p-q)*sx.d||a.ma.localeCompare(b.ma)}
+function sapLai(){if(!sx.k||sx.k==='ten')return;const body=$('#bg-body'),ds=locDs().sort(soSanh),rows=[...body.querySelectorAll('tr[data-ma]')];if(ds.every((x,i)=>rows[i]?.dataset.ma===x.ma))return;const nodes=new Map(rows.map(r=>[r.dataset.ma,r])),f=document.activeElement,keep=f&&body.contains(f)?f:null;for(const x of ds){const row=nodes.get(x.ma);if(row)body.appendChild(row)}if(keep&&keep.isConnected)keep.focus({preventScroll:true})}
 function bangGia(){chips();const ds=locDs(),body=$('#bg-body');O.clear();
  document.querySelectorAll('#bg th[data-k]').forEach(th=>th.setAttribute('aria-sort',th.dataset.k===sx.k?(sx.d>0?'ascending':'descending'):'none'));
- let h='';if(sx.k){ds.sort((a,b)=>{const p=khoa(a,sx.k),q=khoa(b,sx.k);if(p==null)return 1;if(q==null)return-1;return(typeof p==='string'?p.localeCompare(q):p-q)*sx.d});h=ds.map(dongHtml).join('')}
+ let h='';if(sx.k){ds.sort(soSanh);h=ds.map(dongHtml).join('')}
  else{for(const l of T.LOPS){const g=ds.filter(x=>x.lop===l).sort((a,b)=>a.goc.localeCompare(b.goc));if(!g.length)continue;h+=`<tr class="nhom"><th colspan="11">${esc(T.S.lop[l])} · ${g.length} mã</th></tr>`+g.map(dongHtml).join('')}}
  body.innerHTML=h||`<tr><td colspan="11" class="small" style="padding:18px">${loc==='sao'?'Chưa có mã nào trong danh sách theo dõi: bấm ★ ở đầu dòng để thêm.':'Không có mã nào khớp.'}</td></tr>`;
- body.querySelectorAll('tr[data-ma]').forEach(tr=>{const td=tr.children,o={gia:td[2],ask:td[3],sp:td[4],c1:td[5],cd:td[6],cw:td[7],rgi:td[8].querySelector('i'),dot:td[1].querySelector('.dot')};
+ body.querySelectorAll('tr[data-ma]').forEach(tr=>{const td=tr.children,o={gia:td[2],ask:td[3],sp:td[4],c1:td[5],cd:td[6],cw:td[7],rgi:td[8].querySelector('i'),dot:td[1].querySelector('.dot'),rgl:td[8].querySelector('small span:first-child'),rgp:td[8].querySelector('small span:nth-child(2)'),rgh:td[8].querySelector('small span:last-child'),spark:td[9]};
   o.c1.dataset.c='c1';o.cd.dataset.c='cd';o.cw.dataset.c='cw';O.set(tr.dataset.ma,o);oCap(T.by().get(tr.dataset.ma),o,0)})}
-$('#bg-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;loc=b.dataset.l;bangGia()});
-$('#bg-tim').addEventListener('input',e=>{tim=e.target.value;bangGia()});
-$('#bg thead').addEventListener('click',e=>{const th=e.target.closest('th[data-k]');if(!th)return;const k=th.dataset.k;sx=sx.k===k?(sx.d<0?{k,d:1}:{k:'',d:-1}):{k,d:k==='ten'?1:-1};bangGia()});
+$('#bg-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;loc=b.dataset.l;luuBang();bangGia()});
+$('#bg-tim').addEventListener('input',e=>{tim=e.target.value;luuBang();bangGia()});
+$('#bg thead').addEventListener('click',e=>{const th=e.target.closest('th[data-k]');if(!th)return;const k=th.dataset.k;sx=sx.k===k?(sx.d<0?{k,d:1}:{k:'',d:-1}):{k,d:k==='ten'?1:-1};luuBang();bangGia()});
 // ---- cảnh báo giá
 let coCB=new Set();const capCB=()=>{const ds=T.CB.ds(),con=ds.filter(c=>!c.da);coCB=new Set(con.map(c=>c.ma));$('#cb-n').textContent=con.length;
  document.querySelectorAll('#bg-body tr[data-ma]').forEach(tr=>{const b=tr.querySelector('.chuong');if(b)b.classList.toggle('co',coCB.has(tr.dataset.ma))});
@@ -293,7 +301,7 @@ function moPop(ma,nut){const x=T.by().get(ma);if(!x||!x.q)return;popMa=ma;$('#cb
  $('#cb-hien').textContent='Giá hiện tại '+fmt(x.q[0],x.so_le)+'. Trang báo khi giá Bid chạm mức bạn nhập (lên hoặc xuống tùy mức đó nằm trên hay dưới giá hiện tại).';
  POP.hidden=false;const r=nut.getBoundingClientRect();POP.style.left=Math.max(8,Math.min(innerWidth-300,r.right-290))+'px';POP.style.top=Math.min(innerHeight-POP.offsetHeight-8,r.bottom+6)+'px';ip.focus();ip.select()}
 $('#cb-luu').addEventListener('click',()=>{const v=parseFloat(String($('#cb-muc').value).replace(',','.'));const c=T.CB.them(popMa,v,$('#cb-ghi').value.trim());
- if(c){POP.hidden=true;T.toast('Đã đặt cảnh báo',`${c.goc} ${c.huong==='tren'?'lên tới':'xuống tới'} ${$('#cb-muc').value}. Trang Thị trường hoặc Công cụ phải đang mở để nhận báo.`)}});
+ if(c){POP.hidden=true;T.toast('Đã đặt cảnh báo',`${c.goc} ${c.huong==='tren'?'lên tới':'xuống tới'} ${$('#cb-muc').value}. Trang Thị trường hoặc Công cụ phải đang mở để nhận báo.`)}else if(T.CB.loi)T.toast(T.CB.loi)});
 $('#cb-huy').addEventListener('click',()=>{POP.hidden=true});
 $('#cb-muc').addEventListener('keydown',e=>{if(e.key==='Enter')$('#cb-luu').click();if(e.key==='Escape')POP.hidden=true});
 document.addEventListener('click',e=>{if(!POP.hidden&&!e.target.closest('#cb-pop')&&!e.target.closest('.chuong'))POP.hidden=true});
@@ -387,7 +395,7 @@ function thongSo(){const tk=T.S.tai_khoan||{},tien=tk.tien||'USD',q=spTim.trim()
 $('#sp-loc').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;spLoc=b.dataset.l;thongSo()});
 $('#sp-tim').addEventListener('input',e=>{spTim=e.target.value;thongSo()});
 // ---- tín hiệu kỹ thuật và bộ lọc mã
-let ktLoc='tat',ktDk='tat',ktTim='',ktMa=null,ktTf='H1',ktCT=null,ktLan=0;const KF=['M15','H1','H4','D1'];
+let ktLoc='tat',ktDk='tat',ktTim='',ktMa=null,ktTf='H1',ktCT=null,ktLan=0,ktSeq=0,ktCtl=null;const KF=['M15','H1','H4','D1'];
 const dongThuan=x=>{const k=x.kt||{};let m=0,b=0;for(const f of KF){const d=k[f]&&k[f].d;if(d>.1)m++;else if(d<-.1)b++}return{m,b}};
 function kyThuat(){const dem={};for(const x of T.by().values())dem[x.lop]=(dem[x.lop]||0)+1;
  $('#kt-loc').innerHTML=[['tat','Tất cả']].concat(T.LOPS.filter(l=>dem[l]).map(l=>[l,T.S.lop[l]])).map(([k,n])=>`<button type="button" data-l="${k}" aria-pressed="${k===ktLoc}">${esc(n)}</button>`).join('');
@@ -404,8 +412,8 @@ function kyThuat(){const dem={};for(const x of T.by().values())dem[x.lop]=(dem[x
 const vong=(d,w=120)=>{const a=Math.PI*(1-((d??0)+1)/2),r=w*.4,cx=w/2,cy=w*.5,x=cx+r*Math.cos(a),y=cy-r*Math.sin(a),arc=(a0,a1,c)=>{const p=t=>[cx+r*Math.cos(Math.PI*(1-t)),cy-r*Math.sin(Math.PI*(1-t))],[x0,y0]=p(a0),[x1,y1]=p(a1);return`<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${c}" stroke-width="${w*.07}" fill="none"/>`};
  return`<svg viewBox="0 0 ${w} ${w*.6}">${arc(0,.25,'var(--loss)')}${arc(.25,.45,'color-mix(in srgb,var(--loss) 45%,var(--track))')}${arc(.45,.55,'var(--track)')}${arc(.55,.75,'color-mix(in srgb,var(--gain) 45%,var(--track))')}${arc(.75,1,'var(--gain)')}
  <line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-width="${w*.025}" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="${w*.035}" fill="var(--ink)"/></svg>`};
-async function ktTai(){if(!ktMa)return;const m=ktMa;ktLan=Date.now();try{const r=await fetch('/api/thi-truong/ky-thuat?ma='+encodeURIComponent(m),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();if(m===ktMa){ktCT=j;ktVe()}}
- catch(e){$('#kt-ct').innerHTML=`<p class="small">Không tính được: ${esc(e.message)}</p>`}}
+async function ktTai(){if(!ktMa)return;const m=ktMa,seq=++ktSeq;if(ktCtl)ktCtl.abort();const ctl=ktCtl=new AbortController(),timer=setTimeout(()=>ctl.abort(),15000);ktLan=Date.now();try{const r=await fetch('/api/thi-truong/ky-thuat?ma='+encodeURIComponent(m),{cache:'no-store',signal:ctl.signal});if(!r.ok)throw Error((await r.text()).slice(0,240));const j=await r.json();if(seq===ktSeq&&m===ktMa){ktCT=j;ktVe()}}
+ catch(e){if(seq===ktSeq&&m===ktMa)$('#kt-ct').innerHTML='<p class="small">'+esc(e.name==='AbortError'?'Tải quá lâu. Chọn lại mã để thử lại.':'Không tính được: '+e.message)+'</p>'}finally{clearTimeout(timer)}}
 function ktVe(){const j=ktCT,el=$('#kt-ct');if(!j)return;const x=T.by().get(j.ma),k=j.khung[ktTf];
  let h=`<div class="kt-hd"><div><h2>${esc(j.goc)}</h2><span class="small" style="margin:0">${esc(x?T.tenMa(x):'')}</span></div><div class="lk"><a class="ghost nho" href="/bieu-do?ma=${encodeURIComponent(j.ma)}">Biểu đồ</a><a class="ghost nho" href="/cong-cu?ma=${encodeURIComponent(j.ma)}">Tính khối lượng</a></div></div>`
   +`<div class="sg" id="kt-tf" style="margin-top:10px">${KF.map(f=>`<button type="button" data-f="${f}" aria-pressed="${f===ktTf}">${f}</button>`).join('')}</div>`;
@@ -422,10 +430,11 @@ $('#kt-tim').addEventListener('input',e=>{ktTim=e.target.value;kyThuat()});
 $('#kt-body').addEventListener('click',e=>{const tr=e.target.closest('tr[data-ma]');if(!tr)return;ktMa=tr.dataset.ma;document.querySelectorAll('#kt-body tr').forEach(r=>r.classList.toggle('chon',r===tr));
  $('#kt-ct').innerHTML='<p class="small">Đang tính…</p>';ktTai();if(innerWidth<1060)$('#kt-ct').scrollIntoView({behavior:'smooth',block:'start'})});
 // ---- biến động theo giờ
-let bdMa=null,bdKq=null;
+let bdMa=null,bdKq=null,bdSeq=0,bdCtl=null,bdLan=0;
 async function bienDong(){const s=$('#bd-ma');if(!s.options.length||s.dataset.n!=String(T.by().size)){if(!bdMa){const e=[...T.by().values()].find(x=>x.goc==='XAUUSD')||[...T.by().values()][0];bdMa=e&&e.ma}s.innerHTML=T.nhomOpt(bdMa);s.dataset.n=T.by().size}
- if(!bdMa)return;if(bdKq&&bdKq.ma===bdMa){bdVe();return}$('#bd').innerHTML='<p class="small">Đang đọc 720 nến H1…</p>';
- try{const r=await fetch('/api/thi-truong/bien-dong?ma='+encodeURIComponent(bdMa),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());bdKq=await r.json();bdVe()}catch(e){$('#bd').innerHTML=`<p class="small">Không đọc được: ${esc(e.message)}</p>`}}
+ if(!bdMa)return;if(bdKq&&bdKq.ma===bdMa&&Date.now()-bdLan<300000){bdVe();return}$('#bd').innerHTML='<p class="small">Đang đọc 720 nến H1…</p>';
+ const m=bdMa,seq=++bdSeq;if(bdCtl)bdCtl.abort();const ctl=bdCtl=new AbortController(),timer=setTimeout(()=>ctl.abort(),15000);
+ try{const r=await fetch('/api/thi-truong/bien-dong?ma='+encodeURIComponent(m),{cache:'no-store',signal:ctl.signal});if(!r.ok)throw Error((await r.text()).slice(0,240));const j=await r.json();if(seq===bdSeq&&m===bdMa){bdKq=j;bdLan=Date.now();bdVe()}}catch(e){if(seq===bdSeq&&m===bdMa)$('#bd').innerHTML='<p class="small">'+esc(e.name==='AbortError'?'Tải quá lâu. Chọn lại mã để thử lại.':'Không đọc được: '+e.message)+'</p>'}finally{clearTimeout(timer)}}
 function bdVe(){const j=bdKq,x=T.by().get(j.ma);if(!x)return;const u=x.pip?{k:x.pip,n:'pip',d:1}:{k:1,n:'đơn vị giá',d:x.so_le>3?x.so_le:2},v=j.gio.map(g=>g.tb==null?0:g.tb/u.k),mx=Math.max(...v)||1;
  const gioNay=new Date(Date.now()+7*36e5).getUTCHours(),top=v.map((y,i)=>[y,i]).sort((a,b)=>b[0]-a[0]).slice(0,3).map(a=>String(a[1]).padStart(2,'0')+'h');
  const TH=['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ nhật'],thu=j.thu.filter(t=>t.t<5),mt=Math.max(...thu.map(t=>t.tb));
@@ -439,9 +448,10 @@ $('#bd-ma').addEventListener('change',e=>{bdMa=e.target.value;bdKq=null;bienDong
 let lanVe=0,choVe=0;
 function ve(day){if(!T.S)return;hero();capCB();if(tab==='bang-gia'){if(day||!O.size)bangGia()}else if(tab==='ky-thuat'){if(day)kyThuat()}else if(tab==='suc-manh')sucManh();else if(tab==='ban-do-nhiet')banDo();else if(tab==='tuong-quan')tuongQuan();
  else if(tab==='bien-dong'){if(day)bienDong()}else if(tab==='phien'){phien();lich()}else if(tab==='thong-so')thongSo();lanVe=Date.now()}
-T.on((loai,ds)=>{if(loai==='anh'){ve(1);return}if(loai!=='gia')return;
- if(tab==='bang-gia')for(const m of ds)oCap(T.by().get(m),O.get(m),1);
- if(Date.now()-lanVe>1000){if(tab==='bang-gia')hero();else ve(0)}else if(!choVe){choVe=setTimeout(()=>{choVe=0;if(tab!=='bang-gia')ve(0);else hero()},1000)}});
+const pending=new Set();let priceFrame=0;
+T.on((loai,ds)=>{if(loai==='anh'){ve(1);return}if(loai!=='gia')return;for(const m of ds||[])pending.add(m);
+ if(!priceFrame)priceFrame=requestAnimationFrame(()=>{priceFrame=0;if(tab==='bang-gia')for(const m of pending){const x=T.by().get(m);if(x)oCap(x,O.get(m),1)}pending.clear()});
+ const other=()=>{choVe=0;if(tab==='bang-gia'){hero();sapLai();lanVe=Date.now()}else ve(0)};if(Date.now()-lanVe>1000)other();else if(!choVe)choVe=setTimeout(other,1000)});
 setInterval(()=>{if(tab==='phien'&&document.visibilityState==='visible'){phien();lich()}if(tab==='bang-gia')for(const[m,o]of O)o.dot.classList.toggle('nghi',T.nghi(T.by().get(m)))},30000);
 addEventListener('resize',()=>{if(tab==='phien')phien()});
 moTab(tab);T.batDau(30).then(()=>moTab(tab)).catch(()=>{})})();
@@ -455,7 +465,7 @@ def trang_thi_truong(ten: str) -> str:
     ky = ''.join(f'<button type="button" data-k="{k}">{n}</button>' for k, n in (('1h', '1 giờ'), ('4h', '4 giờ'), ('ngay', 'Hôm nay'), ('tuan', 'Tuần'), ('thang', 'Tháng')))
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Thị trường · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Thị trường · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'thi-truong', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="tt-top"><div><h1>Thị trường Forex &amp; CFD</h1><p>Giá trực tiếp của mọi cặp tiền, kim loại, năng lượng, chỉ số và tiền mã hóa mà sàn cung cấp, '
         'đẩy về trình duyệt ngay khi có tick mới.</p></div><span id="song" class="song-pill"><i></i>Đang nối…</span></div>',
@@ -495,11 +505,11 @@ def trang_thi_truong(ten: str) -> str:
         '"Đồng thuận" đếm số khung cùng nghiêng mua (xanh) hoặc bán (đỏ). Bấm một dòng để xem từng chỉ báo.</p></section>',
         # sức mạnh tiền tệ
         f'<section class="tt-p" data-p="suc-manh" hidden><div class="tt-tool"><div class="sg" id="sm-ky">{ky}</div></div><div class="sm-grid">'
-        '<div class="tt-card"><h2>Sức mạnh 8 đồng tiền chính</h2><p class="sub">Trung bình thay đổi của mỗi đồng tiền so với 7 đồng còn lại, tính lại theo từng tick trên 28 cặp.</p><div id="sm-bar"></div></div>'
+        '<div class="tt-card"><h2>Sức mạnh 8 đồng tiền chính</h2><p class="sub">Trung bình thay đổi trên các cặp đang có giá, cập nhật theo tick. Số cặp được ghi dưới mỗi đồng tiền; thiếu cặp có thể làm lệch so sánh.</p><div id="sm-bar"></div></div>'
         '<div class="tt-card"><h2>Ma trận thay đổi theo cặp</h2><p class="sub">Hàng là đồng tiền gốc, cột là đồng tiền định giá: ô xanh nghĩa là đồng ở hàng mạnh lên so với đồng ở cột.</p><div id="sm-mx" style="overflow-x:auto"></div></div>'
         '</div><div class="goi-y" id="sm-goi"></div></section>',
         f'<section class="tt-p" data-p="ban-do-nhiet" hidden><div class="tt-tool"><div class="sg" id="hm-ky">{ky}</div><span class="small" style="margin:0">Màu đậm là thay đổi lớn so với các mã còn lại; bấm ô để mở biểu đồ.</span></div><div id="hm"></div></section>',
-        '<section class="tt-p" data-p="tuong-quan" hidden><div class="tt-card"><h2>Tương quan giữa các mã</h2><p class="sub">+1: luôn đi cùng chiều; −1: luôn ngược chiều; quanh 0: không liên quan.</p><div id="tq"></div></div></section>',
+        '<section class="tt-p" data-p="tuong-quan" hidden><div class="tt-card"><h2>Tương quan giữa các mã</h2><p class="sub">Gần +1: liên hệ tuyến tính cùng chiều mạnh; gần −1: ngược chiều mạnh; quanh 0: liên hệ tuyến tính yếu trong mẫu đã đo.</p><div id="tq"></div></div></section>',
         '<section class="tt-p" data-p="bien-dong" hidden><div class="tt-card"><div class="tt-tool" style="margin:0 0 4px"><h2 style="margin:0">Biến động theo giờ trong ngày</h2>'
         '<span class="grow"></span><select id="bd-ma" aria-label="Chọn mã"></select></div><div id="bd"></div></div></section>',
         '<section class="tt-p" data-p="phien" hidden><div class="tt-card"><h2>Phiên giao dịch hôm nay</h2><p class="sub" id="ss-ghi"></p><div id="ss"></div></div>'
@@ -512,5 +522,5 @@ def trang_thi_truong(ten: str) -> str:
         '<tbody id="sp-body"></tbody></table></div><p class="small" id="sp-ghi"></p></section>',
         '<p class="note" style="margin-top:22px"><b>Chỉ đọc giá.</b> Trang lấy giá từ MT5 demo đang mở trên máy này và không đặt lệnh. CFD và Forex là sản phẩm có đòn bẩy, '
         'rủi ro cao: phần lớn tài khoản cá nhân giao dịch CFD bị lỗ. Không phải lời khuyên đầu tư.</p>',
-        '<footer>Giá: tick của MT5, đọc liên tục (mặc định 20 lần mỗi giây) và đẩy về trình duyệt qua Server-Sent Events ngay khi có giá mới. Thông số hợp đồng, ký quỹ và các mốc giá đọc lại 30 giây một lần; '
+        '<footer>Giá đọc từ MT5 theo chu kỳ cấu hình (mặc định 0,5 giây), rồi đẩy các giá mới qua Server-Sent Events. Khi luồng không dùng được, trang thử nối lại hoặc cập nhật định kỳ. Tốc độ thực tế còn phụ thuộc sàn, MT5 và mạng. Thông số hợp đồng, ký quỹ và các mốc giá được làm mới định kỳ; '
         'tương quan 10 phút một lần. ' + escape(trang.MIEN_TRU) + f'</footer></main><script>{trang.JS}</script><script>{JS_CHUNG}</script><script>{JS}</script></body></html>'])

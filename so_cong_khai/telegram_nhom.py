@@ -24,6 +24,7 @@ import re
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from html import escape
@@ -36,12 +37,12 @@ from .doc_so import VN
 API = 'https://api.telegram.org/bot{token}/{lenh}'
 GIAY = 30                                    # chu kỳ của vòng nền
 CACH_GUI = 1.5                               # giây giữa hai tin (Telegram giới hạn khoảng 20 tin/phút cho một nhóm)
-TOI_DA_TRE = 30                              # tín hiệu ghi cách đây quá chừng này phút (webapp vừa tắt) thì không đăng nữa
+TOI_DA_TRE = 3                               # cùng hạn vào lệnh của bot; không phát điểm vào đã cũ sau khi thử gửi lại
 GIU_TIN = 400                                # số tin giữ trong nhật ký gửi
 MAC_DINH = {'che_do': 'xem_truoc', 'chat': '', 'link_moi': '', 'ten_nhom': '', 'tin_hieu': True, 'ma': ['bot:'], 'ket_qua': True,
             'tin_tuc': True, 'nhac_truoc_phut': 15, 'tong_ket': True, 'gio_tong_ket': 22, 'phan_tich': True, 'gio_phan_tich': [8, 19],
             'hoa_von_tp1': True, 'anh_bieu_do': False}
-DIA_CHI = 'http://127.0.0.1:8765'             # địa chỉ của chính webapp, để chụp ảnh biểu đồ (web.py đặt theo cổng đang chạy)
+DIA_CHI = 'http://127.0.0.1:8769'             # địa chỉ của chính webapp, để chụp ảnh biểu đồ (web.py đặt theo cổng đang chạy)
 CHU_THICH_TOI_DA = 1024                        # Telegram: chú thích ảnh tối đa 1.024 ký tự (sau khi bỏ thẻ HTML)
 CHE_DO = ('xem_truoc', 'gui', 'tat')
 MIEN = 'Không phải lời khuyên đầu tư. Bạn tự quyết và tự chịu rủi ro.'
@@ -173,8 +174,12 @@ def _goi(tk: str, lenh: str, du: dict | None = None, timeout: float = 15) -> dic
         req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=than, headers={'Content-Type': loai}, method='POST')   # noqa: S310 - địa chỉ https cố định, chỉ tải về
         timeout = max(timeout, 30)
     else:
-        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=json.dumps(du or {}).encode('utf-8'),   # noqa: S310 - địa chỉ https cố định, chỉ tải về
-                                     headers={'Content-Type': 'application/json'}, method='POST')
+        # Bot API accepts form bodies. Nested values remain JSON, without putting token/content in query logs.
+        form = {k: json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list, bool)) else str(v)
+                for k, v in (du or {}).items() if v is not None}
+        req = urllib.request.Request(API.format(token=tk, lenh=lenh), data=urllib.parse.urlencode(form).encode('utf-8'),  # noqa: S310 - fixed https Telegram endpoint
+                                     headers={'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'HarryGoldResearch/1.0',
+                                              'Connection': 'close'}, method='POST')
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:   # noqa: S310 - địa chỉ https cố định, chỉ tải về
             return json.loads(r.read().decode('utf-8'))
@@ -301,7 +306,7 @@ def soan_tin_hieu(r: dict, hv: dict | None = None) -> str:
         dong.append(f'Lý do: {escape(str(r["ly_do"]))}')
     if r.get('phien') or r.get('bien_do'):
         dong.append(' · '.join(x for x in (f'Phiên {r["phien"]}' if r.get('phien') else '', f'biên độ {r["bien_do"]}' if r.get('bien_do') else '') if x))
-    if hv and _la_bot(r) and tps:
+    if hv and r.get('ma') == 'bot:nen' and tps:
         dong.append(f'🛡 Gợi ý giữ lệnh: chạm TP1 thì dời dừng lỗ phần còn lại về giá vào {so(r["vao"], le)}. Đo từ {hv["tu"]}: thắng '
                     f'{so(hv["thang"], 1)}% thay vì {so(hv["thang_goc"], 1)}%, sụt giảm nhỏ hơn; đổi lại lời mỗi lệnh {_r(hv["r"])} thay vì {_r(hv["r_goc"])}.')
     if r.get('bam'):
@@ -328,8 +333,15 @@ def thanh_tich(st: dict, ds: list[dict]) -> dict:
     """Số liệu của riêng các lệnh ĐÃ ĐĂNG vào nhóm: bao nhiêu lệnh đã xong, thắng, thua, tổng R."""
     da = _da_dang(st)
     xong = [r for r in ds if r['id'] in da and r.get('r') is not None and r['tt'] in ('thang', 'thua', 'het_gio')]
+    nhanh = []
+    for ma, ten in (('bot:nen', 'Chờ nến xác nhận'), ('bot:xu_huong', 'Theo yêu cầu — đã dừng tự đăng')):
+        rs = [r for r in xong if r.get('ma') == ma]
+        nhanh.append({'ma': ma, 'ten': ten, 'n': len(rs), 'thang': sum(r['r'] > 0 for r in rs),
+                      'ty_le': round(sum(r['r'] > 0 for r in rs) / len(rs) * 100, 1) if rs else None,
+                      'tong_r': round(sum(r['r'] for r in rs), 2), 'du_mau': len(rs) >= 100})
     return {'tu': st.get('bat_dau'), 'n': len(xong), 'thang': sum(r['r'] > 0 for r in xong), 'thua': sum(r['r'] <= 0 for r in xong),
-            'tong_r': round(sum(r['r'] for r in xong), 2), 'mo': sum(1 for r in ds if r['id'] in da and r['tt'] in nhat_ky.SONG)}
+            'tong_r': round(sum(r['r'] for r in xong), 2), 'mo': sum(1 for r in ds if r['id'] in da and r['tt'] in nhat_ky.SONG),
+            'theo_nhanh': nhanh}
 
 
 def _dong_thanh_tich(t: dict) -> str:
@@ -432,7 +444,8 @@ def soan_phan_tich(pt: dict, tin_ds: list[dict], now: datetime) -> str | None:
                     + '.')
     luat = []                                                    # từng luật một, kèm độ tin của nó: không gộp luật đang lỗ vào một con số "đồng thuận"
     for goc_ma, ten, tin in LUAT_PT:
-        pa = [p for p in pt.get('phuong_an') or [] if str(p.get('ma') or '').split(':')[0] == goc_ma]
+        pa = [p for p in pt.get('phuong_an') or [] if str(p.get('ma') or '').split(':')[0] == goc_ma
+              and p.get('ma') != 'bot:xu_huong' and p.get('hieu_luc', True)]
         if pa:
             h = sorted({p['huong'] for p in pa if p.get('co') and p.get('huong') in ('MUA', 'BAN')})
             luat.append(f'{ten}: {" / ".join("MUA" if x == "MUA" else "BÁN" for x in h) if h else "chưa có tín hiệu"} ({tin})')
@@ -477,7 +490,9 @@ def dang_phan_tich(cfg: dict, now: datetime | None = None, goc: Path = HERE, c: 
 
 # --------------------------------------------------------------------------- vòng nền
 def _hop(r: dict, c: dict) -> bool:
-    return any(r.get('ma', '').startswith(m) for m in c['ma']) and not r.get('trung_voi')
+    # Nhánh theo yêu cầu không có kiểm định riêng. Chặn cả bản cấu hình cũ dùng 'bot:'.
+    return (r.get('ma') != 'bot:xu_huong' and any(r.get('ma', '').startswith(m) for m in c['ma'])
+            and not r.get('trung_voi'))
 
 
 def thu_muc_anh(goc: Path = HERE) -> Path:
@@ -491,7 +506,7 @@ def chup_anh(r: dict, goc: Path = HERE) -> Path | None:
         co = thu_muc_anh(goc) / f'lenh-{int(r["id"])}.png'
         if co.is_file() and co.stat().st_size > 0:                # đã chụp ở lượt trước (gửi lỗi): dùng lại, không mở trình duyệt lần nữa
             return co
-        return anh_lenh.chup(DIA_CHI, r, thu_muc_anh(goc))
+        return anh_lenh.chup(DIA_CHI, r, thu_muc_anh(goc), goc=goc)
     except Exception:                                            # noqa: BLE001 - ảnh hỏng không chặn tin
         return None
 
@@ -623,6 +638,11 @@ def muc_suc_khoe(goc: Path = HERE) -> dict:
     if c['che_do'] == 'xem_truoc':
         return {'ten': ten, 'muc': 'tot', 'chi_tiet': 'Chế độ xem trước: tin được soạn ở trang /telegram, chưa gửi đi đâu.', 'lam': ''}
     loi = TT.get('loi') or TT.get('loi_vong')
+    # Khởi động lại không có nghĩa lần gửi lỗi đã được khôi phục; giữ bằng chứng lần gửi thật cuối.
+    sent = [x for x in _doc_json(_tep('telegram-tin.json', goc), []) if x.get('che_do') == 'gui']
+    last = sent[-1] if sent else None
+    if last and last.get('ok') is False and not loi:
+        loi = str(last.get('loi') or 'lần gửi gần nhất chưa thành công')
     if loi or not token(goc):
         return {'ten': ten, 'muc': 'chu_y', 'chi_tiet': f'Gửi lỗi: {loi}.' if loi else 'Thiếu mã bot.', 'lam': 'Mở trang /telegram để xem và gửi tin thử.'}
     return {'ten': ten, 'muc': 'tot', 'chi_tiet': f'Đang gửi vào {c.get("ten_nhom") or c["chat"]}.', 'lam': ''}
@@ -660,6 +680,7 @@ const ve=j=>{const c=j.cai,t=j.thanh_tich;
   (j.loi?`<br><span style="color:var(--loss)">Lỗi gần nhất: ${e(j.loi)}</span>`:'');
  $('#tg-so').innerHTML=`<div><small>Lệnh đã đăng, đã xong</small><b>${t.n}</b></div><div><small>Thắng / thua</small><b>${t.thang} / ${t.thua}</b></div>
   <div><small>Tổng</small><b>${t.n?sr(t.tong_r):'—'}</b></div><div><small>Còn mở hoặc chờ</small><b>${t.mo}</b></div>`;
+ $('#tg-nhanh').innerHTML='<table><thead><tr><th>Nhánh tín hiệu</th><th>Lệnh xong</th><th>Có lãi</th><th>Tổng R</th></tr></thead><tbody>'+(t.theo_nhanh||[]).map(x=>`<tr><td>${e(x.ten)}</td><td>${x.n}</td><td>${x.ty_le==null?'Chưa có mẫu':e(x.ty_le)+'%'}${x.du_mau?'':' · chưa đủ mẫu đánh giá'}</td><td>${x.n?sr(x.tong_r):'—'}</td></tr>`).join('')+'</tbody></table><p class="small">Tỷ lệ có lãi tính theo R sau khi đóng, gồm cả lệnh hết giờ có lãi. Thành tích nhánh cũ được giữ nguyên; chưa thể suy ra tỷ lệ thắng thực tế của nhánh mới khi chưa đủ lệnh.</p>';
  const f=$('#tg-f');if(!f.dataset.da){f.dataset.da=1;for(const k of ['chat','link_moi','ten_nhom','nhac_truoc_phut','gio_tong_ket'])f[k].value=c[k];f.ma.value=(c.ma||[]).join(', ');
   f.gio_phan_tich.value=(c.gio_phan_tich||[]).join(', ');for(const k of ['tin_hieu','ket_qua','tin_tuc','phan_tich','tong_ket','hoa_von_tp1','anh_bieu_do'])f[k].checked=!!c[k]}
  $('#tg-tin').innerHTML=j.tin.length?j.tin.map(m=>`<article class="${m.ok?'':'loi'}"><header>${LOAI[m.loai]||e(m.loai)} · ${new Date(m.luc).toLocaleString('vi-VN')} · ${m.che_do==='gui'?(m.ok?'đã gửi':'gửi lỗi: '+e(m.loi)):'xem trước, chưa gửi'}</header>${m.anh?`<a href="/telegram/anh/${encodeURIComponent(m.anh)}" target="_blank" rel="noopener"><img src="/telegram/anh/${encodeURIComponent(m.anh)}" alt="Ảnh biểu đồ kèm tin" loading="lazy" style="width:100%;max-width:640px;border-radius:8px;display:block;margin:4px 0 8px"></a>`:''}${m.loi_anh?`<div class="small" style="color:var(--loss)">Không gửi được ảnh (đã gửi chữ): ${e(m.loi_anh)}</div>`:''}${tg(m.van_ban)}</article>`).join('')
@@ -684,12 +705,12 @@ nap();setInterval(nap,30000);})();
 def trang_telegram(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Nhóm Telegram · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Nhóm Telegram · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'telegram', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Nhóm Telegram</h1></div><div class="stamp">tín hiệu, kết quả, tin sắp ra<br>tự gửi vào một nhóm cố định</div></div>',
         '<div class="tg">',
         '<section class="card" id="tg-vao"></section>',
-        '<section class="card"><b>Thành tích của chính nhóm</b><div class="so" id="tg-so"></div>'
+        '<section class="card"><b>Thành tích của chính nhóm</b><div class="so" id="tg-so"></div><div id="tg-nhanh" style="overflow-x:auto"></div>'
         '<div class="small">Chỉ tính các lệnh đã đăng vào nhóm, từ lúc bật. Mọi lệnh đều được báo kết quả, kể cả lệnh thua; mỗi tín hiệu kèm dấu của dòng nhật ký '
         'nên không ai sửa ngược được. Đây là cách cho người xem thấy hệ thống làm việc thật, thay cho lời hứa.</div></section>',
         '<section class="card"><b>Chế độ</b><div class="cd" id="tg-cd"></div><div class="small" id="tg-tt"></div><div class="bao" id="bao" role="status"></div></section>',

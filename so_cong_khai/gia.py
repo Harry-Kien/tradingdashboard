@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import doc_so, song
+from . import doc_so, duong, song
 
 KHUNG ={'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30, 'H1': 60, 'H4': 240, 'D1': 1440}   # M1 chỉ để xem biểu đồ; không luật nào tính trên M1
 KHUNG.update(song.KHUNG_XEM)                                       # khung chỉ để xem: M2, M3, M10, H2, H3, W1, MN1 (đọc thẳng MT5)
@@ -107,7 +107,7 @@ def _nap_ma(g: dict):
 
 
 _TIN: dict = {}
-LICH_MANG = Path(__file__).resolve().parent.parent / 'du-lieu' / 'lich-tin-mang.json'   # lịch ForexFactory do lich_mang.py tải mỗi giờ
+LICH_MANG = duong.goc_du_lieu() / 'du-lieu' / 'lich-tin-mang.json'   # lịch ForexFactory do lich_mang.py tải mỗi giờ
 NGUON_TIN: dict = {}                                       # lần gọi gần nhất: tệp EA phủ tới đâu, lịch mạng bù bao nhiêu tin
 _MANG: dict = {}
 _CAO: dict = {}
@@ -400,7 +400,7 @@ def lenh_dang_mo(cfg: dict) -> list[dict]:
     - Vị thế: vi_the.tong_hop (MT5 của tài khoản đang nối là nguồn chính; lệnh còn mở theo nhật ký EA được đối chiếu với MT5,
       lệnh MT5 xác nhận đã đóng không còn ở đây, lệnh chưa xác minh mang `xac_minh: False`, `luc_nguon` và `ly_do`).
     - Lệnh gọi còn mở của bot tín hiệu: `nguon: 'bot'`, là tín hiệu chứ không phải vị thế của tài khoản."""
-    key = (cfg.get('bot_db'), json.dumps(cfg.get('tai_khoan', []), sort_keys=True))
+    key = (cfg.get('bot_db'), json.dumps([cfg.get('tai_khoan', []), cfg.get('gia', {}), cfg.get('mt5_xem', {})], sort_keys=True))
     now = time.monotonic()
     if _lenh_nho['key'] == key and now - _lenh_nho['luc'] < 10:
         return _lenh_nho['ds']
@@ -463,6 +463,7 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
                                  zip(view.index, view['open'], view['high'], view['low'], view['close'])],
            **{k: _day(v.iloc[-n:]) for k, v in over.items()}, 'vung': [], 'tin': [],
            'nguon': fr['nguon'], 'bid': _so(fr.get('bid')), 'ask': _so(fr.get('ask')),
+           'tick_ms': int(fr['het'].timestamp() * 1000) if fr['nguon'] == 'mt5' and fr.get('bid') and fr.get('ask') else None,
            'ly_do_khong_song': song.ly_do() if fr['nguon'] != 'mt5' else None,
            'lenh': lenh_cho_vang(cfg)}   # so đúng mã; XAUEUR, XAUJPY, XAUUSD247 là những tài sản khác
     try:                                                          # chỉ báo thêm (EMA200, MACD, Stochastic, ATR, SuperTrend, Ichimoku, pivot)

@@ -140,6 +140,12 @@ function pdhl(H,L,C,T,gio){const n=H.length,a=nul(n),b=nul(n),c=nul(n);if(!T||T.
 const L_=(t,a,k)=>[t,a,k||'duong'];
 const KLM='Vàng CFD dùng tick volume (số lần giá đổi trong nến), không phải khối lượng hợp đồng thật. Chỉ có khi đang nối MT5 trực tiếp.';
 const LIB={
+ zscore:{ten:'Z-score giá đóng',nhom:'dao',khung:'rieng',ts:[['n','Chu kỳ',20,1]],muc:[-2,0,2],mo:'(Giá đóng − SMA) / độ lệch chuẩn tổng thể; đo khoảng cách với trung bình. Chuỗi phẳng trả 0. Không tự xác nhận đảo chiều.',
+  tinh:(H,L,C,O,p)=>{const m=sma(C,p.n),s=sd(C,p.n);return[L_('Z-score',C.map((c,i)=>m[i]==null||s[i]==null?null:s[i]===0?0:(c-m[i])/s[i]))]}},
+ er:{ten:'Hiệu suất xu hướng (Efficiency Ratio)',nhom:'xu',khung:'rieng',ts:[['n','Chu kỳ',10,1]],muc:[0,1],mo:'Khoảng dịch chuyển tuyệt đối sau n nến / tổng biến động tuyệt đối từng bước, từ 0 tới 1. Cao là giá đi thẳng hơn; không dự báo hướng đi.',
+  tinh:(H,L,C,O,p)=>{const d=C.map((c,i)=>i?Math.abs(c-C[i-1]):null),v=sma(d,p.n);return[L_('ER',C.map((c,i)=>i<p.n||v[i]==null?null:v[i]===0?0:Math.abs(c-C[i-p.n])/(v[i]*p.n)))]}},
+ natr:{ten:'ATR chuẩn hóa (NATR, %)',nhom:'bien',khung:'rieng',ts:[['n','Chu kỳ',14,1]],mo:'100 × ATR Wilder / giá đóng; so sánh mức biến động tương đối giữa các mã. Không phải xác suất thắng.',
+  tinh:(H,L,C,O,p)=>[L_('NATR %',atr(H,L,C,p.n).map((v,i)=>v==null||C[i]===0?null:100*v/Math.abs(C[i])))]},
  sma:{ten:'Trung bình động đơn (SMA)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',20,1]],mo:'Giá đóng trung bình của n nến.',tinh:(H,L,C,O,p)=>[L_('SMA '+p.n,sma(C,p.n))]},
  ema:{ten:'Trung bình động hàm mũ (EMA)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',9,1]],mo:'Trung bình nghiêng về nến gần; hay dùng 9, 21, 50, 200.',tinh:(H,L,C,O,p)=>[L_('EMA '+p.n,ema(C,p.n))]},
  wma:{ten:'Trung bình động có trọng số (WMA)',nhom:'xu',khung:'gia',ts:[['n','Chu kỳ',20,1]],mo:'Nến gần có trọng số lớn hơn theo bậc 1, 2, 3…',tinh:(H,L,C,O,p)=>[L_('WMA '+p.n,wma(C,p.n))]},
@@ -289,14 +295,16 @@ const LIB={
   tinh:(H,L,C,O,p)=>[L_('HV '+p.n,sd(C.map((c,i)=>i&&C[i-1]>0&&c>0?Math.log(c/C[i-1]):null),p.n).map(v=>v==null?null:100*v))]},
  mass:{ten:'Mass Index',nhom:'bien',khung:'rieng',ts:[['n','Tổng',25,1]],muc:[27,26.5],mo:'Đo biên độ nến phình rồi co (Donald Dorsey); vượt 27 rồi rơi dưới 26,5 là dấu hiệu "đảo chiều phình" cổ điển.',
   tinh:(H,L,C,O,p)=>{const e1=ema(H.map((h,i)=>h-L[i]),9),e2=ema(e1,9);return[L_('Mass',tong(hop(e1,e2,(a,b)=>b?a/b:null),p.n))]}},};
+Object.assign(LIB,HGR_OSS_EXT.entries(L_));
 const NHOM={xu:'Xu hướng',dao:'Dao động',bien:'Biến động',kl:'Khối lượng (tick volume)',cd:'Cộng đồng nổi tiếng'},MAUS=['#2962ff','#ff6d00','#e91e63','#00897b','#8e24aa','#fbc02d','#43a047','#6d4c41','#00acc1','#f4511e'];
 // ---------------------------------------------------------------- trạng thái cá nhân (lưu trong trình duyệt)
-let S={ds:[],sao:['ema','rsi','macd','bb'],mau:{}};try{Object.assign(S,JSON.parse(localStorage.getItem('so-cbcn1')||'{}'))}catch(e){}
-S.ds=(S.ds||[]).filter(x=>x&&LIB[x.k]);const luu=()=>{try{localStorage.setItem('so-cbcn1',JSON.stringify(S))}catch(e){}};
+const CBKEY=window.HVD_CB_KEY||'so-cbcn1';
+let S={ds:[],sao:['ema','rsi','macd','bb'],mau:{}};try{Object.assign(S,JSON.parse(localStorage.getItem(CBKEY)||'{}'))}catch(e){}
+S.ds=(Array.isArray(S.ds)?S.ds:[]).filter(x=>x&&LIB[x.k]);let cbLuuLoi=false;const luu=()=>{try{localStorage.setItem(CBKEY,JSON.stringify(S));cbLuuLoi=false;return true}catch(e){cbLuuLoi=true;return false}};
 const macDinh=k=>Object.fromEntries(LIB[k].ts.map(t=>[t[0],t[2]])),moiId=()=>Math.random().toString(36).slice(2,9);
 function them(k,p){const n=S.ds.length;S.ds.push({id:moiId(),k,p:{...macDinh(k),...(p||{})},mau:MAUS[n%MAUS.length],an:false});luu();doi()}
 // ---------------------------------------------------------------- vẽ lên biểu đồ (Lightweight Charts)
-let SER=[],KH='',TINH=0,khoaDL='';
+let SER=[],KH='',TINH=0,khoaDL='',lastSource=null,tickTimer=0,tickCost=0;
 function goSach(c){for(const s of SER)try{c.removeSeries(s.s)}catch(e){}SER=[]}
 // ---------------------------------------------------------------- dạng biểu đồ: nến, nến rỗng, Heikin Ashi, thanh OHLC, đường, vùng, đường cơ sở.
 // Chuỗi nến gốc (LW.nen) giữ nguyên để các đường giá, hình vẽ và lệnh vẫn bám đúng; với dạng khác, nến gốc trong suốt và một chuỗi phủ vẽ dạng mới.
@@ -317,12 +325,12 @@ function kieuVe(B){const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||
  if(KBD==='ha')PHU.applyOptions({upColor:len,downColor:xuong,wickUpColor:len,wickDownColor:xuong,borderUpColor:len,borderDownColor:xuong});
  else if(KBD==='thanh')PHU.applyOptions({upColor:len,downColor:xuong});else if(KBD==='duong')PHU.applyOptions({color:xanh});
  else if(KBD==='vung')PHU.applyOptions({lineColor:xanh,topColor:'rgba(41,98,255,.35)',bottomColor:'rgba(41,98,255,.02)'});
- const cs=B.D.candles,k=KBD+'|'+cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1][4];if(k===khoaKieu)return;khoaKieu=k;
+ const cs=B.D.candles,k=KBD+'|'+cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1].join(',');if(k===khoaKieu&&PHU._source===cs)return;khoaKieu=k;PHU._source=cs;
  if(KBD==='coso'){const n=Math.min(200,cs.length),tb=cs.slice(-n).reduce((s,r)=>s+r[4],0)/n;       // mốc: giá đóng trung bình 200 nến gần nhất
   PHU.applyOptions({baseValue:{type:'price',price:tb},topLineColor:len,bottomLineColor:xuong,topFillColor1:'rgba(38,166,154,.28)',topFillColor2:'rgba(38,166,154,.03)',
    bottomFillColor1:'rgba(239,83,80,.03)',bottomFillColor2:'rgba(239,83,80,.28)'})}
  const ds=KBD==='ha'?heikin(cs):cs;
- PHU.setData(KBD==='ha'||KBD==='thanh'?ds.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]})):cs.map(r=>({time:r[0],value:r[4]})))}
+ CHART_RT.gui(PHU,cs.length,i=>{const r=ds[i];return KBD==='ha'||KBD==='thanh'?{time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]}:{time:r[0],value:r[4]}},cs)}
 const MOC=[];
 function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candles||!B.D.candles.length)return;const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||{};
  try{kieuVe(B)}catch(e){console.warn('Dạng biểu đồ:',e)}
@@ -330,29 +338,57 @@ function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candle
  const bat=S.ds.filter(x=>!x.an),coBan=1+String(LW.khDao||'').split(',').filter(Boolean).length,
   kh=coBan+'|'+(LW.khDao||'')+'|'+bat.map(x=>x.id+x.k+JSON.stringify(x.p)+x.mau).join(';'),
   mat=SER.some(s=>{try{return!c.panes().some(pa=>pa.getSeries().includes(s.s))}catch(e){return true}});
- if(kh!==KH||mat){goSach(c);try{for(let i=c.panes().length-1;i>=coBan;i--)c.removePane(i)}catch(e){}KH=kh;khoaDL='';let pn=coBan;
+ if(kh!==KH||mat){workerBo();goSach(c);try{for(let i=c.panes().length-1;i>=coBan;i--)c.removePane(i)}catch(e){}KH=kh;khoaDL='';let pn=coBan;
   for(const x of bat){const d=LIB[x.k],cs=d.khung==='rieng'?pn++:0,mau=[x.mau,'#ff6d00','#26a69a','#ef5350'];
    d.tinh([0],[0],[0],[0],x.p).forEach(([ten,,kieu],j)=>{const m=kieu==='tang'?'#26a69a':kieu==='giam'?'#ef5350':j===0?x.mau:mau[j%4],
      o={color:m,lineWidth:j===0?2:1,priceLineVisible:false,lastValueVisible:d.khung==='rieng'||j===0,title:d.khung==='rieng'?'':ten,crosshairMarkerVisible:kieu!=='cham'};
     let s;if(kieu==='cot'||kieu==='kl')s=c.addSeries(LWC.HistogramSeries,{priceLineVisible:false,lastValueVisible:false},cs);
-    else s=c.addSeries(LWC.LineSeries,kieu==='cham'?{...o,lineVisible:false,pointMarkersVisible:true,pointMarkersRadius:1.6}:kieu==='bac'?{...o,lineType:1,lineStyle:2}:o,cs);
+    else s=c.addSeries(LWC.LineSeries,kieu==='dau'?{...o,lineVisible:false,pointMarkersVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,title:''}:kieu==='cham'?{...o,lineVisible:false,pointMarkersVisible:true,pointMarkersRadius:1.6}:kieu==='bac'?{...o,lineType:1,lineStyle:2}:o,cs);
     SER.push({s,id:x.id,j,kieu,mau:m,mk:null});
     if(j===0&&d.muc)for(const v of d.muc)try{s.createPriceLine({price:v,color:P.mute||'#888',lineWidth:1,lineStyle:1,axisLabelVisible:true,title:''})}catch(e){}})}
   try{c.panes().forEach((pa,i)=>{if(i>=coBan)pa.setStretchFactor(.22)})}catch(e){}}
- const cs=B.D.candles,k=cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1][4]+'|'+KH,now=Date.now();
- if(k===khoaDL||(now-TINH<800&&khoaDL.split('|')[0]==String(cs.length)))return;khoaDL=k;TINH=now;
- const H=cs.map(r=>r[2]),Lo=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]),VM=B.D.vol||{},V=cs.map(r=>VM[r[0]]),T=cs.map(r=>r[0]);   // V: tick volume của MT5 theo giờ mở nến (không có khi dùng kho nến); T: giờ mở nến
- for(const x of bat){let out;try{out=LIB[x.k].tinh(H,Lo,C,O,x.p,V,T)}catch(e){console.warn('Chỉ báo '+x.k+':',e);continue}for(const it of SER.filter(s=>s.id===x.id)){const a=out[it.j]&&out[it.j][1];if(!a)continue;
-  it.s.setData(cs.map((r,i)=>a[i]==null||!isFinite(a[i])?{time:r[0]}:{time:r[0],value:a[i],...(it.kieu==='cot'?{color:a[i]>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:it.kieu==='kl'?{color:r[4]>=r[1]?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}));
-  const mk=out[it.j][3];if(mk&&LWC.createSeriesMarkers){if(!it.mk)it.mk=LWC.createSeriesMarkers(it.s,[]);                  // mũi tên mua bán của chỉ báo (300 dấu gần nhất)
-   it.mk.setMarkers(mk.filter(m=>m.i<cs.length).slice(-300).map(m=>({time:cs[m.i][0],position:m.len?'belowBar':'aboveBar',color:m.len?'#26a69a':'#ef5350',shape:m.len?'arrowUp':'arrowDown'})))}}}}
-function doi(){KH+='*';ve();veDs()}
+ const cs=B.D.candles,last=cs[cs.length-1],k=cs.length+'|'+cs[0][0]+'|'+last.join(',')+'|'+(B.D.vol||{})[last[0]]+'|'+KH,now=Date.now();
+ if(k===khoaDL&&lastSource===cs)return;khoaDL=k;lastSource=cs;TINH=now;if(!bat.length)return;
+ if(!mayTinh(B,bat)){
+  const H=cs.map(r=>r[2]),Lo=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]),VM=B.D.vol||{},V=cs.map(r=>VM[r[0]]),T=cs.map(r=>r[0]);
+  const items=[];for(const x of bat)try{items.push({id:x.id,k:x.k,out:LIB[x.k].tinh(H,Lo,C,O,x.p,V,T).map(o=>({values:o[1],start:0,markers:o[3]}))})}catch(e){console.warn('Chỉ báo '+x.k+':',e)}
+  nhanKetQua(items,cs,cs.length)}
+}
+function nhanKetQua(items,cs,n){const LWC=window.LightweightCharts;
+ for(const item of items)for(const it of SER.filter(s=>s.id===item.id)){const out=item.out[it.j];if(!out)continue;
+  CHART_RT.gui(it.s,n,i=>{const r=cs[i],v=out.values[i-out.start];return v==null||!isFinite(v)?{time:r[0]}:{time:r[0],value:v,...(it.kieu==='cot'?{color:v>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:it.kieu==='kl'?{color:r[4]>=r[1]?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}},cs,!['zz','frac','rsipk'].includes(item.k));
+  if(out.markers&&LWC.createSeriesMarkers){if(!it.mk)it.mk=LWC.createSeriesMarkers(it.s,[]);it.mk.setMarkers(out.markers.filter(m=>m.i>=0&&m.i<n).slice(-300).map(m=>({time:cs[m.i][0],position:m.len?'belowBar':'aboveBar',color:m.len?'#26a69a':'#ef5350',shape:m.len?'arrowUp':'arrowDown',...(m.text?{text:m.text}:{})})))}}
+}
+// Same formulas run off the UI thread. Only one job plus the newest dirty state is retained.
+let worker=null,workerFailed=false,workerTask=null,workerSerial=0,workerDirty=false,workerDone=null,workerCost=null,workerApplied=null;
+function workerBo(){if(worker){worker.onmessage=null;worker.onerror=null;worker.terminate()}worker=null;workerTask=null;workerDirty=false;workerDone=null}
+function mayTinh(B,bat){if(workerFailed||!window.Worker)return false;
+ const cs=B.D.candles,c=B.LW.chart,epoch=B.D._chart_epoch;
+ if(workerTask&&(workerTask.source!==cs||workerTask.config!==KH||workerTask.epoch!==epoch||workerTask.chart!==c))workerBo();
+ if(workerTask){workerDirty=true;return true}
+ if(!worker){try{worker=new Worker('/tinh/chi-bao-worker.js');worker.onmessage=e=>{const task=workerTask,msg=e.data;if(!task||msg.id!==task.id)return;workerTask=null;
+   const B2=window.BDCB&&BDCB();if(B2&&B2.D&&B2.LW&&B2.LW.chart===task.chart&&B2.D.candles===task.source&&B2.D._chart_epoch===task.epoch&&KH===task.config){
+    nhanKetQua(msg.items,task.source,msg.n);workerCost=msg.cost_ms;workerApplied=performance.now();workerDone={source:task.source,n:msg.n,config:KH};}
+   if(workerDirty){workerDirty=false;khoaDL='';tick()}};
+  worker.onerror=()=>{workerBo();workerFailed=true;khoaDL='';tick()}}
+ catch(e){workerFailed=true;return false}}
+ const from=workerDone&&workerDone.source===cs&&workerDone.config===KH&&cs.length>=workerDone.n&&cs.length-workerDone.n<=2?Math.max(0,workerDone.n-1):0;
+ workerTask={id:++workerSerial,source:cs,config:KH,epoch,chart:c};
+ try{worker.postMessage({id:workerTask.id,cs,vol:B.D.vol||{},specs:bat.map(x=>({id:x.id,k:x.k,p:x.p})),from})}
+ catch(e){workerBo();workerFailed=true;return false}return true}
+function tinhTrang(){return{mode:worker?'worker':workerFailed?'fallback':'idle',waiting:!!workerTask,compute_ms:workerCost,age_ms:workerApplied==null?null:performance.now()-workerApplied}}
+addEventListener('chart-context-changing',()=>{workerBo();clearTimeout(tickTimer);tickTimer=0;khoaDL='';lastSource=null});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')workerBo();else{khoaDL='';tick()}});
+// Chỉ gom cập nhật chỉ báo: nến/Bid/Ask vẫn vẽ ở khung hình kế tiếp. Tránh tính cả lịch sử ở mỗi tick.
+function tick(){if(tickTimer)return;const wait=Math.max(0,Math.max(16,Math.min(500,tickCost*4))-(Date.now()-TINH));
+ tickTimer=setTimeout(()=>{tickTimer=0;if(document.visibilityState==='hidden')return;const t=performance.now();try{ve()}catch(e){console.warn('Chỉ báo realtime:',e)}tickCost=performance.now()-t},wait)}
+function doi(){clearTimeout(tickTimer);tickTimer=0;KH+='*';ve();veDs()}
 // số cuối (nến đã đóng) của các chỉ báo đang bật, mũi tên gần nhất và 60 nến, cho nút "AI đọc chỉ báo"
 function tomTat(){const B=window.BDCB&&window.BDCB(),r={tf:'',ma:'XAUUSD',chi_bao:[],nen:[],lang:(document.documentElement.lang||'vi').slice(0,2)};if(!B||!B.D||!B.D.candles)return r;
  const D=B.D,cs=D.candles,n=D.live!=null&&D.live>=0&&D.live<cs.length?D.live:cs.length,c2=cs.slice(0,n),VM=D.vol||{};r.tf=D.tf||'';r.ma=D.khac_vang?D.ma:'XAUUSD';
  const H=c2.map(x=>x[2]),Lo=c2.map(x=>x[3]),C=c2.map(x=>x[4]),O=c2.map(x=>x[1]),V=c2.map(x=>VM[x[0]]),T=c2.map(x=>x[0]),so=v=>v==null||!isFinite(v)?null:+(+v).toPrecision(6);
  for(const x of S.ds.filter(v=>!v.an&&LIB[v.k])){let out;try{out=LIB[x.k].tinh(H,Lo,C,O,x.p,V,T)}catch(e){continue}const gt={},dau=[];
-  for(const o of out){gt[o[0]]=[so(o[1][n-1]),so(o[1][n-2])];if(o[3])for(const m of o[3].filter(m=>m.i<n).slice(-3))dau.push({len:m.len,cach:n-1-m.i})}
+  for(const o of out){if(o[2]!=='dau')gt[o[0]]=[so(o[1][n-1]),so(o[1][n-2])];if(o[3])for(const m of o[3].filter(m=>m.i<n).slice(-3))dau.push({len:m.len,cach:n-1-m.i,...(m.patterns?{mau:m.patterns}:{})})}
   r.chi_bao.push({ten:LIB[x.k].ten,tham_so:x.p,gia_tri:gt,dau})}
  r.nen=c2.slice(-60).map(x=>x.slice(0,5));return r}
 // ---------------------------------------------------------------- hộp chọn
@@ -361,14 +397,14 @@ NEN.innerHTML='<div class="cbcn" role="dialog" aria-modal="true" aria-label="Ch�
  +'<div class="tim"><input type="search" placeholder="Tìm chỉ báo: EMA, RSI, MACD, Bollinger…" aria-label="Tìm chỉ báo"></div>'
  +'<div class="tab" role="group" aria-label="Nhóm chỉ báo"></div><div class="ds"></div></div>';
 document.body.appendChild(NEN);let TAB='tat';const DS=NEN.querySelector('.ds'),TIM=NEN.querySelector('.tim input');
-const TABS=[['tat','Tất cả'],['sao','Yêu thích'],['dung','Đang dùng'],['xu','Xu hướng'],['dao','Dao động'],['bien','Biến động'],['kl','Khối lượng'],['cd','Cộng đồng nổi tiếng'],['co_san','Có sẵn của hệ thống'],['mau','Mẫu của tôi']];
+const TABS=[['tat','Tất cả'],['sao','Yêu thích'],['dung','Đang dùng'],['oss','Mã nguồn mở'],['xu','Xu hướng'],['dao','Dao động'],['bien','Biến động'],['kl','Khối lượng'],['cd','Cộng đồng nổi tiếng'],['co_san','Có sẵn của hệ thống'],['mau','Mẫu của tôi']];
 function veTab(){NEN.querySelector('.tab').innerHTML=TABS.map(([k,n])=>`<button type="button" class="ghost" data-tab="${k}" aria-pressed="${TAB===k}">${n}${k==='dung'&&S.ds.length?' ('+S.ds.length+')':''}</button>`).join('')}
 function hangLib(k){const d=LIB[k],sao=S.sao.includes(k),dem=S.ds.filter(x=>x.k===k).length;
  return`<div class="h"><button type="button" class="sao" data-sao="${k}" aria-pressed="${sao}" aria-label="Yêu thích" title="Yêu thích">${sao?'★':'☆'}</button>`
  +`<b>${esc(d.ten)}</b><button type="button" class="them" data-them="${k}">Thêm${dem?' ('+dem+')':''}</button><small>${esc(NHOM[d.nhom])} · ${d.khung==='gia'?'trên biểu đồ giá':'khung riêng'} · ${esc(d.mo)}</small></div>`}
 function hangDung(x){const d=LIB[x.k];return`<div class="dg${x.an?' an':''}" data-id="${x.id}"><input type="color" value="${x.mau}" data-mau aria-label="Màu">`
  +`<b>${esc(d.ten)}</b><button type="button" class="ghost" data-an>${x.an?'Hiện':'Ẩn'}</button><button type="button" class="ghost" data-chep>Nhân bản</button><button type="button" class="ghost xoa" data-xoa>Xóa</button>`
- +`<div class="ts">${d.ts.map(([k,n,,b,mn])=>`<label>${esc(n)}<input type="number" step="${b}" min="${mn??b}" data-ts="${k}" value="${x.p[k]}"></label>`).join('')}</div></div>`}
+ +`<div class="ts">${d.ts.map(([k,n,,b,mn,mx])=>`<label>${esc(n)}<input type="number" step="${b}" min="${mn??b}" max="${mx??1000}" data-ts="${k}" value="${x.p[k]}"></label>`).join('')}</div></div>`}
 function veDs(){if(NEN.hidden)return;veTab();const q=TIM.value.trim().toLowerCase(),khop=k=>!q||(k+' '+LIB[k].ten+' '+LIB[k].mo).toLowerCase().includes(q);let h='';
  if(TAB==='dung')h=S.ds.length?S.ds.map(hangDung).join(''):'<p class="rong">Chưa dùng chỉ báo nào. Chọn ở tab Tất cả.</p>';
  else if(TAB==='co_san'){const ch=[...document.querySelectorAll('.chips .chip[data-k]')].filter(b=>!q||b.textContent.toLowerCase().includes(q));
@@ -377,7 +413,7 @@ function veDs(){if(NEN.hidden)return;veTab();const q=TIM.value.trim().toLowerCas
  else if(TAB==='mau'){const ten=Object.keys(S.mau||{});h='<div class="mau"><input type="text" maxlength="40" placeholder="Tên mẫu, ví dụ: Lướt sóng M5" data-ten-mau><button type="button" data-luu-mau>Lưu bộ đang dùng</button></div>'
   +(ten.length?ten.map(t=>`<div class="h"><span></span><b>${esc(t)}</b><span><button type="button" class="them" data-ap="${esc(t)}">Áp dụng</button> <button type="button" class="ghost them" data-bo-mau="${esc(t)}">Xóa</button></span>`
    +`<small>${S.mau[t].map(x=>esc(LIB[x.k]?LIB[x.k].ten.split(' (')[0]+' '+Object.values(x.p).join('/'):'')).join(' · ')}</small></div>`).join(''):'<p class="rong">Chưa có mẫu nào. Bật các chỉ báo bạn hay dùng rồi lưu thành mẫu.</p>')}
- else{const ds=Object.keys(LIB).filter(k=>(TAB==='tat'||(TAB==='sao'?S.sao.includes(k):LIB[k].nhom===TAB))&&khop(k));
+ else{const ds=Object.keys(LIB).filter(k=>(TAB==='tat'||(TAB==='sao'?S.sao.includes(k):TAB==='oss'?LIB[k].nguon==='oss':LIB[k].nhom===TAB))&&khop(k));
   h=ds.length?ds.map(hangLib).join(''):'<p class="rong">'+(TAB==='sao'?'Bấm ☆ để thêm chỉ báo vào Yêu thích.':'Không có chỉ báo khớp.')+'</p>'}
  DS.innerHTML=h}
 NEN.addEventListener('click',e=>{const t=e.target;if(t===NEN||t.closest('[data-dong]')){dong();return}
@@ -394,7 +430,7 @@ NEN.addEventListener('click',e=>{const t=e.target;if(t===NEN||t.closest('[data-d
  else if(b.dataset.boMau){delete S.mau[b.dataset.boMau];luu();veDs()}});
 NEN.addEventListener('change',e=>{const t=e.target,dg=t.closest('.dg'),x=dg&&S.ds.find(v=>v.id===dg.dataset.id);if(!x)return;
  if(t.hasAttribute('data-mau'))x.mau=t.value;else if(t.dataset.ts){const q=LIB[x.k].ts.find(r=>r[0]===t.dataset.ts)||[],mn=q[4]??0,nguyen=q[3]>=1;let v=parseFloat(t.value);   // bước 1 là chu kỳ: làm tròn số nguyên
- if(isFinite(v)&&v>=mn&&(v>0||mn===0)){if(nguyen)v=Math.max(mn,Math.round(v));x.p[t.dataset.ts]=Math.min(v,1000);t.value=x.p[t.dataset.ts]}else t.value=x.p[t.dataset.ts]}luu();doi()});
+ if(isFinite(v)&&v>=mn&&(v>0||mn===0)){if(nguyen)v=Math.max(mn,Math.round(v));x.p[t.dataset.ts]=Math.min(v,q[5]??1000);t.value=x.p[t.dataset.ts]}else t.value=x.p[t.dataset.ts]}luu();doi()});
 TIM.addEventListener('input',()=>{if(TAB==='dung'||TAB==='mau')TAB='tat';veDs()});
 function mo(){NEN.hidden=false;TIM.value='';veDs();setTimeout(()=>TIM.focus(),30)}function dong(){NEN.hidden=true;nut&&nut.focus()}
 addEventListener('keydown',e=>{if(!NEN.hidden&&e.key==='Escape'){e.stopPropagation();dong();return}
@@ -406,8 +442,25 @@ let nut=null;const t2=document.querySelector('.tools.t2');if(t2){nut=document.cr
  const ch=document.createElement('label');ch.className='sel cbcn-kieu';ch.title='Dạng biểu đồ';
  ch.innerHTML='<select aria-label="Dạng biểu đồ">'+Object.entries(KIEU).map(([k,n])=>`<option value="${k}"${k===KBD?' selected':''}>${n}</option>`).join('')+'</select>';
  ch.querySelector('select').addEventListener('change',e=>{KBD=e.target.value;try{localStorage.setItem('so-kieu-bd',KBD)}catch(_){}ve()});nut.before(ch)}
-return{ve,mo,LIB,KIEU,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},dongBo:x=>{if(x&&x.mau&&typeof x.mau==='object'&&!Array.isArray(x.mau))S.mau=x.mau;if(x&&Array.isArray(x.sao))S.sao=x.sao.filter(k=>LIB[k]);luu();if(!NEN.hidden)veDs()},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
+return{cauHinh:()=>({mau:S.mau,sao:S.sao}),loiLuu:()=>cbLuuLoi,ve,tick,mo,LIB,KIEU,tinhTrang,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},dongBo:x=>{if(x&&x.mau&&typeof x.mau==='object'&&!Array.isArray(x.mau))S.mau=x.mau;if(x&&Array.isArray(x.sao))S.sao=x.sao.filter(k=>LIB[k]);const ok=luu();if(!NEN.hidden)veDs();return ok},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
 """
+
+from . import chi_bao_nguon_mo as _oss  # noqa: E402
+
+NGUON_MO_NOTICE = _oss.NOTICE_HTML
+
+# Derive worker formulas from the exact same source tested against pandas; no approximation or second implementation.
+WORKER_JS = _oss.JS + JS[JS.index('const N=a=>'):JS.index('// ---------------------------------------------------------------- trạng thái cá nhân')] + r"""
+self.onmessage=e=>{const task=e.data,t0=performance.now(),cs=task.cs,
+ H=cs.map(r=>r[2]),L=cs.map(r=>r[3]),C=cs.map(r=>r[4]),O=cs.map(r=>r[1]),V=cs.map(r=>task.vol[r[0]]),T=cs.map(r=>r[0]),items=[];
+ for(const x of task.specs){if(!LIB[x.k])continue;try{const start=['zz','frac','rsipk'].includes(x.k)?0:task.from;
+  const out=LIB[x.k].tinh(H,L,C,O,x.p,V,T).map(o=>({values:o[1].slice(start),start,markers:o[3]?o[3].slice(-300):null}));items.push({id:x.id,k:x.k,out})}catch(e){items.push({id:x.id,k:x.k,out:[],error:'indicator_failed'})}}
+ self.postMessage({id:task.id,n:cs.length,items,cost_ms:performance.now()-t0})};
+"""
+
+from . import chart_realtime as _rt  # noqa: E402
+
+JS = _oss.JS + _rt.JS + JS
 
 from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script
 

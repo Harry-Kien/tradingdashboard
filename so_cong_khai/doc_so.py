@@ -5,6 +5,7 @@ import csv
 import glob
 import json
 import os
+import re
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -76,7 +77,10 @@ def doc_ea(csv_path: str, lech_gio_utc: float = 0) -> dict:
     tz = timezone(timedelta(hours=lech_gio_utc))
     trades, orphans, curve, deposits = [], [], [], []
     cur, version = None, ''
-    with open(mo_rong(csv_path), encoding='utf-8-sig', newline='') as f:
+    path = mo_rong(csv_path)
+    symbol = re.search(r'^EAPromax_(?:M_)?(.+)_\d+_\d+_events\.csv$', Path(path).name)
+    symbol = symbol.group(1) if symbol else None
+    with open(path, encoding='utf-8-sig', newline='') as f:
         reader = csv.DictReader(f)
         gon = 'detail' in (reader.fieldnames or [])
         for row in reader:
@@ -98,6 +102,8 @@ def doc_ea(csv_path: str, lech_gio_utc: float = 0) -> dict:
                     cur = {'side': ev.upper(), 'opened': t, 'lots': _f(row.get('lots')),
                            'entry': _f(row.get('fill_price')) or _f(row.get('req_price')),
                            'sl': _f(row.get('sl')), 'tp': _f(row.get('tp'))}
+                if row.get('symbol') or symbol:
+                    cur['ma'] = row.get('symbol') or symbol
             elif ev == 'closed':
                 words = [w for w in text.split() if '=' not in w]
                 base = cur or {'side': '?', 'opened': None, 'lots': _f(row.get('lots')), 'entry': 0.0, 'sl': 0.0, 'tp': 0.0}

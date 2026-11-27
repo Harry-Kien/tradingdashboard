@@ -26,14 +26,14 @@ BI_DANH = {'GOLD': 'XAUUSD', 'XAU': 'XAUUSD', 'VANG': 'XAUUSD', 'VÀNG': 'XAUUSD
            'DOW': 'US30', 'DJ30': 'US30', 'NASDAQ': 'NAS100', 'US100': 'NAS100', 'USTEC': 'NAS100', 'NAS': 'NAS100', 'SPX': 'US500', 'SP500': 'US500',
            'BTC': 'BTCUSD', 'BITCOIN': 'BTCUSD', 'ETH': 'ETHUSD', 'OIL': 'USOIL', 'WTI': 'USOIL', 'DAX': 'GER40', 'GER30': 'GER40'}
 _GIO = [  # (mẫu, thứ tự nhóm: ngày, tháng, năm, giờ, phút)
-    (re.compile(r'\[?\s*(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})[\s,T]+(\d{1,2})[:h](\d{2})(?::\d{2})?\s*\]?'), (1, 2, 3, 4, 5)),
+    (re.compile(r'\[?\s*(\d{1,2})([./-])(\d{1,2})[./-](\d{2,4})[\s,T]+(\d{1,2})[:h](\d{2})(?::\d{2})?\s*([AaPp][Mm])?\s*\]?'), (1, 3, 4, 5, 6)),
     (re.compile(r'\b(\d{1,2})[:h](\d{2})(?::\d{2})?\s*,?\s*(?:ngày\s*)?(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?\b'), (3, 4, 5, 1, 2)),
     (re.compile(r'\b(\d{1,2})[./-](\d{1,2})\s+(\d{1,2})[:h](\d{2})\b'), (1, 2, None, 3, 4)),
 ]
 _SO = r'\d[\d.,]*\d|\d'
 _TU_CHIEU = re.compile(r'(?<![A-Za-z])(BUY|SELL|LONG|SHORT|MUA|BÁN|BAN)(?![A-Za-z])', re.I)
 _TU_SL = re.compile(r'(?:\bS\s*/?\s*L\b|STOP\s*LOSS|CẮT\s*LỖ|CAT\s*LO|DỪNG\s*LỖ|DUNG\s*LO)\s*[:=@-]?\s*(' + _SO + ')', re.I)
-_TU_TP = re.compile(r'(?:\bT\s*/?\s*P\s*\d?\b|TAKE\s*PROFIT\s*\d?|CHỐT\s*LỜI\s*\d?|CHOT\s*LOI\s*\d?)\s*[:=@-]?\s*((?:(?:' + _SO + r')\s*[/|,;]?\s*)+)', re.I)
+_TU_TP = re.compile(r'(?:\bT\s*/?\s*P\s*\d?\b|TAKE\s*PROFIT\s*\d?|CHỐT\s*LỜI\s*\d?|CHOT\s*LOI\s*\d?)\s*[:=@-]?\s*((?:(?:' + _SO + r')\s*[/|,;\-–]?\s*)+)', re.I)
 _NGAY = re.compile(r'\b(NOW|MARKET|CMP|NGAY|HIỆN\s*TẠI|THỊ\s*TRƯỜNG)\b', re.I)
 
 
@@ -77,7 +77,16 @@ def _gio(dong: str, nam_mac_dinh: int) -> datetime | None:
         try:
             nam = int(g[2]) if g[2] else nam_mac_dinh
             nam = nam + 2000 if nam < 100 else nam
-            return datetime(nam, int(g[1]), int(g[0]), int(g[3]), int(g[4]))
+            ngay_, thang, gio, phut = int(g[0]), int(g[1]), int(g[3]), int(g[4])
+            if mau is _GIO[0][0]:
+                ap = (m.group(7) or '').upper()
+                if ap and m.group(2) == '/' and ngay_ <= 12 or thang > 12:       # kiểu Mỹ 11/25/2026 2:05 PM: tháng đứng trước
+                    ngay_, thang = thang, ngay_
+                if ap == 'PM' and gio < 12:
+                    gio += 12
+                elif ap == 'AM' and gio == 12:
+                    gio = 0
+            return datetime(nam, thang, ngay_, gio, phut)
         except (ValueError, TypeError):
             continue
     return None
@@ -121,18 +130,28 @@ def doc_tin(van_ban: str, mui_gio: float = 7, nam: int | None = None, ma_mac_din
     return ra, loi
 
 
+def _ngan_so(t: str) -> str:
+    """Dấu phẩy nằm giữa hai giá viết liền ('3510,3520', '1.0850,1.0880') là dấu ngăn danh sách: đổi thành dấu cách để không đọc thành một số."""
+    cu = None
+    while cu != t:                                                          # lặp: '3535,3530,3520' cần hai lượt (mỗi lượt không chồng nhau)
+        cu = t
+        t = re.sub(r'(?<![\d.,])(\d{4,}),(?=\d{3,})', r'\1 ', t)
+        t = re.sub(r'(\d\.\d+),(?=\d)', r'\1 ', t)
+    return t
+
+
 def _mot_tin(dong: list[str], ma_mac_dinh: str) -> tuple[dict, str | None]:
-    chu = '\n'.join(dong)
+    chu = _ngan_so('\n'.join(dong))
     m = _TU_CHIEU.search(chu)
     if not m:
         return {}, 'không thấy BUY/SELL'
     chieu = CHIEU[m.group(1).upper()]
     dau = chu[:m.start()].rsplit('\n', 1)[-1] + chu[m.start():].split('\n', 1)[0]  # dòng có chữ BUY/SELL
-    loai = 'cho' if re.search(r'\b(LIMIT|STOP|CHỜ|CHO)\b', dau, re.I) else ''
+    loai = 'cho' if re.search(r'\b(LIMIT|STOP(?!\s*LOSS)|CHỜ)\b', dau, re.I) else ''
     ngay = bool(_NGAY.search(dau)) and not loai
     sau = dau[dau.upper().find(m.group(1).upper()) + len(m.group(1)):]
     sau = re.split(r'\b(?:S\s*/?\s*L|T\s*/?\s*P|STOP\s*LOSS|TAKE)\b', sau, maxsplit=1, flags=re.I)[0]
-    gia_vao = [v for v in (so(t) for t in re.findall(_SO, re.sub(r'\b(?:US30|US500|NAS100|GER40|UK100|JP225)\b', '', sau))) if v]
+    gia_vao = [v for v in (so(t) for t in re.findall(_SO, re.sub(r'\b(?:US30|US500|NAS100|GER40|UK100|JP225|[MHDW]\d{1,2}|MN1)\b', '', sau))) if v]
     if not gia_vao:                                                         # "BUY GOLD" xuống dòng "Entry: 3540"
         e = re.search(r'(?:ENTRY|VÀO|VAO|GIÁ\s*VÀO|@)\s*[:=]?\s*(' + _SO + r')(?:\s*[-–~]\s*(' + _SO + '))?', chu, re.I)
         if e:
@@ -150,7 +169,7 @@ def _mot_tin(dong: list[str], ma_mac_dinh: str) -> tuple[dict, str | None]:
          'vung': sorted(gia_vao[:2]) if gia_vao else None}
     mua = chieu == 'MUA'
     for v in tp:                                                            # bỏ số lạ (như "TP1" bị đọc thành 1) và giữ đúng chiều
-        if (v > x['sl']) == mua and v not in x['tp']:
+        if (v > x['sl']) == mua and v not in x['tp'] and abs(v - x['sl']) <= 0.5 * x['sl']:
             x['tp'].append(v)
     x['tp'] = sorted(x['tp'], reverse=not mua)
     if not x['tp']:
@@ -206,11 +225,14 @@ def cham(x: dict, nen: list[tuple], cho_gio: float = 4, ve_hoa_von: bool = False
         return kq
     sl = x['sl']
     tps = x['tp']
-    for n in nen[i:]:
+    cho_khop = not x['ngay'] and not (lo <= p0 <= hi)                       # khớp nhờ giá chạm mức chờ giữa một nến
+    for j, n in enumerate(nen[i:]):
         cham_sl = n[3] <= sl if mua else n[2] >= sl
         if cham_sl:
             kq.update(trang_thai='thua' if kq['tp_cham'] == 0 else ('hoa_von' if sl == vao else 'tp_roi_sl'), luc_xong=n[0])
             break
+        if j == 0 and cho_khop:
+            continue
         while kq['tp_cham'] < len(tps) and ((n[2] >= tps[kq['tp_cham']]) if mua else (n[3] <= tps[kq['tp_cham']])):
             kq['tp_cham'] += 1
             if kq['tp_cham'] == 1 and ve_hoa_von:
@@ -220,7 +242,7 @@ def cham(x: dict, nen: list[tuple], cho_gio: float = 4, ve_hoa_von: bool = False
             break
     else:
         kq['trang_thai'] = 'dang_mo'
-    r = [abs(t - vao) / rui for t in tps]
+    r = [(t - vao) / (vao - x['sl']) for t in tps]                          # có dấu cho cả mua lẫn bán
     kq['r_cac_tp'] = [round(v, 2) for v in r]
     if kq['trang_thai'] != 'dang_mo' or kq['tp_cham']:
         kq['r_tp1'] = round(r[0] if kq['tp_cham'] else -1.0, 3)

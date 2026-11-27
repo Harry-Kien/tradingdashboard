@@ -65,13 +65,28 @@ let GAN=null,YC=null;const PRIM={attached(p){YC=p.requestUpdate},detached(){YC=n
  paneViews(){return[{zOrder:()=>'bottom',renderer:()=>({draw:t=>{try{vePhien(t)}catch(e){}}})},{zOrder:()=>'top',renderer:()=>({draw:t=>{try{veHoSo(t)}catch(e){}}})}]}};
 const capNhat=()=>{YC&&YC()};
 // ---------------------------------------------------------------- so sánh với mã khác (thang trái) và tương quan lợi suất
-let SS=null,ssKhoa='',ssLuc=0,ssDL=null,ssVe='';
-function ssBo(c){if(SS){try{c.removeSeries(SS)}catch(e){}SS=null}ssKhoa='';ssDL=null;ssVe='';try{c.applyOptions({leftPriceScale:{visible:false}})}catch(e){}}
-async function ssNap(B){const c=B.LW.chart,tf=B.D.tf||'M15',k=ON.ss+'|'+tf;if(!ON.ss||(B.D.khac_vang&&B.D.ma===ON.ss)){if(SS)ssBo(c);return}
- if(k!==ssKhoa||Date.now()-ssLuc>=60000){ssKhoa=k;ssLuc=Date.now();
-  try{const r=await fetch('/api/gia?tf='+tf+'&n=1500&ma='+encodeURIComponent(ON.ss),{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json();
-   const B2=BD();if(!B2||!B2.D||ON.ss+'|'+(B2.D.tf||'M15')!==k)return;ssDL=j;B=B2;ssVe=''}catch(e){console.warn('So sánh mã:',e);ssKhoa='';return}}   // phản hồi cũ (đã đổi mã, khung) thì bỏ
- const j=ssDL;if(!j)return;const kv=k+'|'+B.D.candles.length+'|'+B.D.candles[B.D.candles.length-1][0];if(kv===ssVe&&SS)return;ssVe=kv;   // vẽ lại theo đúng chuỗi nến đang vẽ (cả khi phát lại)
+let SS=null,ssKhoa='',ssLuc=0,ssDL=null,ssVe='',ssES=null,ssESKey='',ssMS=0,ssTick=null,ssFrame=0,ssSource=null;const ssGate=CHART_RT.latest();let ssTask=null;
+const ssKey=B=>(B.D._chart_context||B.D.ma||'')+'|'+(B.D._chart_epoch||0)+'|'+ON.ss+'|'+(B.D.tf||'M15');
+function ssDong(){if(ssES){ssES.onmessage=ssES.onerror=null;ssES.close()}ssES=null;ssESKey='';ssTick=null;ssMS=0}
+function ssBo(c){ssGate.cancel();ssTask=null;ssDong();if(SS){try{c.removeSeries(SS)}catch(e){}SS=null}ssKhoa='';ssDL=null;ssVe='';ssSource=null;try{c.applyOptions({leftPriceScale:{visible:false}})}catch(e){}}
+function ssAp(j,x){if(!x.nen||!j?.candles?.length)return;const cs=j.candles,last=cs.at(-1),r=x.nen;if(r[0]===last[0])cs[cs.length-1]=r.slice();else if(r[0]>last[0])cs.push(r.slice());j.bid=x.bid;j.ask=x.ask}
+function ssHen(){if(ssFrame)return;ssFrame=requestAnimationFrame(()=>{ssFrame=0;const B=BD();if(B?.D)ssNap(B)})}
+function ssMo(B,key){if(!window.EventSource||B.D.nguon!=='mt5'||document.visibilityState!=='visible'||window.PHAT_LAI)return;
+ if(ssES&&ssESKey===key)return;ssDong();ssESKey=key;const es=new EventSource('/api/song?tf='+encodeURIComponent(B.D.tf||'M15')+'&ma='+encodeURIComponent(ON.ss));ssES=es;
+ es.onmessage=e=>{if(ssES!==es||ssESKey!==key)return;const now=BD();if(!now?.D||ssKey(now)!==key)return;let x;try{x=JSON.parse(e.data)}catch(e){return}if(!CHART_RT.hopLe(x,ssMS))return;ssMS=x.ms;ssTick=x;if(ssDL)ssAp(ssDL,x);ssHen()}}
+async function ssNap(B){if(!B?.D||!B.LW)return;const c=B.LW.chart,tf=B.D.tf||'M15',k=ssKey(B);
+ if(window.PHAT_LAI){if(SS||ssES||ssTask)ssBo(c);return}
+ if(!ON.ss||(B.D.ma===ON.ss)){if(SS||ssES||ssTask)ssBo(c);return}
+ if(k!==ssKhoa){ssBo(c);ssKhoa=k;ssLuc=0}
+ if(!ssTask&&(Date.now()-ssLuc>=(ssES?60000:10000)||!ssDL)){
+  const task=ssGate.begin(k);ssTask=task;ssLuc=Date.now();
+  try{const r=await fetch('/api/gia?tf='+tf+'&n=1500&ma='+encodeURIComponent(ON.ss),{cache:'no-store',signal:task.signal});if(!r.ok)throw new Error(await r.text());const j=await r.json();
+   const B2=BD();if(!ssGate.current(task)||!B2?.D||ssKey(B2)!==k)return;ssDL=j;if(ssTick)ssAp(j,ssTick);B=B2;ssVe='';ssMo(B,k)}
+  catch(e){if(ssGate.current(task)&&e.name!=='AbortError')console.warn('So sánh mã:',e);return}
+  finally{if(ssTask===task)ssTask=null}}
+ const j=ssDL;if(!j||ssKey(B)!==ssKhoa)return;ssMo(B,k);
+ const last=B.D.candles.at(-1),other=j.candles.at(-1),kv=k+'|'+B.D.candles.length+'|'+last.join(',')+'|'+j.candles.length+'|'+other.join(',');
+ if(kv===ssVe&&SS)return;ssVe=kv;
  const cs=B.D.candles,co=new Set(cs.map(x=>x[0])),m=new Map(j.candles.filter(x=>co.has(x[0])).map(x=>[x[0],x[4]]));if(!m.size)return;
  const chung=cs.filter(x=>m.has(x[0])).slice(-101);let tq=null;
  if(chung.length>30){const a=[],b=[];for(let i=1;i<chung.length;i++){a.push(Math.log(chung[i][4]/chung[i-1][4]));b.push(Math.log(m.get(chung[i][0])/m.get(chung[i-1][0])))}
@@ -79,7 +94,9 @@ async function ssNap(B){const c=B.LW.chart,tf=B.D.tf||'M15',k=ON.ss+'|'+tf;if(!O
  if(!SS){SS=c.addSeries(LightweightCharts.LineSeries,{priceScaleId:'left',color:'#4f8cff',lineWidth:1.5,priceLineVisible:false,crosshairMarkerVisible:false},0);
   c.applyOptions({leftPriceScale:{visible:true,borderVisible:false}})}
  const ds=[...m].sort((p,q)=>p[0]-q[0]),goc=ds[0][1];                 // % thay đổi so với nến chung đầu tiên, như "So sánh" của TradingView
- SS.applyOptions({title:ON.ss+' %'+(tq!=null&&isFinite(tq)?' · tương quan '+tq.toFixed(2):'')});SS.setData(ds.map(([t,v])=>({time:t,value:(v/goc-1)*100})))}
+ SS.applyOptions({title:ON.ss+' %'+(tq!=null&&isFinite(tq)?' · tương quan '+tq.toFixed(2):'')});
+ if(!ssSource||ssSource.main!==cs||ssSource.compare!==j.candles||ssSource.first!==ds[0][0])ssSource={main:cs,compare:j.candles,first:ds[0][0]};
+ CHART_RT.gui(SS,ds.length,i=>({time:ds[i][0],value:(ds[i][1]/goc-1)*100}),ssSource)}
 // ---------------------------------------------------------------- tick volume của nến cũ: tải một lần mỗi mã và khung (tới 30.000 nến MT5 còn giữ), ghép theo giờ nến
 const KLM=new Map();let klDang='';
 async function napKL(B){if(!(ON.hoso||CBCN.dung('kld')||CBCN.dung('kldg'))||!B.D||B.D.nguon!=='mt5')return;const ma=B.D.khac_vang?B.D.ma:'',tf=B.D.tf||'',k=ma+'|'+tf,c=KLM.get(k);
@@ -108,33 +125,18 @@ const ve=()=>{const B=BD();if(window.CBCN)CBCN.ve();if(B&&B.LW){const s=B.LW.nen
 dt.querySelectorAll('input[type=checkbox]').forEach(i=>{i.checked=!!ON[i.dataset.k];i.addEventListener('change',()=>{ON[i.dataset.k]=i.checked?1:0;luu();ve();const B=BD();if(B)napKL(B)})});
 const st=dt.querySelector('[data-k=thang]'),sm=dt.querySelector('[data-k=ss]');st.value=String(ON.thang||0);
 st.addEventListener('change',()=>{ON.thang=+st.value;luu();const B=BD();try{B.LW.chart.priceScale('right').applyOptions({mode:ON.thang})}catch(e){}ve()});
-sm.addEventListener('change',()=>{ON.ss=sm.value;luu();const B=BD();if(B&&B.LW&&!ON.ss)ssBo(B.LW.chart);ssKhoa='';ve()});
+sm.addEventListener('change',()=>{const B=BD();if(B?.LW)ssBo(B.LW.chart);ON.ss=sm.value;luu();ve()});
+addEventListener('chart-context-changing',()=>{const B=BD();if(B?.LW)ssBo(B.LW.chart)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')ssDong()});
 const pop=dt.querySelector('.pop');dt.addEventListener('toggle',()=>{if(!dt.open)return;const dl=v=>{pop.style.setProperty('left',v,'important');pop.style.setProperty('right','auto','important')};dl('0px');const r=pop.getBoundingClientRect(),o=dt.getBoundingClientRect(),mx=document.documentElement.clientWidth-12;if(r.right>mx)dl(Math.max(12-o.left,mx-r.right)+'px')});   // dời sang trái cho vừa màn hình hẹp
 let dsNap=0;dt.addEventListener('toggle',async()=>{if(!dt.open||dsNap)return;dsNap=1;try{const j=await(await fetch('/api/ma?gon=1',{cache:'no-store'})).json(),B=BD(),hien=B&&B.D&&B.D.khac_vang?B.D.ma:'';
  sm.innerHTML='<option value="">Không so sánh</option>'+(j.ds||[]).filter(x=>x.ma!==hien).map(x=>`<option value="${esc(x.ma)}">${esc(x.ma)}</option>`).join('');sm.value=ON.ss||''}
  catch(e){dsNap=0}});
 if(ON.ss){const o=document.createElement('option');o.value=ON.ss;o.textContent=ON.ss;sm.append(o);sm.value=ON.ss}
 addEventListener('click',e=>{if(dt.open&&!dt.contains(e.target))dt.open=false});
-// ---------------------------------------------------------------- AI đọc chỉ báo
-const NE=document.createElement('div');NE.className='cbcn-nen aicb';NE.hidden=true;
-NE.innerHTML='<div class="cbcn" role="dialog" aria-modal="true" aria-label="AI đọc chỉ báo" style="grid-template-rows:auto minmax(0,1fr)"><header><b>AI đọc chỉ báo</b><button type="button" class="ghost" data-dong>Đóng</button></header><div class="noi"></div></div>';
-document.body.appendChild(NE);const NOI=NE.querySelector('.noi');let KQ=null;
-const dinhDang=s=>esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').split(/\n{2,}/).map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
-async function aiVe(){let st;try{st=await(await fetch('/api/ai-chi-bao',{cache:'no-store'})).json()}catch(e){NOI.innerHTML='<p class="why">Không tải được trạng thái.</p>';return}
- const tt=CBCN.tomTat(),B=BD();let h='<p class="why">Gửi số cuối (nến đã đóng) của các chỉ báo bạn đang bật, các mũi tên mua bán gần nhất và 60 nến gần nhất cho Claude. Claude chỉ ra chỉ báo nào đồng thuận, chỗ nào mâu thuẫn, và các kịch bản vào lệnh có điều kiện. Dùng chung lượt và ngân sách với nút Hỏi AI.</p>'
-  +`<p class="why">Hôm nay ${st.hom_nay}/${st.moi_ngay} lượt · đã dùng ${(+st.da_tieu_usd).toFixed(2)} / ${(+st.ngan_sach_usd).toFixed(2)} USD.</p>`;
- const chan=[...st.chan];if(!tt.chi_bao.length)chan.push('Chưa bật chỉ báo nào: bấm "Thêm chỉ báo" và chọn vài chỉ báo trước.');
- h+=`<p><b>Sẽ gửi ${tt.chi_bao.length} chỉ báo</b> (${esc(tt.chi_bao.map(x=>x.ten).join(', ')||'không có')}), khung ${esc(B&&B.D?B.D.tf:'')}.</p>`
-  +`<button type="button" class="go" data-hoi ${chan.length?'disabled':''}>Đọc các chỉ báo đang bật (khoảng 0,05 USD)</button>`+chan.map(c=>`<p class="why">• ${esc(c)}</p>`).join('');
- if(KQ)h+=`<div class="tl">${dinhDang(KQ.tra_loi)}</div><p class="why">${esc(KQ.mien_tru)} Chi phí lượt này: ${(+KQ.chi_phi_usd||0).toFixed(3)} USD.</p>`;
- NOI.innerHTML=h;const b=NOI.querySelector('[data-hoi]');if(b)b.addEventListener('click',async()=>{if(!confirm('Một lượt AI đọc chỉ báo tốn khoảng 0,05 USD tiền API của bạn và tính vào lượt Hỏi AI hôm nay. Tiếp tục?'))return;
-  b.disabled=true;b.textContent='Đang đọc, chờ tối đa 2 phút…';
-  try{const r=await fetch('/api/ai-chi-bao',{method:'POST',headers:{'X-So-Cong-Khai':'1','Content-Type':'application/json'},body:JSON.stringify(CBCN.tomTat())});
-   if(!r.ok)throw new Error(await r.text());const j=await r.json();if(!j.ok){alert(j.chan.join('\n'));await aiVe();return}KQ=j;await aiVe()}
-  catch(e){alert('Không hỏi được AI: '+e.message);await aiVe()}})}
-NE.addEventListener('click',e=>{if(e.target===NE||e.target.closest('[data-dong]'))NE.hidden=true});
-addEventListener('keydown',e=>{if(!NE.hidden&&e.key==='Escape'){e.stopPropagation();NE.hidden=true}},true);
-const ab=document.createElement('button');ab.type='button';ab.className='ghost nho';ab.textContent='AI đọc chỉ báo';ab.title='Claude đọc các chỉ báo bạn đang bật (chung lượt với Hỏi AI)';
-ab.addEventListener('click',()=>{NE.hidden=false;aiVe()});dt.after(ab);
+// ---------------------------------------------------------------- AI biểu đồ dùng chung
+for(const [mode,label] of [['indicators','AI đọc chỉ báo'],['explain','AI giải thích']]){
+ const button=document.createElement('button');button.type='button';button.className='ghost nho';button.textContent=label;
+ button.addEventListener('click',()=>window.AI_CHART?.open(mode));dt.after(button)}
 window.CBTH={ON,phien,PRIM,ssNap}})();
 """

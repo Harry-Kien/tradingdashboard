@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import doc_so, tong_hop, thuong_hieu
+from . import doc_so, tong_hop, thuong_hieu, duong
 from .doc_so import VN
 
 GIOI_HAN = 500                      # Thread Auto từ chối chú thích dài hơn 500 ký tự
@@ -261,7 +261,7 @@ def dua_vao_hang_cho(draft: dict, out: Path, thu_muc: Path) -> str:
 
 
 def main(argv=None) -> int:
-    here = Path(__file__).resolve().parent.parent
+    here = duong.goc_du_lieu()
     ap = argparse.ArgumentParser(prog='so_cong_khai.threads', description=__doc__)
     ap.add_argument('--cau-hinh', default=str(here / 'cau-hinh.json'))
     ap.add_argument('--loai', choices=('ngay', 'tuan'), default='tuan')

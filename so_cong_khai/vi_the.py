@@ -51,8 +51,13 @@ def anh_mt5(cfg: dict, now: datetime | None = None, ngay: int = 21) -> dict | No
         a = mt5.account_info()
         if a is None or int(getattr(a, 'trade_mode', -1)) != int(getattr(mt5, 'ACCOUNT_TRADE_MODE_DEMO', 0)):
             return None
-        pos = list(mt5.positions_get() or [])
-        deals = list(mt5.history_deals_get(now - timedelta(days=ngay), now + timedelta(days=1)) or [])
+        pos = mt5.positions_get()
+        deals = mt5.history_deals_get(now - timedelta(days=ngay), now + timedelta(days=1))
+        if pos is None or deals is None:
+            return None
+        current = mt5.account_info()
+        if current is None or current.login != a.login or current.trade_mode != a.trade_mode:
+            return None
     so = str(a.login)
     mo = [{'ve': int(getattr(p, 'ticket', 0) or 0), 'ma': p.symbol, 'huong': 'BUY' if int(p.type) == 0 else 'SELL', 'lot': _r(p.volume, 3),
            'vao': _r(p.price_open, 5), 'sl': _r(p.sl, 5) if p.sl else None, 'tp': _r(p.tp, 5) if p.tp else None, 'mo': _gio(p.time),
@@ -93,6 +98,9 @@ def la_tai_khoan(khai: dict, anh: dict | None) -> bool:
     """MT5 đang nối có phải tài khoản `khai` (một mục trong cfg['tai_khoan']) không."""
     if not anh:
         return False
+    pin = khai.get('mt5_doi_chieu') or {}
+    if pin.get('so'):
+        return str(pin['so']) == anh['so_day_du']
     so_cuoi = str(khai.get('so_cuoi') or '').strip()
     if so_cuoi:
         return anh['so_day_du'].endswith(so_cuoi)
@@ -100,7 +108,9 @@ def la_tai_khoan(khai: dict, anh: dict | None) -> bool:
     return any(x['nguon'] in ten for x in anh['mo'] + anh['da_dong'])
 
 
-def _khop(o: dict, x: dict, theo_dong: bool = False) -> bool:
+def _khop(o: dict, x: dict) -> bool:
+    if o.get('ma') and o['ma'] != x.get('ma'):
+        return False
     if x['huong'] != o['side'] or abs(float(x['lot'] or 0) - float(o['lots'] or 0)) >= 0.0051:
         return False
     if not o.get('opened'):
@@ -108,7 +118,7 @@ def _khop(o: dict, x: dict, theo_dong: bool = False) -> bool:
     if x.get('mo') is not None:
         if abs((x['mo'] - o['opened']).total_seconds()) > LECH_GIAY:
             return False
-    elif not theo_dong or x['dong'] < o['opened']:                  # chỉ có giờ đóng: phải đóng sau lúc vào
+    else:                                                         # chỉ có giờ đóng không đủ xác minh đây là cùng vị thế
         return False
     if o.get('entry') and x.get('vao'):
         return abs(float(x['vao']) - float(o['entry'])) <= max(0.01, LECH_GIA * float(o['entry']))
@@ -124,7 +134,7 @@ def doi_chieu_ea(o: dict, ten_ea: str, anh: dict | None, dung_tk: bool, da_dung:
                 da_dung.add(x['ve'])
                 return {'trang_thai': 'xac_minh', 'mt5': x}
         for x in sorted(anh['da_dong'], key=lambda x: x['dong']):
-            if ('d', x['ve'], x['dong']) not in da_dung and x['nguon'] == ten_ea and _khop(o, x, theo_dong=True):
+            if ('d', x['ve'], x['dong']) not in da_dung and x['nguon'] == ten_ea and _khop(o, x):
                 da_dung.add(('d', x['ve'], x['dong']))
                 return {'trang_thai': 'da_dong', 'mt5': x}
         return {'trang_thai': 'chua_xac_minh', 'ly_do': 'MT5 đang nối đúng tài khoản nhưng không có vị thế mở hay đã đóng khớp với lệnh này'}
@@ -148,9 +158,16 @@ def tong_hop(cfg: dict, now: datetime | None = None, anh=...) -> dict:
     ds, da_dong, tk_noi = [], [], None
     da_dung: set = set()
     ve_cua_ea: set = set()
+    anh_chinh = anh
     for khai in cfg.get('tai_khoan', []):
+        if khai.get('mt5_doi_chieu') and not la_tai_khoan(khai, anh_chinh):
+            from . import doi_chieu_mt5
+            anh = doi_chieu_mt5.anh_vi_the(khai, now)
+        else:
+            anh = anh_chinh
+        da_dung = set()
         dung = la_tai_khoan(khai, anh)
-        if dung:
+        if dung and anh is anh_chinh:
             tk_noi = khai.get('ten')
         for e in khai.get('ea', []):
             try:
@@ -162,10 +179,11 @@ def tong_hop(cfg: dict, now: datetime | None = None, anh=...) -> dict:
                 continue
             luc_nk = ea['last_time'].astimezone(timezone.utc).isoformat() if ea.get('last_time') else None
             dc = doi_chieu_ea(o, e['ten'], anh, dung, da_dung)
-            chung = {'ten': e['ten'], 'tai_khoan': khai.get('ten'), 'huong': o['side'], 'lot': o['lots']}
+            chung = {'ten': e['ten'], 'tai_khoan': khai.get('ten'), 'huong': o['side'], 'lot': o['lots'], 'ma': o.get('ma')}
             if dc['trang_thai'] == 'xac_minh':
                 x = dc['mt5']
-                ve_cua_ea.add(x['ve'])
+                if anh is anh_chinh:
+                    ve_cua_ea.add(x['ve'])
                 ds.append({**chung, 'nhan': f'{e["ten"]} {"MUA" if x["huong"] == "BUY" else "BÁN"} {x["lot"]:g}', 'lot': x['lot'], 'vao': _so(x['vao']),
                            'sl': x['sl'], 'tp': [x['tp']] if x['tp'] else [], 'loai': 'demo', 'nguon': 'mt5', 'xac_minh': True, 've': x['ve'],
                            'ma': x['ma'], 'luc_nguon': anh['luc'].isoformat(), 'so_tk': anh['so']})
@@ -179,6 +197,7 @@ def tong_hop(cfg: dict, now: datetime | None = None, anh=...) -> dict:
                            'sl': _so(o['sl']) if o['sl'] else None, 'tp': [_so(o['tp'])] if o['tp'] else [], 'loai': 'demo', 'nguon': 'nhat_ky_ea',
                            'xac_minh': False, 'luc_nguon': luc_nk, 'ly_do': dc['ly_do'],
                            'mo': o['opened'].isoformat() if o.get('opened') else None})
+    anh = anh_chinh
     if anh:                                                                    # vị thế MT5 khác của tài khoản đang nối (đặt tay, EA khác)
         for x in anh['mo']:
             if x['ve'] in ve_cua_ea:
@@ -196,7 +215,7 @@ _nho = {'luc': 0.0, 'key': None, 'kq': None}
 
 def tong_hop_nho(cfg: dict, giay: float = 10) -> dict:
     """tong_hop có nhớ ngắn hạn: biểu đồ hỏi mỗi vài giây, MT5 chỉ bị đọc tối đa một lần mỗi `giay` giây."""
-    key = json.dumps([cfg.get('tai_khoan', []), (cfg.get('mt5_xem') or {}).get('magic')], sort_keys=True, default=str)
+    key = json.dumps([cfg.get('tai_khoan', []), cfg.get('gia', {}), (cfg.get('mt5_xem') or {}).get('magic')], sort_keys=True, default=str)
     now = time.monotonic()
     if _nho['key'] == key and now - _nho['luc'] < giay and _nho['kq'] is not None:
         return _nho['kq']

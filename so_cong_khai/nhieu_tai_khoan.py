@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 import threading
 import time
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 
+from . import duong as _duong      # (tên khác vì nhiều hàm ở đây có tham số tên `duong`)
 from . import noi_mt5, trang
 from .__main__ import HERE
 
@@ -89,7 +89,7 @@ def xoa(id_: int, p: Path | None = None) -> tuple[bool, str]:
 def doc_mot(duong: str, ngay: int = 90, chay=subprocess.run) -> dict:
     """Đọc một tài khoản trong tiến trình riêng; trả kết quả JSON của so_cong_khai.doc_mot_tai_khoan."""
     try:
-        r = chay([sys.executable, '-X', 'utf8', '-m', 'so_cong_khai.doc_mot_tai_khoan', duong, str(int(ngay))], cwd=str(HERE), capture_output=True,
+        r = chay(_duong.lenh_mo_dun('so_cong_khai.doc_mot_tai_khoan', duong, str(int(ngay))), cwd=str(_duong.goc_chuong_trinh()), capture_output=True,
                  text=True, encoding='utf-8', timeout=120, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         dong = [x for x in (r.stdout or '').splitlines() if x.strip().startswith('{')]
         if not dong:
@@ -215,7 +215,7 @@ JS = r"""
 def trang_cac_tai_khoan(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Các tài khoản · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Các tài khoản · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'cac-tai-khoan', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Các tài khoản đã nối</h1></div><div class="stamp">mọi MT5 bạn đã thêm, demo và tiền thật<br><span id="ctk-luc">đang đọc…</span> · '
         '<button type="button" class="ghost nho" id="doc-lai">Đọc lại ngay</button></div></div>',

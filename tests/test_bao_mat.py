@@ -56,7 +56,7 @@ class BaoMatTest(unittest.TestCase):
 
     def test_dia_chi_cua_may_van_mo_duoc(self):
         for host in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}', 'localhost'):
-            self.assertEqual(self._goi('GET', '/api/cai-dat', {'Host': host})[0], 200, host)
+            self.assertEqual(self._goi('GET', '/api/ai-platform/status', {'Host': host})[0], 200, host)
 
     def test_khong_gui_ho_lenh_ghi(self):
         for duong, than in GHI:

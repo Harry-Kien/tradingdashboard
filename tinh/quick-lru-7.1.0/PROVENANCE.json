@@ -1,0 +1,11 @@
+{
+  "repo": "https://github.com/sindresorhus/quick-lru",
+  "tag": "v7.1.0",
+  "commit": "1ad492a192b80256709691434b95a179d1e5c48e",
+  "license": "MIT",
+  "adaptation": "Original index.js unchanged; export wrapped by da_khung_vendor.py",
+  "sha256": {
+    "index.js": "5c9ef2c607e00c33ffd1fdc55a9a438950cd0a2374581f5ccfd12c1bd3f7941a",
+    "license": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+  }
+}

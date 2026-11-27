@@ -31,7 +31,8 @@ class MauChiBaoTest(unittest.TestCase):
     def test_chan_du_lieu_la(self):
         xau = [({'<img src=x onerror=1>': []}, []), ({'a"b': []}, []), ({'M5': [{'k': '<b>'}]}, []), ({'M5': [{'k': 'ema', 'mau': 'red;x:url(a)'}]}, []),
                ({'M5': [{'k': 'ema', 'p': {'n': float('inf')}}]}, []), ({'M5': [{'k': 'ema', '<x>': 1}]}, []), ({}, ['<script>']), ([], []),
-               ({f'm{i}': [] for i in range(mcb.TOI_DA_MAU + 1)}, [])]
+               ({f'm{i}': [] for i in range(mcb.TOI_DA_MAU + 1)}, []),
+               ({'M5': [{'k': 'ema', 'p': {'n': 10 ** 400}}]}, [])]                      # lỗi đã gặp: số quá lớn làm isfinite ném OverflowError (lỗi 500)
         for mau, sao in xau:
             with self.subTest(mau=str(mau)[:40], sao=sao), self.assertRaises(ValueError):
                 mcb.luu(mau, sao, self.goc)
@@ -41,8 +42,8 @@ class MauChiBaoTest(unittest.TestCase):
         from so_cong_khai import bieu_do, bieu_do_chi_bao
         h = bieu_do.trang_bieu_do('Harry')
         self.assertIn('window.MCB=', h)
-        self.assertIn("const K='so-cbcn1'", mcb.JS)
-        self.assertIn("localStorage.getItem('so-cbcn1')", bieu_do_chi_bao.JS)       # cùng khóa với bảng chỉ báo
+        self.assertIn("K=window.HVD_CB_KEY||'so-cbcn1'", mcb.JS)
+        self.assertIn("CBKEY=window.HVD_CB_KEY||'so-cbcn1'", bieu_do_chi_bao.JS)  # cùng khóa theo tài khoản
         self.assertIn('dongBo:x=>{', bieu_do_chi_bao.JS)
         self.assertIn('&&n0>=3&&!confirm(', mcb.JS)                                # hỏi lại trước khi xóa sạch trên mọi máy
 

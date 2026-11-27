@@ -13,14 +13,13 @@ import sys
 import threading
 import time
 from datetime import timedelta
-from pathlib import Path
 
-from . import noi_mt5
+from . import duong, noi_mt5
 
 # khung CHỈ ĐỂ XEM (phút mỗi nến; MN1 lấy 30 ngày làm bước ước lượng): đọc thẳng từ MT5 khi người dùng chọn, không nằm trong vòng nến của luật
 KHUNG_XEM = {'M2': 2, 'M3': 3, 'M10': 10, 'H2': 120, 'H3': 180, 'W1': 10080, 'MN1': 43200}
 SO_NEN = {'M1': 1300, 'M5': 900, 'M15': 900, 'M30': 400, 'H1': 1000, 'H4': 1000, 'D1': 900}   # M1: 900 nến xem + 400 nến khởi động chỉ báo
-LUU_LECH = Path(__file__).resolve().parent.parent / 'out' / 'lech-gio-san.json'
+LUU_LECH = duong.goc_du_lieu() / 'out' / 'lech-gio-san.json'
 _khoa = threading.Lock()
 _tt: dict = {'deps': None, 'mt5': None, 'ly_do': 'chưa thử nối', 'thu': 0.0, 'luc': 0.0, 'fr': None}
 
@@ -117,6 +116,10 @@ def tick(g: dict, tf: str, sym: str | None = None) -> dict | None:
     if r is not None and len(r):
         x = r[0]
         out['nen'] = [int(x['time']), float(x['open']), float(x['high']), float(x['low']), float(x['close'])]
+        try:
+            out['vol'] = int(x['tick_volume'])
+        except (KeyError, ValueError, TypeError):
+            pass  # một số nguồn lịch sử hoặc bộ nối không cung cấp tick volume
     return out
 
 

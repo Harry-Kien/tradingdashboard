@@ -32,7 +32,7 @@ class HinhVeTest(unittest.TestCase):
         import json
         truoc = json.loads((self.goc / 'du-lieu' / 'hinh-ve' / 'XAU.truoc.json').read_text(encoding='utf-8'))
         self.assertEqual(len(truoc['ds']), 6)
-        self.assertIn("v==='[]'&&n0>=5&&!daHoi&&!confirm(", hinh_ve.JS)
+        self.assertTrue("!sent.length&&n0>=5&&!daHoi&&!confirm(" in hinh_ve.JS)
         self.assertIn('const daHoi=window.HVD_DA_HOI===true;window.HVD_DA_HOI=false;', hinh_ve.JS)   # cờ dùng một lần
 
     def test_tu_choi(self):
@@ -52,11 +52,57 @@ class HinhVeTest(unittest.TestCase):
         h = bieu_do.trang_bieu_do('Harry')
         self.assertIn('window.HVD=', h)
         self.assertIn("'so-ve:'+(g.ma||'XAU')", hinh_ve.JS)                      # cùng khóa với công cụ vẽ (veKhoa)
-        self.assertIn("veKhoa=()=>'so-ve:'+(ma||'XAU')", bieu_do.JS)
-        self.assertIn('if(g2.VE.keo||g2.VE.tam)return', hinh_ve.JS)            # không thay hình khi đang kéo hay đang vẽ
-        self.assertIn("if(document.querySelector('.venhap,.mnp,.cbv-nen'))return", hinh_ve.JS)   # đang gõ chữ, menu hay hộp cảnh báo mở
-        self.assertIn('if(!dau&&v!==DONG[k])return', hinh_ve.JS)                # còn thay đổi chưa gửi thì không nạp đè
-        self.assertIn('v!==DONG[k]&&v!==choV){choV=v;', hinh_ve.JS)              # lỗi đã gặp: hẹn lại mỗi 0,5 giây nên không bao giờ gửi
+        self.assertIn("veKhoa=()=>(window.PHAT_LAI?'so-ve-luyen:':'')", bieu_do.JS)  # nháp replay có khóa riêng
+        self.assertTrue("g.VE.keo||g.VE.tam||document.querySelector('.venhap,.mnp,.cbv-nen')" in hinh_ve.JS)
+        self.assertTrue('window.HVD_MERGE=merge' in hinh_ve.JS)
+        self.assertTrue('ban_co_so:' in hinh_ve.JS)
+        self.assertTrue('s.timer&&s.sig===sig' in hinh_ve.JS)                  # cùng nội dung không hẹn lại vô hạn
+
+
+NODE_KHUNG = r"""
+const ls={},goi=[],hen=[];let lapLai=[];
+globalThis.localStorage={getItem:k=>k in ls?ls[k]:null,setItem:(k,v)=>{ls[k]=String(v)}};
+globalThis.setInterval=f=>{lapLai.push(f)};globalThis.setTimeout=(f)=>{hen.push(f);return hen.length};globalThis.clearTimeout=()=>{};
+globalThis.addEventListener=()=>{};globalThis.document={visibilityState:'visible',querySelector:()=>null};globalThis.confirm=()=>false;
+const VE={ds:[],keo:null,tam:null};
+globalThis.window=globalThis;window.BDMN=()=>({ma:'',VE,veTb(){},lwPhu(){}});
+const MAY={ds:SERVER,ban:3};
+globalThis.fetch=async(u,o)=>{goi.push([u,o&&o.method,o&&o.body]);if(o&&o.method==='POST'){const b=JSON.parse(o.body);MAY.ds=b.ds;MAY.ban++;return{ok:true,json:async()=>({ok:true,ban:MAY.ban})}}
+ return{ok:true,json:async()=>({ds:MAY.ds,ban:MAY.ban})}};
+ls['so-ve:XAU']=JSON.stringify(LOCAL);if(SNAPV!==null)ls['so-ve-dong:XAU']=JSON.stringify(SNAPV);
+const cho=()=>new Promise(r=>setImmediate(r));
+(async()=>{JS_HVD
+ for(let i=0;i<3;i++){for(const f of lapLai)f();await cho();await cho();for(const f of hen.splice(0))f();await cho();await cho()}
+ console.log(JSON.stringify({local:JSON.parse(ls['so-ve:XAU']),may:MAY.ds,post:goi.filter(x=>x[1]==='POST').length}))})();
+"""
+
+
+@unittest.skipUnless(__import__('shutil').which('node'), 'máy không có Node.js')
+class DongBoJsTest(unittest.TestCase):
+    """27/11/2026: lớp đồng bộ không được nạp đè nét vẽ chưa gửi (tải lại trang ngay sau khi vẽ, hay lần gửi trước bị hỏng)."""
+
+    def chay(self, local, server, snap):
+        import json
+        import subprocess
+        import tempfile
+        js = (NODE_KHUNG.replace('SERVER', json.dumps(server)).replace('LOCAL', json.dumps(local)).replace('SNAPV', json.dumps(snap))
+              .replace('JS_HVD', hinh_ve.JS))
+        with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+            f.write(js)
+        r = subprocess.run(['node', f.name], capture_output=True, text=True, encoding='utf-8', timeout=60)
+        Path(f.name).unlink()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout.strip().splitlines()[-1])
+
+    A, B = {'id': 'a', 'k': 'ngang'}, {'id': 'b', 'k': 'xu'}
+
+    def test_net_ve_chua_gui_duoc_giu_va_gui_len(self):
+        kq = self.chay([self.A, self.B], [self.A], [self.A])            # đã đồng bộ [A], vẽ thêm B rồi tải lại trước khi kịp gửi
+        self.assertEqual((kq['local'], kq['may'], kq['post']), ([self.A, self.B], [self.A, self.B], 1))
+
+    def test_ban_moi_tu_may_khac_van_duoc_nap(self):
+        kq = self.chay([self.A], [self.A, self.B], [self.A])            # máy này không sửa gì; máy khác vừa thêm B
+        self.assertEqual((kq['local'], kq['post']), ([self.A, self.B], 0))
 
 
 if __name__ == '__main__':

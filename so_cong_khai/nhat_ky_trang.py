@@ -22,7 +22,7 @@ td.tt{font-weight:700}td.pp{white-space:normal;min-width:190px;max-width:320px}
 td a.xem{color:var(--series);font-weight:600;text-decoration:none;border:1px solid var(--series);border-radius:6px;padding:3px 9px;font-size:12.5px}
 td a.xem:hover{background:color-mix(in srgb,var(--series) 9%,transparent)}
 h2.nk{margin:26px 0 4px;font-size:16px}
-main{max-width:1560px!important}.bar>div{max-width:1400px!important}td.pp{min-width:170px;max-width:260px}
+main{max-width:1560px!important}.bar>div{max-width:1560px!important}td.pp{min-width:170px;max-width:260px}
 details.gt{margin:18px 0 0;font-size:13.5px;color:var(--ink2)}details.gt summary{cursor:pointer;color:var(--series);font-weight:600;text-transform:none;letter-spacing:0;font-size:13.5px}
 details.gt p{margin:8px 0 0;max-width:78ch}
 """
@@ -76,7 +76,7 @@ ve();tai();setInterval(()=>{if(document.visibilityState==='visible')tai()},30000
 def trang_nhat_ky(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Nhật ký điểm vào · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Nhật ký điểm vào · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'nhat-ky', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Nhật ký điểm vào</h1></div><div class="stamp">ghi lúc điểm vào xuất hiện, chấm kết quả về sau<br><span id="nk-luc">đang đọc…</span></div></div>',
         '<div id="nk-trang"></div>',
@@ -85,6 +85,10 @@ def trang_nhat_ky(ten: str) -> str:
         'Kết quả mô phỏng (chạm TP hay SL) và việc làm đúng kế hoạch là hai cột riêng. Dữ kiện của phiếu không bị sửa; ghi chú là lớp thêm.</p>'
         '<div class="pk-loc" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><input id="pk-tim" placeholder="Lọc theo mã, phương pháp hoặc tag" '
         'style="min-height:34px;padding:0 10px;flex:1 1 220px"></div><div id="pk-ds"><p class="small">Đang đọc phiếu…</p></div></section>',
+        '<section class="card" id="tien-cuu" style="margin-top:18px"><h2>Sổ tiến cứu Harrison 3 Khung</h2>'
+        '<p class="sub">Sổ riêng cho đúng phiên bản đã đóng băng; không gộp với nhật ký luật gốc. Tín hiệu được ghi ngay lúc xuất hiện, kết quả chấm sau trên nến '
+        'M5 đã đóng theo đúng quy tắc của nghiên cứu (TP 5, SL 20 giá, SL trước khi cùng nến, không giới hạn thời gian giữ). Harrison chưa qua cổng kiểm chứng '
+        'thì sổ này chỉ để quan sát, không phải bằng chứng phương pháp có hiệu quả.</p><div id="tc-ds"><p class="small">Đang đọc…</p></div></section>',
         '<details class="gt"><summary>Cách ghi và cách chấm</summary>'
         '<p>Mỗi khi một luật hoặc một phương pháp có điểm vào còn hiệu lực, máy chủ ghi lại ngay lúc đó. Mức giá chốt lúc ghi và không sửa lại. '
         'Mỗi mã, mỗi phương pháp, mỗi chiều chỉ có một dòng còn sống.</p>'
@@ -117,5 +121,14 @@ function ve(){const q=($('#pk-tim').value||'').trim().toLowerCase(),ds=DS.filter
   +'<p class="small">Kết quả mô phỏng chấm trên nến M5 đã đóng sau lúc bấm theo dõi; một nến chạm cả SL và TP tính SL trước; thiếu nến thì ghi "Chưa xác định". Đây không phải lệnh thật.</p>'}
 async function tai(){try{const r=await fetch('/api/phieu/ds',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());DS=(await r.json()).ds||[];ve()}
  catch(e){$('#pk-ds').innerHTML='<p class="note">Không đọc được sổ phiếu: '+esc(e.message)+'. Dữ liệu cũ trên máy không bị ảnh hưởng.</p>'}}
-$('#pk-tim').addEventListener('input',ve);tai();setInterval(tai,60000);})();
+$('#pk-tim').addEventListener('input',ve);tai();setInterval(tai,60000);
+async function taiTC(){try{const r=await fetch('/api/harrison/tien-cuu',{cache:'no-store'});if(!r.ok)throw new Error(await r.text());const j=await r.json(),s=j.tom_tat,v=s.phien_ban||{};
+  const KQ={tp:'Chạm TP',tp_nhay:'Mở qua TP',sl:'Chạm SL',sl_nhay:'Mở qua SL',chua_xac_dinh:'Chưa xác định'};
+  $('#tc-ds').innerHTML=`<p class="small">Phiên bản ${esc(v.khoa||'')} · bộ lọc ${esc(v.chon||'')} · ${v.qua_cong?'đã qua cổng nghiên cứu':'chưa qua cổng nghiên cứu'} · bắt đầu ${s.bat_dau?PKJ.gio(s.bat_dau):'chưa có tín hiệu nào'}</p>`
+   +`<p><b>${s.so_tin_hieu}</b> tín hiệu · <b>${s.da_co_ket_qua}</b> có kết quả (thắng ${s.thang}, thua ${s.thua}) · ${s.chua_xac_dinh} chưa xác định · lãi lỗ ròng ${so(s.loi_gia_rong)} giá · ${s.co_khoang_trong} lệnh có khoảng mất dữ liệu</p><p class="small">${esc(s.ghi_chu)}</p>`
+   +(j.ds.length?'<div class="wrap"><table><thead><tr><th>Ghi lúc</th><th>Nến tín hiệu</th><th>Chiều</th><th class="r">Vào</th><th class="r">Spread</th><th>Kết quả</th><th class="r">Ròng (giá)</th><th>Độ chắc</th></tr></thead><tbody>'
+    +j.ds.map(t=>{const k=t.ket_qua||{};return`<tr><td>${PKJ.gio(t.luc_ghi)}</td><td>${PKJ.gio(t.nen_tin_hieu)}</td><td>${t.huong==='MUA'?'MUA':'BÁN'}</td><td class="r">${so(t.vao)}</td><td class="r">${so(t.spread)}</td>
+     <td>${esc(KQ[k.trang_thai]||'Đang chờ')}${k.dong?' · '+PKJ.gio(k.dong):''}</td><td class="r">${k.loi_gia_rong!=null?so(k.loi_gia_rong):'—'}</td><td>${k.do_chac==='chac'?'đủ dữ liệu':k.do_chac?'có khoảng trống':'—'}</td></tr>`}).join('')+'</tbody></table></div>':'')}
+ catch(e){$('#tc-ds').innerHTML='<p class="note">Không đọc được sổ tiến cứu: '+esc(e.message)+'</p>'}}
+taiTC();setInterval(taiTC,120000)})();
 """

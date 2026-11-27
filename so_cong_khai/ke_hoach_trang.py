@@ -165,7 +165,7 @@ def trang_ke_hoach(ten: str) -> str:
     khung = _nhom('khung', 3, [('M15', 'Lướt sóng', 'M15'), ('H1', 'Trong ngày', 'H1'), ('H4', 'Dài hơn', 'H4')], 'Phong cách')
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.BIEU_TUONG}<title>Kế hoạch vốn · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Kế hoạch vốn · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
         trang.thanh_dau(ten, 'ke-hoach', '<button id="theme" type="button">Nền tối</button>') + '<main class="rong">',
         '<div class="kh-top"><h1>Kế hoạch vốn và lệnh</h1><p>Nhập vốn và chọn mức rủi ro: trang chia vốn thành rủi ro mỗi lệnh, giới hạn lỗ ngày, tổng rủi ro '
         'được mở, rồi mô phỏng hàng nghìn chuỗi lệnh để cho biết khả năng sụt vốn. Chọn mã và chiều: trang gợi ý dừng lỗ theo đỉnh/đáy gần nhất và theo '

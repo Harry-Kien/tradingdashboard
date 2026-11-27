@@ -9,9 +9,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import canh_bao, doc_so, gia, tai_khoan, tong_hop, trang, thuong_hieu
+from . import canh_bao, doc_so, duong, gia, tai_khoan, tong_hop, trang, thuong_hieu
 
-HERE = Path(__file__).resolve().parent.parent
+HERE = duong.goc_du_lieu()      # GỐC DỮ LIỆU (cau-hinh.json, du-lieu/, out/); tài nguyên của chương trình thì lấy qua duong.goc_chuong_trinh()
 
 
 def thu(fn, *a):
@@ -34,7 +34,10 @@ def gom(cfg: dict, start=None, end=None) -> dict:
         for e in acc.get('ea', []):
             r = thu(doc_so.doc_ea, e['tep'], e.get('lech_gio_utc', 0))
             (errs if isinstance(r, str) else eas).append((e['ten'], r))
+        from . import doi_chieu_mt5
+        eas, bo_sung = doi_chieu_mt5.bo_sung(acc, eas)
         d['tai_khoan'].append({'id': f'tk-{i + 1}', 'ten': acc['ten'], 'loi': errs,
+                               'bo_sung_mt5': bo_sung,
                                'tom': tong_hop.tom_tai_khoan(eas, start, end) if eas else None})
     for key, name, reader, summ in (('xu_huong', 'Luật xu hướng ba khung', doc_so.doc_bong_xu_huong, tong_hop.tom_xu_huong),
                                     ('dinh_day', 'Luật đỉnh/đáy', doc_so.doc_bong_dinh_day, tong_hop.tom_dinh_day)):
@@ -53,8 +56,10 @@ def gan_doi_chieu(cfg: dict, d: dict, now: datetime | None = None) -> dict:
     """Đối chiếu nhật ký EA với lịch sử MT5 (chỉ đọc) cho tài khoản mà MT5 đang nối; gắn kết quả vào từng tài khoản trong `d`."""
     for khai, acc in zip(cfg.get('tai_khoan', []), d.get('tai_khoan', [])):
         if acc.get('tom'):
-            dc = thu(tai_khoan.doi_chieu, cfg, {e['ten'] for e in khai.get('ea', [])}, acc['tom'], now)
+            dc = thu(tai_khoan.doi_chieu, cfg, {e['ten'] for e in khai.get('ea', [])}, acc['tom'], now, 300, khai.get('so_cuoi'))
             acc['doi_chieu'] = dc if isinstance(dc, dict) else None
+            if acc['doi_chieu'] is not None:
+                acc['doi_chieu']['n_bo_sung_mt5'] = (acc.get('bo_sung_mt5') or {}).get('bo_sung', 0)
     return d
 
 

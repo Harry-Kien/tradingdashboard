@@ -4,6 +4,7 @@ kết quả kiểm cũ thành "cần kiểm lại" khi đổi giá, chấm mô p
 import base64
 import http.client
 import json
+from http_owner import owner_cookie
 import shutil
 import subprocess
 import tempfile
@@ -118,6 +119,7 @@ class ApiPhieu(unittest.TestCase):
         self.p.write_text(json.dumps({'gia': {'ma_nguon': [], 'mt5': {'bat': False}}, 'ai': {'bat': False}, 'thu_muc_ra': str(self.d / 'out')}), encoding='utf-8')
         self.srv = web.tao_may_chu(str(self.p), port=0)
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.cookie = owner_cookie(self.p.parent)
         self.port = self.srv.server_address[1]
 
     def tearDown(self):
@@ -128,7 +130,7 @@ class ApiPhieu(unittest.TestCase):
     def goi(self, phuong, duong, than=None, rieng=True):
         c = http.client.HTTPConnection('127.0.0.1', self.port, timeout=30)
         b = json.dumps(than).encode() if than is not None else b''
-        h = {'Content-Type': 'application/json', 'Content-Length': str(len(b))}
+        h = {'Content-Type': 'application/json', 'Content-Length': str(len(b)), 'Cookie': self.cookie}
         if rieng:
             h['X-So-Cong-Khai'] = '1'
         c.request(phuong, duong, body=b, headers=h)
