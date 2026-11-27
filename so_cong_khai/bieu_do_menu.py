@@ -192,7 +192,7 @@ function menuHinh(cx,cy,id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h)retur
  if(coGia)s+=mi('chep','chep','Sao chép giá',{v:so(g,h.a.p)})+(coCbv?'':mi('bao','bao','Đặt cảnh báo tại đường này',{v:so(g,h.a.p)}));
  if(coCbv)s+=mi('cbv','bao','Cảnh báo khi giá cắt hình này…');
  if(coGia||coCbv)s+=hr;
- if(h.k==='chu')s+=mi('suachu','nhan','Sửa chữ');
+ if(laChu(h))s+=mi('suachu','nhan','Sửa chữ');
  s+=mi('nban','nban','Nhân bản')+mi('khoa',h.khoa?'mo':'khoa',h.khoa?'Mở khóa vị trí':'Khóa vị trí')+mi('an1','an','Ẩn hình này')
   +mi('tren','len','Đưa lên trên cùng')+mi('duoi','xuong','Đưa xuống dưới cùng');
  s+=hr+nhom('Màu')+'<div class="mau">'+MAU.map(c=>`<button type="button" data-k="mau" data-v="${c}" title="${c||'Màu mặc định'}" aria-label="${c||'Màu mặc định'}" aria-pressed="${(h.mau||'')===c}" style="background:${c||'var(--series)'}"></button>`).join('')+'</div>';
@@ -210,14 +210,15 @@ function lamHinh(k,v,id){const g=G(),VE=g.VE,i=VE.ds.findIndex(x=>x.id===id),h=V
  else if(k==='mau'){if(v)h.mau=v;else delete h.mau}else if(k==='w')h.w=+v;else if(k==='net'){if(v)h.net=v;else delete h.net}
  g.veLuu();g.veTb();g.lwPhu()}
 // --- sửa chữ của ghi chú ngay trên biểu đồ (bấm đúp vào ghi chú, hoặc menu → Sửa chữ)
-function suaChu(id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h||h.k!=='chu')return;let x=null,y=null;try{x=g.LW.chart.timeScale().timeToCoordinate(h.a.t);y=g.LW.nen.priceToCoordinate(h.a.p)}catch(e){}
+const laChu=h=>!!h&&(h.k==='chu'||!!(window.VEX&&window.VEX[h.k]&&window.VEX[h.k].chu));   // văn bản và các công cụ chữ của bieu_do_cong_cu.py
+function suaChu(id){const g=G(),h=g.VE.ds.find(x=>x.id===id);if(!h||!laChu(h))return;let x=null,y=null;try{x=g.LW.chart.timeScale().timeToCoordinate(h.a.t);y=g.LW.nen.priceToCoordinate(h.a.p)}catch(e){}
  const o=document.createElement('input');o.className='venhap';o.maxLength=80;o.value=h.chu||'';o.style.left=Math.max(4,Math.min(x==null?LWE.clientWidth/2:x,LWE.clientWidth-230))+'px';
  o.style.top=Math.max(4,(y==null?60:y)-14)+'px';ST.appendChild(o);setTimeout(()=>{o.focus();o.select()},0);
  let da=0;const xong=luu=>{if(da)return;da=1;const v=o.value.trim();o.remove();if(luu&&v&&v!==h.chu){h.chu=v;g.veLuu();g.lwPhu()}};
  o.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')xong(1);else if(e.key==='Escape')xong(0)});o.addEventListener('blur',()=>xong(1))}
 // bấm đúp trúng hình: ghi chú thì sửa chữ, hình khác thì mở menu của hình (bieu_do.py gọi trước khi nhảy về nến mới nhất)
 function dbl(e){const g=G();if(!g.LW||!g.D||g.VE.an||g.VE.cong!=='tro')return false;const r=LWE.getBoundingClientRect(),h=g.veTrung(e.clientX-r.left,e.clientY-r.top);if(!h)return false;
- const s=g.VE.ds.find(x=>x.id===h.id);if(s&&s.k==='chu')suaChu(h.id);else menuHinh(e.clientX,e.clientY,h.id);return true}
+ const s=g.VE.ds.find(x=>x.id===h.id);if(s&&laChu(s))suaChu(h.id);else menuHinh(e.clientX,e.clientY,h.id);return true}
 // --- mở menu: chuột phải trên máy tính, giữ ngón tay trên điện thoại; đang cầm công cụ vẽ thì chuột phải là thôi công cụ (như TradingView)
 function moMenu(cx,cy){const g=G();if(!g.LW||!g.D)return;if(g.VE.cong!=='tro'){g.veCong('tro');return}
  const r=LWE.getBoundingClientRect(),m={x:cx-r.left,y:cy-r.top};if(m.x<0||m.y<0||m.x>r.width||m.y>r.height)return;

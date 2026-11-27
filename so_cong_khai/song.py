@@ -166,18 +166,31 @@ def khung_song(g: dict, noi=_noi) -> dict | None:
         now = time.monotonic()
         if _tt['fr'] is not None and now - _tt['luc'] < float(cfgm.get('nho_giay', 4)):
             return _tt['fr']
-        if _tt['deps'] is None:
-            if _tt['thu'] and now - _tt['thu'] < float(cfgm.get('thu_lai_giay', 60)):
-                return None                                      # vừa thử nối không được: chưa thử lại vội
+        can_noi = _tt['deps'] is None
+        if can_noi:
+            if _tt.get('dang_noi') or (_tt['thu'] and now - _tt['thu'] < float(cfgm.get('thu_lai_giay', 60))):
+                return None                                      # đang nối ở luồng khác, hoặc vừa thử không được: chưa thử lại vội
             _tt['thu'] = now
-            try:
-                _tt['mt5'], _tt['deps'], why = noi(cfgm, g)
-            except Exception as e:                               # noqa: BLE001
-                _tt['mt5'], _tt['deps'], why = None, None, f'{type(e).__name__}: {e}'
-            if _tt['deps'] is None:
+            _tt['dang_noi'] = True
+    if can_noi:
+        # Nối NGOÀI khóa (27/11/2026). Lỗi đã gặp: MT5 vừa mở chưa sẵn sàng, mt5.initialize đứng chờ tới 60 giây trong lúc giữ _khoa,
+        # nên mọi trang và API cần giá đều treo theo (webapp như chết) và cứ mỗi 60 giây lại treo lần nữa. Giờ lúc đang nối, các yêu cầu khác
+        # trả None ngay (trang dùng kho nến như khi chưa nối), chỉ một luồng nối tại một thời điểm.
+        try:
+            m, d, why = noi(cfgm, g)
+        except Exception as e:                                   # noqa: BLE001
+            m, d, why = None, None, f'{type(e).__name__}: {e}'
+        with _khoa:
+            _tt['dang_noi'] = False
+            _tt['mt5'], _tt['deps'] = m, d
+            if d is None:
                 _tt['ly_do'] = why or 'không nối được MT5'
                 return None
+    with _khoa:
+        now = time.monotonic()
         deps = _tt['deps']
+        if deps is None:
+            return None
         try:
             tick = deps.get_tick()
             fr = {}

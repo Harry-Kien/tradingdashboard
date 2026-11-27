@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
-from . import bieu_do_chi_bao, bieu_do_menu, canh_bao_ve, do_sau, hinh_ve, mau_chi_bao, trang
+from . import bieu_do_chi_bao, bieu_do_cong_cu, bieu_do_menu, canh_bao_ve, do_sau, hinh_ve, mau_chi_bao, trang
 
 CSS = """
 .desk{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;align-items:start;margin-top:14px}
@@ -672,15 +672,16 @@ const VE={ds:[],cong:'tro',chon:null,tam:null,keo:null,an:false,do:null,hit:[],m
  NHIEU={gap:99,elliott:6,abc:4,xabcd:5,dauvai:7,badinh:7,tamgm:4},
  VEL={mau:['Màu nét vẽ: bấm để đổi (áp cho hình đang chọn và hình vẽ sau)','M9 9m-5.5 0a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0'],net:['Độ dày nét: bấm để đổi (mảnh, vừa, đậm)','M3 5h12M3 9.5h12M3 14h12'],kieu:['Kiểu nét: liền, gạch, chấm','M2 9h3M7.5 9h3M13 9h3'],nam:['Hút vào giá mở, cao, thấp, đóng của nến khi vẽ','M5 3v6a4 4 0 0 0 8 0V3M5 6h3M10 6h3'],hoan:['Hoàn tác (Ctrl+Z)','M6 7h5.5a3.5 3.5 0 0 1 0 7H7M6 7l3-3M6 7l3 3'],lam:['Làm lại (Ctrl+Y)','M12 7H6.5a3.5 3.5 0 0 0 0 7H11M12 7L9 4M12 7l-3 3'],
   an:['Ẩn hoặc hiện các hình đã vẽ','M2 9s2.8-5 7-5 7 5 7 5-2.8 5-7 5-7-5-7-5zM9 9m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],xoa:['Xóa hình đang chọn (phím Delete)','M4 6h10M7 6V4h4v2M5.5 6l.7 9h5.6l.7-9'],het:['Xóa tất cả hình của mã này','M3 5h12M6.5 5V3h5v2M5 5l.6 10h6.8L13 5M7.5 8l3 4M10.5 8l-3 4']};
+const VEX=window.VEX||{};for(const[k,v]of Object.entries(VEX)){VEC[k]=[v.ten,v.d,v.goi];if(v.n)NHIEU[k]=v.n}for(const[k,t]of Object.entries(window.VETEN||{}))if(VEC[k])VEC[k][0]=t;   // công cụ vẽ thêm và thanh nhóm: bieu_do_cong_cu.py
 const VTB=document.createElement('div'),VGOI=document.createElement('div');VTB.className='vetb';VTB.setAttribute('role','toolbar');VTB.setAttribute('aria-label','Công cụ vẽ');VGOI.className='vegoi';VGOI.hidden=true;
 try{VE.nam=localStorage.getItem('so-ve-nam')==='1'}catch(e){}
 function veHoan(){if(!VE.cu.length)return;const nay=JSON.stringify(VE.ds);try{VE.ds=JSON.parse(VE.cu.pop())}catch(e){return}VE.lai.push(nay);VE.chon=null;veLuu(1);veTb();lwPhu()}
 function veLam(){if(!VE.lai.length)return;const nay=JSON.stringify(VE.ds);try{VE.ds=JSON.parse(VE.lai.pop())}catch(e){return}VE.cu.push(nay);VE.chon=null;veLuu(1);veTb();lwPhu()}
 function veTb(){const tat=k=>(k==='xoa'&&!VE.chon)||(k==='het'&&!VE.ds.length)||(k==='hoan'&&!VE.cu.length)||(k==='lam'&&!VE.lai.length),mau=VE.mau||css('--series')||'#2f6fed',
   nut=(k,[ten,d],kieu)=>`<button type="button" data-${kieu}="${k}" title="${ten}" aria-label="${ten}"${kieu==='c'?` aria-pressed="${VE.cong===k}"`:(k==='an'||k==='nam')?` aria-pressed="${!!VE[k]}"`:''}${tat(k)?' disabled':''}><svg viewBox="0 0 18 18" width="18" height="18" fill="${k==='mau'?mau:'none'}" stroke="${k==='mau'?mau:'currentColor'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></button>`;
- VTB.innerHTML='<button type="button" class="mo" title="Mở hoặc thu gọn công cụ vẽ" aria-label="Mở hoặc thu gọn công cụ vẽ"><svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15l1-4 8-8 3 3-8 8zM11 4l3 3"/></svg></button>'+Object.entries(VEC).map(([k,v])=>nut(k,v,'c')).join('')+'<i></i>'+Object.entries(VEL).map(([k,v])=>nut(k,v,'l')).join('');
+ VTB.innerHTML='<button type="button" class="mo" title="Mở hoặc thu gọn công cụ vẽ" aria-label="Mở hoặc thu gọn công cụ vẽ"><svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15l1-4 8-8 3 3-8 8zM11 4l3 3"/></svg></button>'+(window.VNH?VNH.html(VE,VEC,nut):Object.entries(VEC).map(([k,v])=>nut(k,v,'c')).join(''))+'<i></i>'+Object.entries(VEL).map(([k,v])=>nut(k,v,'l')).join('');
  VTB.querySelector('.mo').addEventListener('click',()=>VTB.toggleAttribute('data-thu'));
- VTB.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',()=>veCong(b.dataset.c)));
+ VTB.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',()=>veCong(b.dataset.c)));if(window.VNH)VNH.gan(VTB,{VE,VEC,veCong,veTb});
  VTB.querySelectorAll('[data-l]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.l;if(k==='an')VE.an=!VE.an;else if(k==='nam'){VE.nam=!VE.nam;try{localStorage.setItem('so-ve-nam',VE.nam?'1':'0')}catch(e){}}else if(k==='net'||k==='kieu'){const h=VE.ds.find(x=>x.id===VE.chon);if(k==='net'){const w=(h&&h.w)||VE.w||1.5;VE.w=w<1.5?1.5:w<2.5?2.5:w<3.5?3.5:1;if(h)h.w=VE.w}else{const n0=h?(h.net||''):(VE.net||'');VE.net=!n0?'gach':n0==='gach'?'cham':'';if(h)h.net=VE.net}if(h)veLuu()}else if(k==='xoa')veXoa();else if(k==='hoan')veHoan();else if(k==='lam')veLam();
    else if(k==='mau'){VE.mau=MAUS[(MAUS.indexOf(VE.mau)+1)%MAUS.length];const h=VE.ds.find(x=>x.id===VE.chon);if(h){if(VE.mau)h.mau=VE.mau;else delete h.mau;veLuu()}}
    else if(VE.ds.length&&confirm('Xóa tất cả '+VE.ds.length+' hình đã vẽ trên '+(ma||'XAUUSD')+'? Bấm Hoàn tác nếu đổi ý.')){window.HVD_DA_HOI=true;VE.ds=[];VE.chon=null;veLuu()}veTb();lwPhu()}));
@@ -698,12 +699,14 @@ function veVe(X,o){const{y,pw,ph,P,cs,dt,ts}=o,n=cs.length;VE.hit=[];const vePct
   cham=(x,yy,col)=>{X.fillStyle=P.bg;X.strokeStyle=col;X.lineWidth=1.6;X.beginPath();X.arc(x,yy,4.5,0,7);X.fill();X.stroke()},
   doan=(x1,y1,x2,y2,x,yy)=>{const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy||1,k=Math.max(0,Math.min(1,((x-x1)*dx+(yy-y1)*dy)/L));return Math.hypot(x-x1-k*dx,yy-y1-k*dy)},
   tg=s=>{s=Math.abs(s);return s>=172800?f2(s/86400)+' ngày':s>=7200?f2(s/3600)+' giờ':Math.round(s/60)+' phút'},atr=PTR&&PTR.boi_canh&&PTR.boi_canh.atr_m15;
+ const VC={X,y,pw,ph,P,cs,dt,ts,ix,vx,chu,cham,doan,tg,atr,vePct,veNd,veLw,fp,f2,vn,VE};   // bối cảnh cho công cụ vẽ thêm (VEX)
  if(VE.do){const a=VE.do.a,b=VE.do.b,xa=vx(a.t),xb=vx(b.t),ya=y(a.p),yb=y(b.p);if(xa!=null&&xb!=null&&ya!=null&&yb!=null){const len=b.p>=a.p,col=len?P.tp:P.sl;X.globalAlpha=.13;X.fillStyle=col;X.fillRect(Math.min(xa,xb),Math.min(ya,yb),Math.abs(xb-xa),Math.abs(yb-ya));X.globalAlpha=1;
    X.strokeStyle=col;X.lineWidth=1;X.strokeRect(Math.min(xa,xb)+.5,Math.min(ya,yb)+.5,Math.abs(xb-xa),Math.abs(yb-ya));
    chu((len?'+':'−')+fp(Math.abs(b.p-a.p))+' ('+(len?'+':'−')+f2(Math.abs(b.p/a.p-1)*100)+'%)'+(atr?' · '+f2(Math.abs(b.p-a.p)/atr)+' ATR':'')+' · '+Math.round(Math.abs(ix(b.t)-ix(a.t)))+' nến · '+tg(b.t-a.t),Math.min(xa,xb)+4,(len?Math.min(ya,yb)-5:Math.max(ya,yb)+14),col)}}
  if(VE.an&&!VE.tam)return;
  for(const h of VE.tam?[...VE.ds,VE.tam]:VE.ds){if(h.an)continue;const sel=h.id===VE.chon,col=h.mau||P.vao,xa=vx(h.a.t),ya=y(h.a.p),xb=h.b?vx(h.b.t):null,yb=h.b?y(h.b.p):null;if(xa==null||ya==null||(h.b&&(xb==null||yb==null)))continue;let g=null;X.lineWidth=(h.w||1.5)+(sel?.7:0);X.strokeStyle=col;X.setLineDash(h.net==='gach'?[7,4]:h.net==='cham'?[2,3]:[]);
-  if(h.k==='xu'){X.beginPath();X.moveTo(xa,ya);X.lineTo(xb,yb);X.stroke();g={nut:[['a',xa,ya],['b',xb,yb]],trong:(x,yy)=>doan(xa,ya,xb,yb,x,yy)<=6}}
+  if(VEX[h.k])g=VEX[h.k].ve(h,VC,sel,col,xa,ya,xb,yb);
+  else if(h.k==='xu'){X.beginPath();X.moveTo(xa,ya);X.lineTo(xb,yb);X.stroke();g={nut:[['a',xa,ya],['b',xb,yb]],trong:(x,yy)=>doan(xa,ya,xb,yb,x,yy)<=6}}
   else if(h.k==='ngang'){const Y=Math.round(ya)+.5;X.beginPath();X.moveTo(0,Y);X.lineTo(pw,Y);X.stroke();chu(fp(h.a.p),pw-6,Y-4,col,1);g={nut:[],trong:(x,yy)=>Math.abs(yy-Y)<=5}}
   else if(h.k==='hop'){const x0=Math.min(xa,xb),y0=Math.min(ya,yb),w=Math.abs(xb-xa),hh=Math.abs(yb-ya);X.globalAlpha=.1;X.fillStyle=col;X.fillRect(x0,y0,w,hh);X.globalAlpha=1;X.strokeRect(x0+.5,y0+.5,w,hh);
    chu(fp(Math.max(h.a.p,h.b.p))+' – '+fp(Math.min(h.a.p,h.b.p)),x0+4,y0-4,col);g={nut:[['a',xa,ya],['b',xb,yb]],trong:(x,yy)=>x>=x0-3&&x<=x0+w+3&&yy>=y0-3&&yy<=y0+hh+3}}
@@ -803,16 +806,16 @@ if(LW){VTB.setAttribute('data-thu','');$('.stage').appendChild(VTB);$('.stage').
  // đang cầm một công cụ: lớp phủ nhận chuột, biểu đồ đứng yên
  LWO.addEventListener('pointerdown',e=>{if(VE.cong==='tro'||!D)return;e.preventDefault();const m=vePt(e),q=veToa(m.x,m.y);if(!q)return;const c=VE.cong,id=moiId();
   if(NHIEU[c]){const h=VE.tam;if(h&&h.k===c){h.pts[h.pts.length-1]=q;if(h.pts.length>=NHIEU[c]){VE.ds.push(h);xong(h.id)}else{h.pts.push({...q});lwPhu()}}else{VE.tam={id,k:c,a:q,pts:[q,{...q}]};VE.keo={moi:'nhieu',m};lwPhu()}return}      // công cụ nhiều điểm: mỗi lần bấm chốt một điểm
-  if(c==='ngang'||c==='doc'||c==='tngang'||c==='cheo'||c==='nhan'||c==='muilen'||c==='muixuong'){VE.ds.push({id,k:c,a:q});xong(id);return}
-  if(c==='chu'){const o=document.createElement('input');o.className='venhap';o.maxLength=80;o.placeholder='Ghi chú, Enter để lưu';o.style.left=Math.min(m.x,LWE.clientWidth-230)+'px';o.style.top=(m.y-14)+'px';$('.stage').appendChild(o);setTimeout(()=>o.focus(),0);
-   let da=0;const dong=luu=>{if(da)return;da=1;const v=o.value.trim();o.remove();if(luu&&v){VE.ds.push({id,k:c,a:q,chu:v});xong(id)}else veCong('tro')};o.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')dong(1);else if(ev.key==='Escape')dong(0)});o.addEventListener('blur',()=>dong(1));return}
-  if(c==='do'){VE.do={a:q,b:q};VE.keo={moi:'do',m}}else{VE.tam=c==='vt'?{id,k:c,a:q,b:{...q},sl:q.p,tp:q.p}:c==='but'?{id,k:c,a:q,pts:[q]}:(c==='kenh'||c==='fibk')?{id,k:c,a:q,b:{...q},d:0}:{id,k:c,a:q,b:{...q}};VE.keo={moi:1,m}}
+  if(c==='ngang'||c==='doc'||c==='tngang'||c==='cheo'||c==='nhan'||c==='muilen'||c==='muixuong'||(VEX[c]&&VEX[c].tao===1&&!VEX[c].chu)){VE.ds.push(Object.assign({id,k:c,a:q},VEX[c]&&VEX[c].them?VEX[c].them(q,m,veToa,VE):{}));xong(id);return}
+  if(c==='chu'||(VEX[c]&&VEX[c].chu)){const o=document.createElement('input');o.className='venhap';o.maxLength=80;o.placeholder='Ghi chú, Enter để lưu';o.style.left=Math.min(m.x,LWE.clientWidth-230)+'px';o.style.top=(m.y-14)+'px';$('.stage').appendChild(o);setTimeout(()=>o.focus(),0);
+   let da=0;const dong=luu=>{if(da)return;da=1;const v=o.value.trim();o.remove();if(luu&&v){VE.ds.push(Object.assign({id,k:c,a:q,chu:v},VEX[c]&&VEX[c].them?VEX[c].them(q,m,veToa,VE):{}));xong(id)}else veCong('tro')};o.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')dong(1);else if(ev.key==='Escape')dong(0)});o.addEventListener('blur',()=>dong(1));return}
+  if(c==='do'){VE.do={a:q,b:q};VE.keo={moi:'do',m}}else{VE.tam=c==='vt'?{id,k:c,a:q,b:{...q},sl:q.p,tp:q.p}:(c==='but'||c==='dabut')?{id,k:c,a:q,pts:[q]}:(c==='kenh'||c==='fibk')?{id,k:c,a:q,b:{...q},d:0}:{id,k:c,a:q,b:{...q}};VE.keo={moi:1,m}}
   try{LWO.setPointerCapture(e.pointerId)}catch(_){}lwPhu()});
- LWO.addEventListener('pointermove',e=>{if(VE.keo&&VE.keo.moi==='nhieu'){const m=vePt(e),q=veToa(m.x,m.y);if(q&&VE.tam&&VE.tam.pts){VE.tam.pts[VE.tam.pts.length-1]=q;lwPhu()}return}if(!VE.keo||!VE.keo.moi)return;const m=vePt(e),q=veToa(m.x,m.y);if(!q)return;if(VE.keo.moi==='do')VE.do.b=q;else{const h=VE.tam;if(h.k==='but'){const l=VE.keo.l||VE.keo.m;if(Math.hypot(m.x-l.x,m.y-l.y)>=3){h.pts.push(q);VE.keo.l=m}}else{h.b=q;if(h.k==='vt'){h.sl=q.p;h.tp=h.a.p+(h.a.p-q.p)*2;h.b={t:q.t,p:h.a.p}}else if(h.k==='kenh'||h.k==='fibk')h.d=LW.nen.coordinateToPrice(44)-LW.nen.coordinateToPrice(0)}}lwPhu()});
+ LWO.addEventListener('pointermove',e=>{if(VE.keo&&VE.keo.moi==='nhieu'){const m=vePt(e),q=veToa(m.x,m.y);if(q&&VE.tam&&VE.tam.pts){VE.tam.pts[VE.tam.pts.length-1]=q;lwPhu()}return}if(!VE.keo||!VE.keo.moi)return;const m=vePt(e),q=veToa(m.x,m.y);if(!q)return;if(VE.keo.moi==='do')VE.do.b=q;else{const h=VE.tam;if(h.k==='but'||h.k==='dabut'){const l=VE.keo.l||VE.keo.m;if(Math.hypot(m.x-l.x,m.y-l.y)>=3){h.pts.push(q);VE.keo.l=m}}else{h.b=q;if(h.k==='vt'){h.sl=q.p;h.tp=h.a.p+(h.a.p-q.p)*2;h.b={t:q.t,p:h.a.p}}else if(h.k==='kenh'||h.k==='fibk')h.d=LW.nen.coordinateToPrice(44)-LW.nen.coordinateToPrice(0)}}lwPhu()});
  LWO.addEventListener('pointerup',e=>{if(!VE.keo||!VE.keo.moi||VE.keo.moi==='nhieu')return;const m=vePt(e),xa=Math.hypot(m.x-VE.keo.m.x,m.y-VE.keo.m.y)>6;
-  if(VE.keo.moi==='do'){VE.keo=null;if(!xa)VE.do=null;veCong('tro');return}const h=VE.tam;if(xa&&h&&!(h.k==='vt'&&h.sl===h.a.p)){if((h.k==='fibmr'||h.k==='chia'||h.k==='tamg'||h.k==='cong')&&!h.c)h.c=h.k==='cong'?{t:h.a.t+Math.round((h.b.t-h.a.t)/2),p:(h.a.p+h.b.p)/2+Math.abs(LW.nen.coordinateToPrice(0)-LW.nen.coordinateToPrice(36))}:h.k==='tamg'?{t:h.b.t+(h.b.t-h.a.t),p:h.a.p}:{t:h.b.t+Math.round((h.b.t-h.a.t)/2),p:h.b.p-(h.b.p-h.a.p)*(h.k==='fibmr'?.5:.6)};VE.ds.push(h);xong(h.id)}else{VE.tam=VE.keo=null;lwPhu()}});
- const gapXong=bot=>{const h=VE.tam;if(!h||h.k!=='gap')return;h.pts.splice(h.pts.length-bot,bot);if(h.pts.length>=2){VE.ds.push(h);xong(h.id)}else veCong('tro')};   // đường gấp khúc: bấm đúp hoặc Enter để xong
- LWO.addEventListener('dblclick',()=>gapXong(2));addEventListener('keydown',e=>{if(e.key==='Enter'&&VE.tam&&VE.tam.k==='gap'){e.preventDefault();gapXong(1)}});
+  if(VE.keo.moi==='do'){VE.keo=null;if(!xa)VE.do=null;veCong('tro');return}const h=VE.tam;if(xa&&h&&!(h.k==='vt'&&h.sl===h.a.p)){if(VEX[h.k]&&VEX[h.k].c){if(!h.c)h.c=VEX[h.k].c(h,LW,D)}else if((h.k==='fibmr'||h.k==='chia'||h.k==='tamg'||h.k==='cong')&&!h.c)h.c=h.k==='cong'?{t:h.a.t+Math.round((h.b.t-h.a.t)/2),p:(h.a.p+h.b.p)/2+Math.abs(LW.nen.coordinateToPrice(0)-LW.nen.coordinateToPrice(36))}:h.k==='tamg'?{t:h.b.t+(h.b.t-h.a.t),p:h.a.p}:{t:h.b.t+Math.round((h.b.t-h.a.t)/2),p:h.b.p-(h.b.p-h.a.p)*(h.k==='fibmr'?.5:.6)};VE.ds.push(h);xong(h.id)}else{VE.tam=VE.keo=null;lwPhu()}});
+ const gapXong=bot=>{const h=VE.tam;if(!h||!(h.k==='gap'||NHIEU[h.k]===99))return;h.pts.splice(h.pts.length-bot,bot);if(h.pts.length>=2){VE.ds.push(h);xong(h.id)}else veCong('tro')};   // đường gấp khúc: bấm đúp hoặc Enter để xong
+ LWO.addEventListener('dblclick',()=>gapXong(2));addEventListener('keydown',e=>{if(e.key==='Enter'&&VE.tam&&NHIEU[VE.tam.k]===99){e.preventDefault();gapXong(1)}});
  // đang ở chế độ chọn: bấm trúng hình thì chọn và kéo hình đó, biểu đồ không trượt theo
  let chan=0;LWE.addEventListener('pointerdown',e=>{chan=0;if(VE.cong!=='tro'||!D)return;if(VE.do){VE.do=null;lwPhu()}if(VE.an)return;const m=vePt(e),h=veTrung(m.x,m.y);
   if(!h){if(VE.chon){VE.chon=null;veTb();lwPhu()}return}const hh=VE.ds.find(x=>x.id===h.id);VE.chon=h.id;if(hh&&hh.khoa){veTb();lwPhu();return}chan=1;e.stopPropagation();VE.keo={id:h.id,nut:h.nut,q0:veToa(m.x,m.y),goc:JSON.parse(JSON.stringify(hh))};veTb();lwPhu()},true);
@@ -1321,7 +1324,7 @@ def trang_bieu_do(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
         f'<script>{NAP_SOM}</script>',
-        f'{trang.BIEU_TUONG}<title>Biểu đồ vàng · {escape(ten)}</title><style>{trang.CSS}{extra}{CSS}{bieu_do_chi_bao.CSS}{bieu_do_menu.CSS}{canh_bao_ve.CSS}{do_sau.CSS}</style></head><body>',
+        f'{trang.BIEU_TUONG}<title>Biểu đồ vàng · {escape(ten)}</title><style>{trang.CSS}{extra}{CSS}{bieu_do_chi_bao.CSS}{bieu_do_menu.CSS}{canh_bao_ve.CSS}{do_sau.CSS}{bieu_do_cong_cu.CSS}</style></head><body>',
         trang.thanh_dau(ten, 'bieu-do', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1 id="tieu-de">Biểu đồ vàng</h1></div><div class="stamp"><span id="ma-nhan">XAUUSD · luật tính trên nến đã đóng</span><br><span id="src">đang tải…</span></div></div>',
         '<p class="note" id="doc-truoc"><b>Đọc trước:</b> các ô bên phải cho biết luật bạn đã viết đang nói gì trên nến đã đóng gần nhất. '
@@ -1379,4 +1382,4 @@ def trang_bieu_do(ten: str) -> str:
         '<footer><span id="chan-nguon">Giá đọc trực tiếp từ MT5 demo của bạn ở chế độ chỉ đọc; khi không nối được thì trang dùng kho nến 1 phút do hệ thống tự lưu. '
         'Trang không tự mở MT5 và không có lệnh đặt lệnh nào. Chỉ báo và luật gọi thẳng các hàm trong mã của bạn '
         '(bot tín hiệu, luật ba khung, luật đỉnh/đáy), tính trên nến đã đóng. </span>' + escape(trang.MIEN_TRU) + '</footer></main>',
-        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{do_sau.JS}</script><script>{hinh_ve.JS}</script><script>{mau_chi_bao.JS}</script></body></html>'])
+        f'<script src="/tinh/lightweight-charts.js"></script><script>{trang.JS}</script><script>{bieu_do_cong_cu.JS}</script><script>{JS}</script><script>{bieu_do_chi_bao.JS}</script><script>{bieu_do_menu.JS}</script><script>{canh_bao_ve.JS}</script><script>{do_sau.JS}</script><script>{hinh_ve.JS}</script><script>{mau_chi_bao.JS}</script></body></html>'])

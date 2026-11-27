@@ -24,16 +24,25 @@ main.rong{max-width:none;padding-left:16px;padding-right:16px}
 .rk-khung{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 #rk-cv{display:block;width:100%;height:calc(100vh - 330px);min-height:380px;cursor:grab;touch-action:none}
 .rk-ghi{margin:12px 0 0;color:var(--ink2);font-size:12.5px;line-height:1.55}
+.rk-nut{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--ink);font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
+.rk-nut[aria-pressed=true]{background:var(--series);color:var(--btn-ink);border-color:var(--series)}.rk-nut:focus-visible{outline:2px solid var(--series);outline-offset:1px}
+.rk-tt i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 2px;vertical-align:0}
+#rk-cv.ve{cursor:crosshair}
 """
 
 JS = r"""
 (()=>{const $=s=>document.querySelector(s),C=$('#rk-cv');if(!C)return;const X=C.getContext('2d');
-const ST={ma:'',tf:'M15',kieu:'renko',o:'',dao:3};try{Object.assign(ST,JSON.parse(localStorage.getItem('so-rk2')||'{}'))}catch(e){}
+const ST={ma:'',tf:'M15',kieu:'renko',o:'',dao:3,tb:10};try{Object.assign(ST,JSON.parse(localStorage.getItem('so-rk2')||'{}'))}catch(e){}
 const U=new URLSearchParams(location.search);if(U.get('ma'))ST.ma=U.get('ma');
 const luu=()=>{try{localStorage.setItem('so-rk2',JSON.stringify(ST))}catch(e){}};
 const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let D=null,dg=2,B=0,COT=[],lui=0,keo=null,lan=0;
+let D=null,dg=2,B=0,COT=[],lui=0,keo=null,lan=0,VG=null,VEL=[],veDang=null,cheDo=0;
+const cau=(s,o)=>s.replace(/%([a-z])/g,(m,k)=>o[k]==null?m:o[k]);   // câu trọn vẹn để bản tiếng Anh dịch nguyên câu, giá trị chèn sau
+// đường xu hướng người dùng vẽ: mỗi đầu gắn theo giờ bắt đầu của cột (và thứ tự trong các cột cùng giờ) cùng giá, nên vẫn đúng chỗ khi có nến mới hay đổi cỡ ô
+const veKhoa=()=>'so-rk-ve:'+(ST.ma||'XAU')+':'+ST.tf,veDoc=()=>{try{VEL=JSON.parse(localStorage.getItem(veKhoa())||'[]')}catch(e){VEL=[]}if(!Array.isArray(VEL))VEL=[]},veLuu=()=>{try{localStorage.setItem(veKhoa(),JSON.stringify(VEL.slice(-50)))}catch(e){}};
+const neo=i=>{const j=Math.max(0,Math.min(COT.length-1,Math.round(i))),t=COT[j][3];let a=j;while(a>0&&COT[a-1][3]===t)a--;return{t,n:j-a}};
+const viTriNeo=q=>{let a=-1;for(let i=0;i<COT.length;i++){if(COT[i][3]===q.t){a=i;break}if(COT[i][3]>q.t)break;a=i}if(a<0)return null;if(COT[a][3]===q.t){let b=a;while(b+1<COT.length&&COT[b+1][3]===q.t&&b-a<q.n)b++;return b}return a};
 const fp=v=>Number(v).toLocaleString('vi-VN',{minimumFractionDigits:dg,maximumFractionDigits:dg});
 const soLe=cs=>{let m=0;for(const c of cs.slice(-60))for(const v of c.slice(1,5)){const s=String(v),i=s.indexOf('.');if(i>=0)m=Math.max(m,s.length-i-1)}return Math.min(m,5)};
 const gio=t=>new Date(t*1000).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -49,9 +58,11 @@ function diemHinh(cs,b,dao){const ra=[];let col=null;const san=g=>Math.floor(g/b
 function tinh(){if(!D)return;const cs=D.candles,atr=(()=>{const a=D.atr14||[];for(let i=a.length-1;i>=0;i--)if(a[i]!=null)return a[i];return null})();
  const tay=parseFloat(String(ST.o).replace(',','.'));B=tay>0?tay:(atr||((cs[cs.length-1][4])*.001));const buoc=Math.pow(10,-dg);B=Math.max(buoc,Math.round(B/buoc)*buoc);
  COT=ST.kieu==='renko'?renko(cs,B):diemHinh(cs,B,Math.max(1,Math.min(5,+ST.dao||3)));
- const c=cs[cs.length-1],k=COT[COT.length-1];
- $('#rk-tt').innerHTML=`<b>${esc(D.ma||ST.ma||'XAUUSD')}</b> · ${ST.tf} · cỡ ô <b>${fp(B)}</b>${tay>0?'':' (ATR14)'} · ${COT.length} ${ST.kieu==='renko'?'viên gạch':'cột'} từ ${cs.length} nến · giá đóng gần nhất <b>${fp(c[4])}</b>`
-  +(k?` · ${ST.kieu==='renko'?'gạch':'cột'} cuối ${k[2]>0?'<b style="color:var(--gain)">tăng</b>':'<b style="color:var(--loss)">giảm</b>'} từ ${gio(k[3])}`:'');ve()}
+ const c=cs[cs.length-1],k=COT[COT.length-1],rk=ST.kieu==='renko';
+ const cuoi=!k?'':rk?(k[2]>0?'Gạch cuối tăng, bắt đầu lúc %t':'Gạch cuối giảm, bắt đầu lúc %t'):(k[2]>0?'Cột cuối là cột X (tăng), bắt đầu lúc %t':'Cột cuối là cột O (giảm), bắt đầu lúc %t');
+ $('#rk-tt').innerHTML=`<b>${esc(D.ma||ST.ma||'XAUUSD')}</b> · ${ST.tf} · `+cau(tay>0?'Cỡ ô: %o':'Cỡ ô: %o (ATR14)',{o:`<b>${fp(B)}</b>`})+' · '
+  +cau(rk?'%n viên gạch dựng từ %c nến':'%n cột dựng từ %c nến',{n:COT.length,c:cs.length})+' · '+cau('Giá đóng gần nhất: %g',{g:`<b>${fp(c[4])}</b>`})
+  +(k?' · '+`<i style="background:var(${k[2]>0?'--gain':'--loss'})"></i>`+cau(cuoi,{t:gio(k[3])}):'');ve()}
 function ve(){const d=window.devicePixelRatio||1,W=C.clientWidth,H=C.clientHeight;if(C.width!==Math.round(W*d)||C.height!==Math.round(H*d)){C.width=Math.round(W*d);C.height=Math.round(H*d)}
  X.setTransform(d,0,0,d,0,0);X.fillStyle=css('--card')||'#111';X.fillRect(0,0,W,H);if(!COT.length){X.fillStyle=css('--ink2')||'#999';X.font='13px sans-serif';X.fillText('Chưa đủ dữ liệu để dựng biểu đồ.',16,28);return}
  const pw=W-74,ph=H-26,cw=ST.kieu==='renko'?12:16,so=Math.max(5,Math.floor(pw/cw));lui=Math.max(0,Math.min(lui,Math.max(0,COT.length-so)));
@@ -63,6 +74,14 @@ function ve(){const d=window.devicePixelRatio||1,W=C.clientWidth,H=C.clientHeigh
   if(ST.kieu==='renko'){X.fillStyle=mau;const ya=y(k[1]),yb=y(k[0]);X.fillRect(x+1,ya,cw-2,Math.max(1,yb-ya-1))}
   else{X.strokeStyle=mau;X.lineWidth=1.6;const h1=Math.abs(y(k[0])-y(k[0]+B));for(let g=k[0];g<k[1]-B/2;g+=B){const ya=y(g+B),m=Math.min(cw,h1)/2-2,cx=x+cw/2,cy=ya+h1/2;X.beginPath();
     if(k[2]>0){X.moveTo(cx-m,cy-m);X.lineTo(cx+m,cy+m);X.moveTo(cx+m,cy-m);X.lineTo(cx-m,cy+m)}else X.arc(cx,cy,Math.max(1.5,m),0,7);X.stroke()}}});
+ VG={b0,b1,cw,pw,ph,lo,hi};const xi=i=>pw-(b1-i)*cw+cw/2;
+ const tb=+ST.tb||0;if(tb>1&&COT.length>=tb){const v=COT.map(k=>ST.kieu==='renko'?(k[2]>0?k[1]:k[0]):(k[0]+k[1])/2),mau=css('--warn')||'#e0a100';let s=0,dau=1,cuoiX=null,cuoiY=null;   // đường trung bình của giá đóng từng viên gạch (giữa cột với Điểm & Hình)
+  X.strokeStyle=mau;X.lineWidth=1.8;X.beginPath();for(let i=0;i<v.length;i++){s+=v[i];if(i>=tb)s-=v[i-tb];if(i<tb-1||i<b0-1||i>=b1)continue;const xx=xi(i),yy=y(s/tb);if(dau){X.moveTo(xx,yy);dau=0}else X.lineTo(xx,yy);cuoiX=xx;cuoiY=yy}X.stroke();
+  if(cuoiX!=null){X.fillStyle=mau;X.textBaseline='middle';X.fillText('TB'+tb,Math.min(cuoiX+6,pw-30),cuoiY-10)}}
+ const mauVe=css('--series')||'#2f6fed';X.lineCap='round';for(const L of veDang?[...VEL,veDang]:VEL){const ia=L.ia!=null?L.ia:viTriNeo(L.a),ib=L.ib!=null?L.ib:viTriNeo(L.b);if(ia==null||ib==null)continue;
+  const x1=xi(ia),y1=y(L.a.p),x2=xi(ib),y2=y(L.b.p);X.strokeStyle=mauVe;X.lineWidth=2;X.beginPath();X.moveTo(x1,y1);X.lineTo(x2,y2);X.stroke();
+  if(x2!==x1){const k=(y2-y1)/(x2-x1),xe=x2>x1?pw:0;X.setLineDash([5,4]);X.lineWidth=1;X.beginPath();X.moveTo(x2,y2);X.lineTo(xe,y2+k*(xe-x2));X.stroke();X.setLineDash([])}
+  X.fillStyle=mauVe;for(const[xx,yy]of[[x1,y1],[x2,y2]]){X.beginPath();X.arc(xx,yy,3,0,7);X.fill()}}X.lineCap='butt';X.textBaseline='middle';
  const c=D.candles[D.candles.length-1][4],Yc=Math.round(y(c))+.5;if(Yc>0&&Yc<ph){X.setLineDash([4,3]);X.strokeStyle=muc;X.lineWidth=1;X.beginPath();X.moveTo(0,Yc);X.lineTo(pw,Yc);X.stroke();X.setLineDash([]);
   const t=fp(c),tw=X.measureText(t).width+10;X.fillStyle=css('--ink')||'#eee';X.fillRect(pw+2,Yc-9,tw,18);X.fillStyle=css('--card')||'#111';X.fillText(t,pw+7,Yc)}
  X.fillStyle=muc;X.textBaseline='alphabetic';const moc=Math.max(1,Math.floor(xem.length/6));xem.forEach((k,i)=>{if(i%moc===0)X.fillText(gio(k[3]),Math.max(2,pw-(xem.length-i)*cw),H-8)})}
@@ -73,15 +92,22 @@ async function tai(){const n=++lan,ma=ST.ma,tf=ST.tf;
 document.querySelectorAll('#rk-kieu button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===ST.kieu));b.addEventListener('click',()=>{ST.kieu=b.dataset.v;luu();lui=0;
  document.querySelectorAll('#rk-kieu button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#rk-dao-o').hidden=ST.kieu!=='pf';tinh()})});
 $('#rk-dao-o').hidden=ST.kieu!=='pf';
-const TF=$('#rk-tf');TF.value=ST.tf;TF.addEventListener('change',()=>{ST.tf=TF.value;luu();lui=0;tai()});
+const TF=$('#rk-tf');TF.value=ST.tf;TF.addEventListener('change',()=>{ST.tf=TF.value;luu();lui=0;veDoc();tai()});
+const TB=$('#rk-tb');TB.value=String(ST.tb||0);TB.addEventListener('change',()=>{ST.tb=+TB.value;luu();ve()});veDoc();
 const O=$('#rk-o');O.value=ST.o;O.addEventListener('input',()=>{ST.o=O.value.trim();luu();lui=0;tinh()});
 const DA=$('#rk-dao');DA.value=ST.dao;DA.addEventListener('change',()=>{ST.dao=+DA.value;luu();lui=0;tinh()});
 const MA=$('#rk-ma');fetch('/api/ma',{cache:'no-store'}).then(r=>r.json()).then(j=>{if(!j.san_sang||!j.ds.length)return;
  MA.innerHTML=j.ds.map(s=>`<option value="${s.la_vang?'':esc(s.ma)}">${esc(s.ma)} · ${esc(s.ten)}</option>`).join('');MA.value=[...MA.options].some(o=>o.value===ST.ma)?ST.ma:''}).catch(()=>{});
-MA.addEventListener('change',()=>{ST.ma=MA.value;luu();lui=0;tai()});
-C.addEventListener('pointerdown',e=>{keo={x:e.clientX,l:lui};C.style.cursor='grabbing';try{C.setPointerCapture(e.pointerId)}catch(_){}});
-C.addEventListener('pointermove',e=>{if(!keo)return;lui=keo.l+Math.round((e.clientX-keo.x)/(ST.kieu==='renko'?12:16));ve()});
-for(const ev of['pointerup','pointercancel'])C.addEventListener(ev,()=>{keo=null;C.style.cursor='grab'});
+MA.addEventListener('change',()=>{ST.ma=MA.value;luu();lui=0;veDoc();tai()});
+const toaDo=e=>{if(!VG)return null;const r=C.getBoundingClientRect(),x=e.clientX-r.left,yy=e.clientY-r.top;if(x>VG.pw||x<0)return null;const i=Math.round(VG.b1-(VG.pw-x)/VG.cw-.5);if(i<0||i>=COT.length)return null;
+ return{i,p:VG.hi-(yy-4)/(VG.ph-8)*(VG.hi-VG.lo)}};
+const VEN=$('#rk-ve'),datVe=on=>{cheDo=on?1:0;VEN.setAttribute('aria-pressed',String(!!on));C.classList.toggle('ve',!!on);veDang=null;ve()};VEN.addEventListener('click',()=>datVe(!cheDo));
+$('#rk-xoa').addEventListener('click',()=>{if(!VEL.length)return;if(confirm('Xóa tất cả đường đã vẽ trên biểu đồ Renko này?')){VEL=[];veLuu();ve()}});
+addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||''))return;if(e.key==='Escape'&&cheDo)datVe(0);else if((e.ctrlKey||e.metaKey)&&(e.key==='z'||e.key==='Z')&&VEL.length){e.preventDefault();VEL.pop();veLuu();ve()}});
+C.addEventListener('pointerdown',e=>{if(cheDo){const q=toaDo(e);if(!q)return;veDang={ia:q.i,ib:q.i,a:{p:q.p},b:{p:q.p}};try{C.setPointerCapture(e.pointerId)}catch(_){}ve();return}keo={x:e.clientX,l:lui};C.style.cursor='grabbing';try{C.setPointerCapture(e.pointerId)}catch(_){}});
+C.addEventListener('pointermove',e=>{if(veDang){const q=toaDo(e);if(q){veDang.ib=q.i;veDang.b={p:q.p};ve()}return}if(!keo)return;lui=keo.l+Math.round((e.clientX-keo.x)/(ST.kieu==='renko'?12:16));ve()});
+for(const ev of['pointerup','pointercancel'])C.addEventListener(ev,()=>{if(veDang){const L=veDang;veDang=null;if(ev==='pointerup'&&(L.ia!==L.ib||Math.abs(L.a.p-L.b.p)>B/4)){VEL.push({a:{...neo(L.ia),p:L.a.p},b:{...neo(L.ib),p:L.b.p}});veLuu()}ve();return}
+ keo=null;C.style.cursor=''});
 C.addEventListener('wheel',e=>{e.preventDefault();lui+=e.deltaY>0?-4:4;ve()},{passive:false});C.addEventListener('dblclick',()=>{lui=0;ve()});
 addEventListener('resize',ve);new MutationObserver(ve).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 setInterval(()=>{if(document.visibilityState==='visible'&&!keo)tai()},15000);window.RK={renko,diemHinh,get COT(){return COT},get B(){return B}};tai()})();
@@ -101,10 +127,13 @@ def trang_renko(ten: str) -> str:
         '<div class="rk-seg" id="rk-kieu" role="group" aria-label="Kiểu biểu đồ"><button type="button" data-v="renko">Renko</button>'
         '<button type="button" data-v="pf">Điểm &amp; Hình</button></div>'
         '<label>Cỡ ô <input id="rk-o" inputmode="decimal" autocomplete="off" placeholder="ATR14" aria-label="Cỡ ô theo giá, để trống là ATR14"></label>'
-        '<label id="rk-dao-o">Số ô đảo chiều <select id="rk-dao"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label></div>',
+        '<label id="rk-dao-o">Số ô đảo chiều <select id="rk-dao"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>'
+        '<label>Trung bình <select id="rk-tb" aria-label="Đường trung bình theo số viên gạch hoặc số cột"><option value="0">Tắt</option><option>10</option><option>20</option><option>50</option></select></label>'
+        '<button type="button" class="rk-nut" id="rk-ve" aria-pressed="false">Vẽ đường xu hướng</button><button type="button" class="rk-nut" id="rk-xoa">Xóa đường vẽ</button></div>',
         '<p class="rk-tt" id="rk-tt" aria-live="polite">Đang tải nến…</p>',
         '<div class="rk-khung"><canvas id="rk-cv" role="img" aria-label="Biểu đồ Renko hoặc Điểm và Hình"></canvas></div>',
         '<p class="rk-ghi">Kéo ngang hoặc lăn chuột để xem phần cũ hơn, bấm đúp để về mới nhất. Cỡ ô để trống thì lấy ATR14 của khung đang chọn. '
         'Renko đổi chiều khi giá đóng đi ngược đủ hai ô; Điểm &amp; Hình đổi cột khi đi ngược đủ số ô đảo chiều. Giờ ghi dưới mỗi cột là lúc cột đó bắt đầu. '
-        'Đây là cách vẽ lại giá đã qua, không phải tín hiệu vào lệnh.</p>',
+        'Bấm "Vẽ đường xu hướng" rồi kéo trên biểu đồ để kẻ đường (Esc để thôi, Ctrl+Z bỏ đường vừa vẽ); đường được nhớ theo mã và khung. '
+        'Đường trung bình tính trên giá đóng của từng viên gạch (với Điểm &amp; Hình là giữa cột). Đây là cách vẽ lại giá đã qua, không phải tín hiệu vào lệnh.</p>',
         '<footer>' + escape(trang.mien_tru()) + f'</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
