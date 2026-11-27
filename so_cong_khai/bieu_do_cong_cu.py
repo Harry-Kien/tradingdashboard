@@ -182,7 +182,7 @@ const VEX={
  duongdi:{ten:'Lộ trình dự báo',d:'M2 15l4-6 4 3 5-8M15 4l-3.5.5M15 4l-.5 3.5',goi:'Bấm từng điểm của đường đi dự kiến; bấm đúp hoặc Enter để xong',n:99,
   ve:nhieu(null,{sau:(X,ps,h,C,col)=>{const n=ps.length;X.save();X.fillStyle=col;X.setLineDash([]);muiTen(X,ps[n-2][0],ps[n-2][1],ps[n-1][0],ps[n-1][1],12);X.restore()}})},
  mauthanh:{ten:'Mẫu thanh nến (sao chép)',d:'M4 3v12M3 6h2v5H3zM9 2v10M8 4h2v5H8zM14 6v10M13 8h2v5h-2z',goi:'Kéo chọn một đoạn nến; bản sao hiện ngay sau, kéo chấm để đặt bản sao vào chỗ khác',
-  c:(h,LW,D)=>{const cs=(D&&D.candles)||[],i0=tim(cs,Math.min(h.a.t,h.b.t)),dt=cs.length>1?cs[1][0]-cs[0][0]:60;return{t:Math.max(h.a.t,h.b.t)+Math.abs(h.b.t-h.a.t)+dt*2,p:i0>=0?cs[i0][1]:h.a.p}},
+  c:(h,LW,D)=>{const cs=(D&&D.candles)||[],i0=tim(cs,Math.min(h.a.t,h.b.t)),dt=(()=>{let m=Infinity;for(let i=Math.max(1,cs.length-30);i<cs.length;i++){const d=cs[i][0]-cs[i-1][0];if(d>0&&d<m)m=d}return m<Infinity?m:60})();return{t:Math.max(h.a.t,h.b.t)+Math.abs(h.b.t-h.a.t)+dt*2,p:i0>=0?cs[i0][1]:h.a.p}},
   ve(h,C,sel,col,xa,ya,xb,yb){const X=C.X,cs=C.cs,n=cs.length,q=pc(C,h,'c'),xs0=Math.min(xa,xb),xs1=Math.max(xa,xb),ys0=Math.min(ya,yb),ys1=Math.max(ya,yb);
    let i0=Math.max(0,Math.round(C.ix(Math.min(h.a.t,h.b.t)))),i1=Math.min(n-1,Math.round(C.ix(Math.max(h.a.t,h.b.t))));i1=Math.min(i1,i0+400);
    X.save();X.setLineDash([3,3]);X.lineWidth=1;X.strokeStyle=C.P.mute;X.strokeRect(xs0+.5,ys0+.5,xs1-xs0,ys1-ys0);X.restore();

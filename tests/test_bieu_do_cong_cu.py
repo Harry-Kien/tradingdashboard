@@ -122,6 +122,24 @@ class CongCuVeThem(unittest.TestCase):
                 r = subprocess.run([node, '--check', str(f)], capture_output=True, text=True, encoding='utf-8', timeout=60)  # noqa: S603
                 self.assertEqual(r.returncode, 0, r.stderr[-2000:])
 
+    def test_do_dai_nen_khong_lay_hai_nen_dau(self):
+        """Lỗi đã gặp: dt = cs[1]-cs[0]; D1 bắt đầu thứ Sáu → thứ Hai thì dt = 3 ngày, hình vẽ bên phải nến cuối lệch chỗ."""
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('không có node')
+        b = bieu_do.JS
+        self.assertNotIn('cs[1][0]-cs[0][0]', b)
+        self.assertNotIn('cs[1][0]-cs[0][0]', JS)
+        tfs = re.search(r'const TFS=\{[^}]*\};', b).group(0)
+        ham = re.search(r'const dtNen=cs=>\{.*?\};', b).group(0)
+        ngay = 86400
+        cs = [[0, 1], [3 * ngay, 1]] + [[3 * ngay + i * ngay, 1] for i in range(1, 10)]
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / 'dt.js'
+            f.write_text(f'let tf="D1";{tfs}{ham}const cs={json.dumps(cs)};const a=dtNen(cs);tf="MN1";console.log(JSON.stringify([a,dtNen(cs)]))', encoding='utf-8')
+            r = subprocess.run([node, str(f)], capture_output=True, text=True, timeout=30)  # noqa: S603
+        self.assertEqual(json.loads(r.stdout), [ngay, ngay])                   # D1 theo bảng; khung lạ thì khoảng nhỏ nhất của nến cuối
+
     def test_chu_khong_vao_html(self):
         """Chữ người dùng gõ chỉ vẽ bằng fillText; tên nhóm, tên công cụ đi qua esc."""
         self.assertNotIn('innerHTML=h.chu', JS)

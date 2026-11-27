@@ -278,7 +278,7 @@ function lwDraw(){const P=pal(),c=LW.chart,cs=D.candles,key=(D.khac_vang?D.ma:'X
 function lwPhu(){if(!LW||!D||!D.candles.length)return;const d=window.devicePixelRatio||1,W=LWE.clientWidth,H=LWE.clientHeight,c=LW.chart,ts=c.timeScale(),cs=D.candles,P=pal();
  if(LWO.width!==Math.round(W*d)||LWO.height!==Math.round(H*d)){LWO.width=Math.round(W*d);LWO.height=Math.round(H*d)}LWO.style.width=W+'px';LWO.style.height=H+'px';
  const X=LWO.getContext('2d');X.setTransform(d,0,0,d,0,0);X.clearRect(0,0,W,H);let pw=W-64,ph=H-26;try{pw=W-c.priceScale('right').width()}catch(e){}try{ph=c.panes()[0].getHeight()}catch(e){}
- const y=v=>LW.nen.priceToCoordinate(v),dt=cs.length>1?cs[1][0]-cs[0][0]:900,
+ const y=v=>LW.nen.priceToCoordinate(v),dt=dtNen(cs),
   vt=t=>{let a=0,b=cs.length-1;if(t>cs[b][0])return b+(t-cs[b][0])/dt;while(a<b){const m=(a+b+1)>>1;if(cs[m][0]<=t)a=m;else b=m-1}return a},xl=i=>ts.logicalToCoordinate(i);
  X.save();X.beginPath();X.rect(0,0,pw,ph);X.clip();
   // mây Ichimoku: tô giữa Senkou A và B, xanh khi A trên B, đỏ khi B trên A; gồm cả 26 nến mây phía trước nến cuối (D.ichi_sau)
@@ -379,7 +379,7 @@ function lwPhu(){if(!LW||!D||!D.candles.length)return;const d=window.devicePixel
 function draw(){if(!D||!D.candles.length)return;if(LW){lwDraw();return}const P=pal(),W=C.clientWidth,H=C.clientHeight,PR=70,PB=22,PT=22,RS=on.rsi?96:0,MB=H-PB-RS,[a,b]=win(),cs=D.candles.slice(a,b),n=b-a;
  let lo=1e12,hi=-1e12;for(const c of cs){if(c[3]<lo)lo=c[3];if(c[2]>hi)hi=c[2]}
  if(plan&&!view.off)for(const v of[plan.vao,plan.sl,(plan.tp||[])[0]])if(v!=null){if(v<lo)lo=v;if(v>hi)hi=v}const pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
- const bw=(W-PR)/n,x=i=>(i-a+.5)*bw,y=v=>PT+(hi-v)/(hi-lo)*(MB-PT),dt=n>1?cs[1][0]-cs[0][0]:900;
+ const bw=(W-PR)/n,x=i=>(i-a+.5)*bw,y=v=>PT+(hi-v)/(hi-lo)*(MB-PT),dt=dtNen(cs);
  X.fillStyle=P.bg;X.fillRect(0,0,W,H);X.font='11.5px Tahoma,Segoe UI,Arial';X.textBaseline='middle';X.lineWidth=1;
  // lưới chấm và thang giá
  const step=nice((hi-lo)/7);X.strokeStyle=P.grid;X.fillStyle=P.fg;X.setLineDash([1,3]);X.textAlign='left';
@@ -525,6 +525,9 @@ async function hisTai(){const key=hisKhoa();if(HISM.has(key)){hisChu(HISM.get(ke
 // Cả biểu đồ (chỉ báo, luật) vẫn tải lại định kỳ và ngay sau khi một nến đóng.
 let ES=null,esKhoa='',SG=null,sgVe=0,sgNap=0,CBS=null,LECH=null,sgBen=0;
 const TFS={M1:60,M2:120,M3:180,M5:300,M10:600,M15:900,M30:1800,H1:3600,H2:7200,H3:10800,H4:14400,D1:86400,W1:604800};
+// Độ dài một nến (giây): theo khung danh nghĩa; khung không có trong TFS (MN1) thì lấy khoảng cách nhỏ nhất của 30 cặp nến cuối.
+// Lỗi đã gặp: lấy cs[1]-cs[0] nên khi hai nến đầu vắt qua cuối tuần (D1 thứ Sáu sang thứ Hai) độ dài thành 3 ngày, hình vẽ bên phải nến cuối lệch chỗ.
+const dtNen=cs=>{const v=TFS[tf];if(v)return v;let m=Infinity;for(let i=Math.max(1,cs.length-30);i<cs.length;i++){const d=cs[i][0]-cs[i-1][0];if(d>0&&d<m)m=d}return m<Infinity?m:900};
 const sgK=()=>(ma||'')+'|'+tf;
 function sgDong(){if(ES){ES.close();ES=null}esKhoa=''}
 function sgMo(){if(window.BDPL&&BDPL.chan)return;if(!D||D.nguon!=='mt5'||document.visibilityState!=='visible'||!window.EventSource){sgDong();return}const k=sgK();if(ES&&esKhoa===k)return;
@@ -688,7 +691,7 @@ function veTb(){const tat=k=>(k==='xoa'&&!VE.chon)||(k==='het'&&!VE.ds.length)||
  LWE.style.touchAction=VE.chon?'none':'';VGOI.textContent=VE.cong==='tro'?'':VEC[VE.cong][2]+' · Esc để thôi';VGOI.hidden=VE.cong==='tro'}
 function veCong(c){VE.cong=c;VE.tam=VE.keo=null;if(c!=='tro'){VE.an=false;VE.chon=null;if(matchMedia('(max-width:640px)').matches)VTB.setAttribute('data-thu','')}document.body.toggleAttribute('data-ve',c!=='tro');veTb();lwPhu()}
 function veXoa(){if(!VE.chon)return;VE.ds=VE.ds.filter(h=>h.id!==VE.chon);VE.chon=null;veLuu();veTb();lwPhu()}
-function veToa(px,py){if(!LW||!D)return null;const cs=D.candles,n=cs.length,dt=n>1?cs[1][0]-cs[0][0]:900,l=LW.chart.timeScale().coordinateToLogical(px),g=LW.nen.coordinateToPrice(py);if(l==null||g==null)return null;
+function veToa(px,py){if(!LW||!D)return null;const cs=D.candles,n=cs.length,dt=dtNen(cs),l=LW.chart.timeScale().coordinateToLogical(px),g=LW.nen.coordinateToPrice(py);if(l==null||g==null)return null;
  const i=Math.round(l);let p=g;if(VE.nam&&i>=0&&i<n){let kc=31;for(const v of cs[i].slice(1,5)){const yy=LW.nen.priceToCoordinate(v);if(yy!=null&&Math.abs(yy-py)<kc){kc=Math.abs(yy-py);p=v}}}   // nam châm: hút vào O/H/L/C gần nhất trong 30 px
  return{t:i<0?cs[0][0]+i*dt:i>=n?cs[n-1][0]+(i-n+1)*dt:cs[i][0],p}}
 // vẽ mọi hình lên lớp phủ và ghi lại hình dạng trên màn hình của từng hình để bắt chuột
