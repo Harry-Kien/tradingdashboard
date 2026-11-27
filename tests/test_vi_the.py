@@ -111,7 +111,7 @@ class ViThe(unittest.TestCase):
         ea_e = nhat_ky(self.d, 'ea_e', ['2026.11.25 23:00:00,init,1000,version=v1'])
         cfg = self.cfg()
         cfg['tai_khoan'].append({'ten': 'Demo B', 'ea': [{'ten': 'EA E', 'tep': ea_e, 'lech_gio_utc': 0}]})
-        self.mt5 = MT5Gia(login=55555220, mo=[vt(300, 'SELL', 0.05, 3445.62, MO, 888)])
+        self.mt5 = MT5Gia(login=55555444, mo=[vt(300, 'SELL', 0.05, 3445.62, MO, 888)])
         r = vi_the.tong_hop(cfg, NOW)
         m = [o for o in r['ds'] if o['ten'] == 'EA M']
         e = [o for o in r['ds'] if o['ten'] == 'EA E']
