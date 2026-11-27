@@ -108,7 +108,7 @@ class CongCuVeThem(unittest.TestCase):
         self.assertIn('if(window.VNH)VNH.gan(VTB,{VE,VEC,veCong,veTb});', b)
         self.assertIn('if(VEX[h.k]&&VEX[h.k].c){if(!h.c)h.c=VEX[h.k].c(h,LW,D)}', b)
         nguon = Path(bieu_do.__file__).read_text(encoding='utf-8')
-        self.assertIn('<script>{bieu_do_cong_cu.JS}</script><script>{JS}</script>', nguon)      # mô-đun nạp trước mã chính
+        self.assertLess(nguon.index('<script>{bieu_do_cong_cu.JS}</script>'), nguon.index('<script>{JS}</script>'))   # mô-đun nạp trước mã chính
         self.assertIn('{bieu_do_cong_cu.CSS}', nguon)
 
     def test_trang_dung_cu_phap(self):
