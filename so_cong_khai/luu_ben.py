@@ -2,6 +2,7 @@
 import json
 import os
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -14,6 +15,16 @@ def ghi_json(p: Path, value) -> None:
             f.write(raw)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(name, p)
+        # Windows: một luồng/tiến trình đang đọc hoặc trình quét tệp có thể
+        # giữ handle không chia sẻ DELETE. Giữ tệp cũ nguyên vẹn và thử lại
+        # phép thay nguyên tử; không mở đích để ghi đè trực tiếp.
+        for attempt in range(6):
+            try:
+                os.replace(name, p)
+                break
+            except PermissionError as e:
+                if getattr(e, 'winerror', None) not in (5, 32, 33) or attempt == 5:
+                    raise
+                time.sleep(.01 * 2 ** attempt)
     finally:
         Path(name).unlink(missing_ok=True)

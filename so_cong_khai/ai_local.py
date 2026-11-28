@@ -7,16 +7,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import re
 import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import ai_chart, ai_store
+from . import ai_chart, ai_store, ai_timeframes
 
-VERSION = 'chart-rules-v1'
+VERSION = 'chart-rules-topdown-v2'
 _lock = threading.Lock()
 _recent: OrderedDict = OrderedDict()
 
@@ -34,11 +33,7 @@ def _rate(root: Path, uid: str, now: float) -> None:
 
 
 def direction(frame: dict) -> int:
-    values = [frame.get(k) for k in ('close', 'ema20', 'ema50')]
-    if not all(type(v) in (int, float) and math.isfinite(v) for v in values):
-        return 0
-    close, fast, slow = values
-    return 1 if fast>slow and close>slow else -1 if fast<slow and close<slow else 0
+    return ai_timeframes.direction(frame)
 
 
 def analyze(root: Path, cfg: dict, user: dict, body: dict, *, snapshot_fn=None, clock=None) -> dict:
@@ -54,14 +49,19 @@ def analyze(root: Path, cfg: dict, user: dict, body: dict, *, snapshot_fn=None, 
     _rate(root, user['id'], clock())
     conf = ai_store.settings(root)
     snap = (snapshot_fn or ai_chart.snapshot)(cfg, request['ma'], request['tf'], conf['quote_max_age'])
+    return read_snapshot(snap, conf, request, clock=clock)
+
+
+def read_snapshot(snap: dict, conf: dict, request: dict, *, clock=None) -> dict:
+    """Pure rule replay on a trusted snapshot; callers enforce authentication/freshness."""
+    clock = clock or time.time
     en = request['lang']=='en'
     text = lambda vi, english: english if en else vi  # noqa: E731
     frames = snap['frames']
     direction_by_tf = {tf: direction(f) for tf, f in frames.items()}
-    needed = tuple(dict.fromkeys((request['tf'], 'H1', 'H4', 'D1')))
-    directions = [direction_by_tf.get(tf, 0) for tf in needed]
-    aligned = len(directions)>=3 and len(set(directions))==1 and directions[0]!=0
-    bias = directions[0] if aligned else 0
+    context = ai_timeframes.assess(snap)
+    aligned = context['aligned']
+    bias = context['bias']
     main = frames[request['tf']]
     rsi = main.get('rsi14')
     atr = main.get('atr14_sma')
@@ -118,7 +118,7 @@ def analyze(root: Path, cfg: dict, user: dict, body: dict, *, snapshot_fn=None, 
                                     'scenarios': selected, 'answer': ''},
             'ma': request['ma'], 'tf': request['tf'], 'mode': request['mode'], 'engine': 'rules', 'training': 'not_trained', 'read_only': True,
             'snapshot_at': snap['captured_at'], 'quote_at': snap['quote_at'], 'bid': snap['bid'], 'ask': snap['ask'],
-            'reference_atr': atr, 'digits': snap['digits'], 'expires_at': snap['captured_at']+conf['quote_max_age'],
+            'reference_atr': atr, 'digits': snap['digits'], 'topdown': context, 'expires_at': snap['captured_at']+conf['quote_max_age'],
             'expired': clock()-snap['captured_at']>conf['quote_max_age'],
             'snapshot_sha': hashlib.sha256(json.dumps(snap, sort_keys=True, allow_nan=False).encode()).hexdigest(),
             'provider': 'local_rules', 'model': VERSION, 'prompt_version': VERSION, 'vision_used': False,

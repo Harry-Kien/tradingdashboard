@@ -13,7 +13,7 @@ from __future__ import annotations
 import time
 from datetime import datetime, timedelta, timezone
 
-from . import chat_luong_call, gia, giu_lenh, harrison, phieu, phuong_phap, song, tin_hieu_ngan
+from . import ai_timeframes, chat_luong_call, gia, giu_lenh, harrison, phieu, phuong_phap, song, tin_hieu_ngan
 
 THONG_KE = {
     'bot:xu_huong': 'Nhánh theo yêu cầu chưa có kiểm định riêng. Số đo của bot chờ nến phá vỡ không áp dụng cho nhánh này. Chỉ tham khảo, không tự ghi lệnh hay phát tín hiệu Telegram.',
@@ -42,7 +42,8 @@ def _khong(ma: str, ten: str, kieu: str, vi_sao: str) -> dict:
 
 def ngan(cfg: dict, ma: str, tf: str) -> dict:
     """Kịch bản quan sát trên đúng khung, dùng bộ quét đã có cho M5/M30."""
-    data = tin_hieu_ngan.doc(cfg, ma, khung=tf)
+    from . import entry_feed
+    data = entry_feed.doc(cfg, ma, khung=tf)
     a = next((r for r in data['ds'] if r['tf'] == tf), {})
     trang_thai = a.get('trang_thai')
     co = trang_thai == 'dat'
@@ -53,6 +54,11 @@ def ngan(cfg: dict, ma: str, tf: str) -> dict:
         row = {'ma': f'ngan:{tf}:{loai}', 'ten': tin_hieu_ngan.LOAI[loai] + f' · {tf}', 'chip': chip, 'nhom': 'pp', 'khung': tf,
                'co': co_loai, 'hieu_luc': co and co_loai, 'quan_sat': True,
                'kieu': f'Quan sát nến {tf} đã đóng', 'thong_ke': 'Bộ quét ngắn hạn đang được theo dõi tiến cứu.'}
+        row['thong_ke'] = 'Bộ quét nến và bối cảnh đa khung đang được kiểm định riêng; không coi là phương pháp đã chứng minh lợi nhuận.'
+        row['ly_do'] = 'Mẫu nến đã đóng; chỉ quan sát khi khung nối, H1/H4 và D1 cùng chiều.'
+        if a.get('plan_id') and co_loai:
+            row.update(plan_id=a['plan_id'], plan_hash=a.get('plan_hash'), plan_locked=True)
+            row['kieu'] += ' · Kế hoạch ' + a['plan_id'][-6:] + ' · Giá đã khóa'
         if co_loai:
             row.update(huong='BAN' if a['huong'] == 'BÁN' else a['huong'], vao=a.get('vao'), sl=a.get('sl'),
                        tp=[a['tp']] if co else [], rr=[a['rr']] if co else [],
@@ -67,7 +73,7 @@ def ngan(cfg: dict, ma: str, tf: str) -> dict:
     return {**{k: data[k] for k in ('ma', 'luc', 'nguon', 'bid', 'ask', 'tick_ms', 'so_le') if k in data},
             'het': datetime.fromtimestamp(data['tick_ms'] / 1000, timezone.utc).isoformat() if data.get('tick_ms') else None,
             'khung_phan_tich': tf, 'quy_trinh_ngan': True, 'phuong_an': [], 'phuong_phap': p, 'con_hieu_luc': int(co),
-            'boi_canh': {}, 'canh_bao': [], 'loi': [], 'ms': {}}
+            'boi_canh': {'topdown': a.get('topdown'), 'atr_khung': a.get('atr')}, 'canh_bao': [], 'loi': [], 'ms': {}}
 
 
 def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
@@ -87,8 +93,10 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     bid = float(fr.get('bid') or m5['close'].iloc[-1])
     ask = float(fr.get('ask') or bid + float(g.get('spread', 0.17)))
     out: dict = {'luc': now.isoformat(), 'het': het.isoformat(), 'tuoi_phut': tuoi, 'nguon': fr.get('nguon', 'kho'), 'bid': _r(bid), 'ask': _r(ask),
-                 'tick_ms': int(het.timestamp() * 1000) if fr.get('nguon') == 'mt5' and fr.get('bid') and fr.get('ask') else None,
                  'phuong_an': [], 'canh_bao': [], 'loi': [], 'ms': ms}
+    # Context is independent of the author's optional private rules. Keep it
+    # available on a fresh install without inventing signals when rules fail.
+    out['boi_canh'] = {'topdown': ai_timeframes.from_frames(fr, 'M15', now.timestamp()), 'spread': _r(ask - bid)}
     if tuoi > 20:
         out['canh_bao'].append(f'Giá đã cũ {tuoi} phút (thị trường nghỉ, MT5 mất kết nối, hoặc đang dùng kho nến). Các mức dưới đây tính trên giá cũ, không dùng để vào lệnh.')
     try:
@@ -133,6 +141,7 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     snap = thu('Bối cảnh', lambda: R.snapshot(m15.iloc[-320:], h1, h4, d1, 'M15')) or {}
     bc = {'xu_huong': {k: int(snap[k]) for k in ('D1', 'H4', 'H1', 'trend') if k in snap}, 'atr_m15': _r(snap.get('atr')),
           'ho_tro': _r(snap.get('support')), 'khang_cu': _r(snap.get('resistance')), 'spread': _r(ask - bid)}
+    bc['topdown'] = ai_timeframes.from_frames(fr, 'M15', now.timestamp())
 
     def vung_gan():
         atr_h1 = float(R.atr_sma(fr['H1'], 14).iloc[-1])

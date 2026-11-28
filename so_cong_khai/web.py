@@ -29,7 +29,7 @@ from . import bao_mat_http, tai_khoan_chart
 from . import ai_chart, ai_providers, ai_store, ai_evidence
 from . import mcp_access
 from . import luong_gia
-from . import tin_hieu_ngan, tin_hieu_tien_cuu
+from . import tin_hieu_tien_cuu
 from . import loi_nghiep_vu, phieu_ke_hoach
 from .__main__ import HERE, xay
 from . import tong_quan, khong_gian, local_runtime
@@ -246,10 +246,6 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
             if path == '/api/phien-ban':
                 body = {'san_pham': thuong_hieu.TEN, 'build': self.server.local_build, 'cong': self.server.server_port,
                         'che_do': self.server.runtime_mode, 'chi_doc_mt5': True}
-                if tien_cuu_vong is not None:
-                    body['theo_doi_tick'] = {'dang_chay': tien_cuu_vong.is_alive() and not tien_cuu_vong.dung.is_set(),
-                                             'lan_quet': tien_cuu_vong.luc_quet, 'co_du_lieu': bool(tien_cuu_vong.trang_thai),
-                                             'loi': bool(tien_cuu_vong.loi)}
                 return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode(), dich_noi_dung=False)
             if path == '/api/mcp/tool':
                 try:
@@ -661,7 +657,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                     ma = (q.get('ma', [''])[0] or '').strip()
                     tf = q.get('tf', ['M15'])[0]
                     try:
-                        if tf in ('M5', 'M30'):
+                        if tf in ('M5', 'M30') or (tf == 'M15' and q.get('topdown', ['0'])[0] == '1'):
                             data = phan_tich.ngan(cfg, ma, tf)
                         else:
                             data = da_ma.phan_tich(cfg, ma) if ma and ma != da_ma.ma_vang(cfg) else phan_tich.phan_tich(cfg)
@@ -711,7 +707,9 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     ma = parse_qs(url.query).get('ma', [''])[0].strip()
                     try:
-                        data = tin_hieu_ngan.doc(cfg, ma)
+                        from . import entry_feed, entry_plans
+                        data = entry_feed.doc(cfg, ma, out=_out(cfg))
+                        data['ke_hoach_dung_chung'] = entry_plans.summary(_out(cfg), data.get('account_scope', ''), data['ma'])
                         data['canh_bao'] = canh_bao.ngan_han(data)
                     except ValueError as e:
                         return self._gui(400, LOAI['.json'], json.dumps({'ly_do': str(e)}, ensure_ascii=False).encode())
@@ -721,10 +719,7 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                         data['tien_cuu'] = {**tien_cuu, 'ma_theo_doi': data['ma'] in tin_hieu_tien_cuu.ma_theo_doi(cfg),
                                             'bat': bool(cb.get('tien_cuu', True) and cb.get('ngan_han', True)),
                                             'dang_chay': any(t and t.is_alive() and not t.dung.is_set() for t in (vong, tien_cuu_vong)),
-                                            'loi_vong': bool(tien_cuu_vong and tien_cuu_vong.loi),
-                                            'nghien_cuu': tin_hieu_tien_cuu.tong_hop_nghien_cuu(_out(cfg), data.get('may_chu', ''), data['ma'])
-                                            if data['ma'] == da_ma.ma_vang(cfg) else [],
-                                            'lan_quet': tien_cuu_vong.trang_thai.get(data['ma']) if tien_cuu_vong else None}
+                                            'loi_vong': bool(tien_cuu_vong and tien_cuu_vong.loi)}
                     except sqlite3.Error:
                         data['tien_cuu'] = {'ly_do': 'Chưa đọc được sổ tiến cứu.'}
                     for k in ('tien_tk', 'buoc_gia', 'gia_tick', 'bid', 'ask', 'tick_ms'):

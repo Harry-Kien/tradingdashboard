@@ -2,3 +2,4 @@
 bandit==1.9.4
 pip-audit==2.10.1
 ruff==0.17.6
+playwright==1.62.0

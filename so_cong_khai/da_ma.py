@@ -273,7 +273,6 @@ def phan_tich(cfg: dict, ma: str, now: datetime | None = None) -> dict:
     out = {'ma': ma, 'ten': s.description, 'so_le': d, 'khac_vang': True, 'chia_se': cs, 'giai_thich': GIAI_CHIA_SE if cs else GIAI_THICH,
            'luc': now.isoformat(), 'het': het.isoformat(),
            'tuoi_phut': tuoi, 'nguon': 'mt5', 'bid': _lam_tron(bid, d), 'ask': _lam_tron(ask, d), 'phuong_an': [], 'canh_bao': [], 'loi': loi,
-           'tick_ms': int(getattr(tick, 'time_msc', 0) or tick.time * 1000) if tick and tick.bid and tick.ask else None,
            'dong_thuan': {'MUA': 0, 'BAN': 0, 'khong': 0}, 'con_hieu_luc': 0,
            'boi_canh': {'xu_huong': {k: snap[k] for k in ('D1', 'H4', 'H1', 'trend') if k in snap}, 'atr_m15': snap.get('atr'),
                         'ho_tro': snap.get('support'), 'khang_cu': snap.get('resistance'), 'spread': _lam_tron(ask - bid, d),

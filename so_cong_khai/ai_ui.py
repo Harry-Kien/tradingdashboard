@@ -12,6 +12,7 @@ CSS = r'''
 .aip-scenario{padding:12px;border:1px solid var(--line);border-radius:9px;margin:10px 0}.aip-levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;font-variant-numeric:tabular-nums}.aip-levels small{display:block;color:var(--mute)}
 .aip-admin{padding:18px;margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}.aip-admin h2{margin-top:0}.aip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.aip-grid label{display:grid;gap:5px;font-size:13px}.aip-admin details{margin:14px 0}.aip-admin summary{cursor:pointer}.aip-admin input[type=checkbox]{width:20px;height:20px}
 .aip-table{overflow:auto}.aip-table table{width:100%;font-size:12px;border-collapse:collapse}.aip-table td,.aip-table th{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.aip-context{border:1px solid var(--line);border-radius:9px;padding:12px;margin:12px 0}.aip-context-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:8px}.aip-context-grid>div{padding:8px;background:var(--bg);border-radius:6px}.aip-context-grid small{display:block;color:var(--mute);font-size:11px}.aip-context-grid b{display:block;font-size:13px}
 @media(max-width:640px){.aip-back{padding:6px}.aip-dialog{max-height:96dvh}.aip-body{padding:12px}.aip-grid{grid-template-columns:1fr}}
 '''
 
@@ -36,10 +37,14 @@ function expired(r){const g=chart();if(r.expired||Date.now()/1000>=r.expires_at|
  const bid=g?.D?.bid,ask=g?.D?.ask;if(!Number.isFinite(bid)||!Number.isFinite(ask))return true;
  if(r.reference_atr>0&&Math.abs(bid-r.bid)>r.reference_atr*.5)return true;
  return r.analysis.scenarios.some(s=>s.side==='MUA'?(bid<=s.sl||bid>=s.tp[0]):(ask>=s.sl||ask<=s.tp[0]))}
+function renderContext(r){const c=r.topdown;if(!c?.rows)return'';const roles={entry:'Khung xác nhận',bridge:'Khung nối',trend:'Xu hướng lớn',macro:'Bối cảnh dài hạn'},states={missing:'Thiếu nến hợp lệ ở khung lớn',macro_conflict:'D1 chưa xác nhận cùng phía EMA200',higher_conflict:'Các khung lớn đang mâu thuẫn',wait_entry:'Chờ khung vào xác nhận theo xu hướng lớn',aligned:'Bối cảnh cùng chiều · Vẫn cần điều kiện vào'};
+ const locale=document.documentElement.lang==='en'?'en-GB':'vi-VN',stamp=t=>new Intl.DateTimeFormat(locale,{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(t*1000));
+ return '<section class="aip-context"><b>Đối chiếu khung lớn</b><p class="aip-muted">'+esc(c.required.join(' → '))+' · UTC+7</p><p class="'+(c.aligned?'':'aip-warn')+'">'+esc(states[c.status]||c.status)+'</p><div class="aip-context-grid">'+c.rows.map(row=>'<div><small>'+esc(roles[row.role]||row.role)+'</small><b>'+esc(row.timeframe)+' · '+(row.direction>0?'▲':row.direction<0?'▼':'—')+'</b><small>'+esc(row.valid&&Number.isFinite(row.closed_at)?stamp(row.closed_at):'Chưa có nến đóng hợp lệ')+'</small></div>').join('')+'</div><small class="aip-muted">Đồng thuận là điều kiện kỹ thuật, không phải xác suất thắng.</small></section>'}
 function renderResult(r){const d=r.analysis,locale=document.documentElement.lang==='en'?'en-GB':'vi-VN',digits=Number.isInteger(r.digits)?Math.max(0,Math.min(8,r.digits)):5,number=(v,n=digits)=>new Intl.NumberFormat(locale,{maximumFractionDigits:n}).format(v),price=v=>number(v),list=(title,a)=>a.length?'<h3>'+title+'</h3><ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'';
  const stamp=new Intl.DateTimeFormat(locale,{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(r.snapshot_at*1000))+' · UTC+7';
  return '<div class="aip-result"><p class="aip-muted">'+esc(r.ma+' · '+r.tf+' · '+r.provider+' / '+r.model)+' · '+esc(stamp)+' · '+(r.vision_used?'Có đọc ảnh':'Dữ liệu số')+'</p>'
  +(r.engine==='rules'?'<p class="aip-muted">Miễn phí · Quy tắc cố định, chưa phải mô hình đã huấn luyện · Không gửi dữ liệu tới nhà cung cấp AI.</p>':'<p class="aip-muted">Mô hình nền của nhà cung cấp · Không phải mô hình được fine-tune riêng trên hệ thống này.</p>')
+ +renderContext(r)
  +(r.checks?.length?'<div class="aip-grid">'+r.checks.map(c=>'<div><b>'+esc(c.label)+'</b><br><span class="'+(c.passed?'':'aip-warn')+'">'+(c.passed?'Đạt điều kiện':'Chưa đạt')+'</span></div>').join('')+'</div>':'')
  +'<p class="aip-warn" data-age></p><h3>Bức tranh chung</h3><p>'+esc(d.summary)+'</p><p>'+esc(d.trend)+'</p>'+list('Đồng thuận',d.agreement)+list('Mâu thuẫn',d.conflicts)
  +d.scenarios.map((s,i)=>'<article class="aip-scenario"><b>'+esc(s.side==='MUA'?'Kịch bản MUA có điều kiện':'Kịch bản BÁN có điều kiện')+'</b><div class="aip-levels">'+[['Entry',s.entry],['SL',s.sl],...s.tp.map((p,j)=>['TP'+(j+1)+' · '+s.rr[j]+'R',p])].map(([k,v])=>'<div><small>'+esc(k)+'</small><b>'+esc(price(v))+'</b></div>').join('')+'</div><p>'+esc(s.reason)+'</p><p><b>Điều kiện máy chủ: </b>'+esc(s.condition)+'</p><p><b>Xác nhận AI: </b>'+esc(s.trigger)+'</p><p><b>Vô hiệu: </b>'+esc(s.invalidation)+'</p><p class="aip-muted">'+esc(s.execution_note)+'</p><button type="button" data-draw="'+i+'">Vẽ mức tham chiếu lên biểu đồ</button></article>').join('')
@@ -81,7 +86,7 @@ async function ask(){if(busy)return;const g=chart(),message=box.querySelector('[
   r._chart_epoch=context.epoch;result=r;box.querySelector('[data-result]').innerHTML=renderResult(r);message.textContent='Đã phân tích. '+(free?'Miễn phí, không trừ lượt AI.':r.account?.plan==='owner'?'':('Còn '+(r.account?.remaining??'—')+' lượt.'));
   box.querySelectorAll('[data-draw]').forEach(b=>b.onclick=()=>{if(expired(r))return;window.dispatchEvent(new CustomEvent('ai-chart-plan',{detail:{...r,selected:r.analysis.scenarios[+b.dataset.draw]}}));close()});tick();
  }catch(e){message.textContent=e.message;message.className='aip-warn'}finally{busy=false;const engine=box.querySelector('[data-engine]');engine.disabled=false;engine.onchange?.()}}
-window.AI_CHART={open:show};
+window.AI_CHART={open:show,context:renderContext};
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stopAge();result=null;const r=box.querySelector('[data-result]');if(r)r.textContent='Kết quả được ẩn khi rời trang. Mở lại bảng AI để lấy dữ liệu mới.'}});
 })();'''
 

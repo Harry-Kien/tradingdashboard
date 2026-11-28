@@ -10,6 +10,8 @@ Tab "Có sẵn" bật tắt các chỉ báo hệ thống tính ở máy chủ (n
 của MT5 (D.vol), chỉ có khi đang nối MT5 trực tiếp; tinh() nhận thêm V (tick volume) và T (giờ mở nến, giây UTC) cho VWAP và mức ngày trước.
 Trang Biểu đồ cần hai móc: window.BDCB (trả LW, D, bảng màu) và gọi CBCN.ve() cuối lwDraw."""
 
+from . import chart_kieu
+
 CSS = r"""
 .cbcn-mo{display:inline-flex;align-items:center;gap:6px}.cbcn-mo svg{width:16px;height:16px}
 .cbcn-nen{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:grid;place-items:start center;padding:6vh 12px 12px}
@@ -336,31 +338,7 @@ function them(k,p){const n=S.ds.length;S.ds.push({id:moiId(),k,p:{...macDinh(k),
 // ---------------------------------------------------------------- vẽ lên biểu đồ (Lightweight Charts)
 let SER=[],KH='',TINH=0,khoaDL='',lastSource=null,tickTimer=0,tickCost=0;
 function goSach(c){for(const s of SER)try{c.removeSeries(s.s)}catch(e){}SER=[]}
-// ---------------------------------------------------------------- dạng biểu đồ: nến, nến rỗng, Heikin Ashi, thanh OHLC, đường, vùng, đường cơ sở.
-// Chuỗi nến gốc (LW.nen) giữ nguyên để các đường giá, hình vẽ và lệnh vẫn bám đúng; với dạng khác, nến gốc trong suốt và một chuỗi phủ vẽ dạng mới.
-const KIEU={nen:'Nến',rong:'Nến rỗng',ha:'Heikin Ashi',thanh:'Thanh OHLC',duong:'Đường giá đóng',vung:'Vùng',coso:'Đường cơ sở'};
-let KBD='nen',PHU=null,PHUK='',GOC=null,khoaKieu='';try{KBD=localStorage.getItem('so-kieu-bd')||'nen';if(!KIEU[KBD])KBD='nen'}catch(e){}
-function heikin(cs){let ho=null,hc=null;return cs.map(r=>{const c=(r[1]+r[2]+r[3]+r[4])/4,o=ho===null?(r[1]+r[4])/2:(ho+hc)/2;ho=o;hc=c;return[r[0],o,Math.max(r[2],o,c),Math.min(r[3],o,c),c]})}
-function kieuVe(B){const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||{},tr='rgba(0,0,0,0)',o=LW.nen.options();
- if(o.downColor!==tr&&o.upColor!==tr)GOC={upColor:o.upColor,downColor:o.downColor,wickUpColor:o.wickUpColor,wickDownColor:o.wickDownColor,borderUpColor:o.borderUpColor,borderDownColor:o.borderDownColor};
- if(KBD!==PHUK){if(PHU)try{c.removeSeries(PHU)}catch(e){}PHU=null;PHUK=KBD;khoaKieu='';const an={priceLineVisible:false,lastValueVisible:false};
-  if(KBD==='ha')PHU=c.addSeries(LWC.CandlestickSeries,an,0);else if(KBD==='thanh')PHU=c.addSeries(LWC.BarSeries,{...an,thinBars:false},0);
-  else if(KBD==='duong')PHU=c.addSeries(LWC.LineSeries,{...an,lineWidth:2},0);else if(KBD==='vung')PHU=c.addSeries(LWC.AreaSeries,{...an,lineWidth:2},0);
-  else if(KBD==='coso')PHU=c.addSeries(LWC.BaselineSeries,{...an,lineWidth:2},0);
-  if(KBD==='nen'&&GOC)LW.nen.applyOptions(GOC)}
- if(KBD==='nen')return;
- if(KBD==='rong'){LW.nen.applyOptions({upColor:tr});return}                       // nến tăng chỉ còn viền, như kiểu "Hollow candles"
- LW.nen.applyOptions({upColor:tr,downColor:tr,wickUpColor:tr,wickDownColor:tr,borderUpColor:tr,borderDownColor:tr});
- const len=(GOC&&GOC.upColor)||P.bull||'#26a69a',xuong=(GOC&&GOC.downColor)||P.bear||'#ef5350',xanh='#2962ff';
- if(KBD==='ha')PHU.applyOptions({upColor:len,downColor:xuong,wickUpColor:len,wickDownColor:xuong,borderUpColor:len,borderDownColor:xuong});
- else if(KBD==='thanh')PHU.applyOptions({upColor:len,downColor:xuong});else if(KBD==='duong')PHU.applyOptions({color:xanh});
- else if(KBD==='vung')PHU.applyOptions({lineColor:xanh,topColor:'rgba(41,98,255,.35)',bottomColor:'rgba(41,98,255,.02)'});
- const cs=B.D.candles,k=KBD+'|'+cs.length+'|'+cs[0][0]+'|'+cs[cs.length-1].join(',');if(k===khoaKieu&&PHU._source===cs)return;khoaKieu=k;PHU._source=cs;
- if(KBD==='coso'){const n=Math.min(200,cs.length),tb=cs.slice(-n).reduce((s,r)=>s+r[4],0)/n;       // mốc: giá đóng trung bình 200 nến gần nhất
-  PHU.applyOptions({baseValue:{type:'price',price:tb},topLineColor:len,bottomLineColor:xuong,topFillColor1:'rgba(38,166,154,.28)',topFillColor2:'rgba(38,166,154,.03)',
-   bottomFillColor1:'rgba(239,83,80,.03)',bottomFillColor2:'rgba(239,83,80,.28)'})}
- const ds=KBD==='ha'?heikin(cs):cs;
- CHART_RT.gui(PHU,cs.length,i=>{const r=ds[i];return KBD==='ha'||KBD==='thanh'?{time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]}:{time:r[0],value:r[4]}},cs)}
+""" + chart_kieu.RENDER_JS + r"""
 const MOC=[];
 function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candles||!B.D.candles.length)return;const LW=B.LW,c=LW.chart,LWC=window.LightweightCharts,P=B.P||{};
  try{kieuVe(B)}catch(e){console.warn('Dạng biểu đồ:',e)}
@@ -463,16 +441,15 @@ NEN.addEventListener('change',e=>{const t=e.target,dg=t.closest('.dg'),x=dg&&S.d
  if(isFinite(v)&&v>=mn&&(v>0||mn===0)){if(nguyen)v=Math.max(mn,Math.round(v));x.p[t.dataset.ts]=Math.min(v,q[5]??1000);t.value=x.p[t.dataset.ts]}else t.value=x.p[t.dataset.ts]}luu();doi()});
 TIM.addEventListener('input',()=>{if(TAB==='dung'||TAB==='mau')TAB='tat';veDs()});
 function mo(){NEN.hidden=false;TIM.value='';veDs();setTimeout(()=>TIM.focus(),30)}function dong(){NEN.hidden=true;nut&&nut.focus()}
-addEventListener('keydown',e=>{if(!NEN.hidden&&e.key==='Escape'){e.stopPropagation();dong();return}
+addEventListener('keydown',e=>{if(document.querySelector('dialog[open]'))return;if(!NEN.hidden&&e.key==='Escape'){e.stopPropagation();dong();return}
  if(e.key==='/'&&NEN.hidden&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')&&!e.ctrlKey&&!e.metaKey){e.preventDefault();mo()}},true);
 // nút trên thanh công cụ của biểu đồ
 let nut=null;const t2=document.querySelector('.tools.t2');if(t2){nut=document.createElement('button');nut.type='button';nut.className='ghost nho cbcn-mo';nut.title='Thêm chỉ báo (phím /)';
  nut.innerHTML='<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 14l4-5 3 3 6-8M12 4h3v3"/></svg><span>Thêm chỉ báo</span>';
  nut.addEventListener('click',mo);const tuy=t2.querySelector('details.tuy');if(tuy)tuy.after(nut);else t2.appendChild(nut);
- const ch=document.createElement('label');ch.className='sel cbcn-kieu';ch.title='Dạng biểu đồ';
- ch.innerHTML='<select aria-label="Dạng biểu đồ">'+Object.entries(KIEU).map(([k,n])=>`<option value="${k}"${k===KBD?' selected':''}>${n}</option>`).join('')+'</select>';
- ch.querySelector('select').addEventListener('change',e=>{KBD=e.target.value;try{localStorage.setItem('so-kieu-bd',KBD)}catch(_){}ve()});nut.before(ch)}
-return{cauHinh:()=>({mau:S.mau,sao:S.sao}),loiLuu:()=>cbLuuLoi,ve,tick,mo,LIB,KIEU,tinhTrang,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},dongBo:x=>{if(x&&x.mau&&typeof x.mau==='object'&&!Array.isArray(x.mau))S.mau=x.mau;if(x&&Array.isArray(x.sao))S.sao=x.sao.filter(k=>LIB[k]);const ok=luu();if(!NEN.hidden)veDs();return ok},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
+""" + chart_kieu.UI_JS + r"""
+}
+return{kieu:()=>KBD,kieuTick:ctTick,nenData:ctMask,kieuThongTin:()=>({kind:KBD,series:PHU,baseline:{...ctBase}}),cauHinh:()=>({mau:S.mau,sao:S.sao}),loiLuu:()=>cbLuuLoi,ve,tick,mo,LIB,KIEU,tinhTrang,moc:MOC,tomTat,dung:k=>S.ds.some(x=>x.k===k&&!x.an),tinhLai:()=>{khoaDL='';ve()},dongBo:x=>{if(x&&x.mau&&typeof x.mau==='object'&&!Array.isArray(x.mau))S.mau=x.mau;if(x&&Array.isArray(x.sao))S.sao=x.sao.filter(k=>LIB[k]);const ok=luu();if(!NEN.hidden)veDs();return ok},_tinh:{ema,sma,rma,rsi,stoch,atr,supertrend,psar,adx,cci,aroon,wma,sd,heikin,kldb,linreg,squeeze,wavetrend,utbot,chandelier,qqe,fisher,alma,kama,mcginley}}})();
 """
 
 from . import chi_bao_nguon_mo as _oss  # noqa: E402
@@ -491,6 +468,8 @@ self.onmessage=e=>{const task=e.data,t0=performance.now(),cs=task.cs,
 from . import chart_realtime as _rt  # noqa: E402
 
 JS = _oss.JS + _rt.JS + JS
+
+CSS += chart_kieu.CSS
 
 from . import bieu_do_them as _them  # noqa: E402 - công cụ thêm chạy ngay sau bộ chọn chỉ báo, cùng thẻ script
 

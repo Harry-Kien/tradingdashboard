@@ -4,6 +4,7 @@ Chỉ có hiệu lực khi cửa sổ rộng từ 981px và cao từ 600px (MOC)
 - Vùng trái: khung biểu đồ lấp hết chỗ; vùng nến co giãn theo cửa sổ (thấp nhất 320px, 200px khi cửa sổ thấp hơn 760px).
 - Dòng "mã · nguồn giá" (.stamp) được dời xuống hàng nhỏ dưới nến (.ban-chan), cạnh dòng ghi công thư viện; thẻ điểm vào (#dv) cao tối đa 200px.
 - Bảng phải (.col, 350px): cuộn riêng, gập/mở bằng nút #phai-btn; ghi chú "Đọc trước" và chân trang được dời xuống cuối bảng.
+- Thẻ điểm vào có mũi tên thu gọn và cửa sổ đọc lớn trên mọi cỡ màn hình; giữ nguyên DOM, bộ lọc và cập nhật giá khi mở rộng.
 - Ngăn dưới (.duoi): mọi ô dưới biểu đồ (AI, COT, Làm tiếp, và các ô mô-đun khác chèn lúc chạy như #cbv, #dsau) thành một dải thẻ, mặc định gập.
 - Nút Toàn màn hình (lớp .max của #cp) không đổi: mọi luật ở đây đều viết cho .chartp:not(.max).
 
@@ -17,6 +18,34 @@ MOC = '@media(min-width:981px) and (min-height:600px)'
 
 CSS = r"""
 #phai-btn,#dv-btn,.ngan-tab{display:none}
+#dv-head{display:flex;align-items:center;gap:8px;padding:8px 0 2px;min-width:0}
+#dv-head[hidden]{display:none}#dv-head strong{font-size:14px}#dv-head small{font-size:12px;color:var(--mute)}
+#dv-head .dv-actions{margin-left:auto;display:flex;gap:6px;flex:none}
+:root #dv-head button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:5px 10px;font-size:13px}
+#dv-head svg,#dv-reader svg{flex:none}#dv-head button:focus-visible,#dv-reader button:focus-visible{outline:2px solid var(--series);outline-offset:2px}
+:root .chartp.dv-an>#dv{display:none}:root .chartp.max.gon #dv-head{display:none}
+:root.dv-reading{overflow:hidden}
+#dv-reader{inset:0;margin:auto;padding:0;width:min(1120px,calc(100vw - 40px));height:min(840px,calc(100dvh - 48px));max-width:none;max-height:none;box-sizing:border-box;
+ color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 90px #0008}
+#dv-reader[open]{display:flex;flex-direction:column}#dv-reader::backdrop{background:#000b;backdrop-filter:blur(3px)}
+.dv-reader-head{display:flex;align-items:center;gap:12px;flex:none;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dv-reader-head h2{margin:0;font-size:20px}.dv-reader-head p{margin:4px 0 0;color:var(--mute);font-size:13px}
+.dv-reader-head button{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:7px;min-height:40px}
+.dv-reader-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px 20px;scrollbar-gutter:stable}
+:root #dv-reader #dv{display:block;max-height:none;overflow:visible;margin:0}
+:root #dv-reader .ppt{gap:6px;margin-bottom:14px}:root #dv-reader .ppx{min-height:38px;font-size:14px}
+:root #dv-reader .pl{gap:14px;padding-top:14px}:root #dv-reader .plh{gap:8px 12px}:root #dv-reader .plh b{font-size:17px}
+:root #dv-reader .plh small{flex-basis:100%;font-size:14px;line-height:1.5}
+:root #dv-reader .plg{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+:root #dv-reader .plg div{padding:12px;gap:5px;border-radius:10px}:root #dv-reader .plg b{font-size:23px}
+:root #dv-reader .plg small,:root #dv-reader .plg i{font-size:14px;white-space:normal;line-height:1.5;overflow-wrap:anywhere}
+:root #dv-reader .plg i,:root #dv-reader .plh small{display:block}
+:root #dv-reader .pl>.why{display:block}:root #dv-reader .why,:root #dv-reader .plct{font-size:16px;line-height:1.7;max-width:90ch}
+:root #dv-reader .plct>summary{font-size:14px;min-height:36px}:root #dv-reader .pln button{min-height:40px;font-size:14px}
+@media(max-width:640px){#dv-head small{display:none}:root #dv-head button{min-height:44px;padding:5px 9px}#dv-head strong{font-size:13px}
+ #dv-reader{width:calc(100vw - 16px);height:calc(100dvh - 16px);border-radius:12px}.dv-reader-head{padding:12px;gap:8px}.dv-reader-head h2{font-size:17px}
+ .dv-reader-head p{display:none}.dv-reader-body{padding:12px}:root #dv-reader .plg{grid-template-columns:repeat(2,minmax(0,1fr))}
+ :root #dv-reader .plg div{padding:10px}:root #dv-reader .plg b{font-size:21px}:root #dv-reader .ppt .kl{margin-left:0}}
 @media(min-width:981px) and (min-height:600px){
 :root body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 :root .nv{flex:none}:root .nv-in{max-width:none}
@@ -56,6 +85,7 @@ CSS = r"""
 :root .ngan-tab button[aria-selected=true]{background:color-mix(in srgb,var(--series) 16%,transparent);color:var(--ink)}
 :root .ngan-tab button:focus-visible{outline:2px solid var(--series);outline-offset:1px}
 :root .ngan-tab .ngan-mui{margin-left:auto;color:var(--mute)}
+:root .ngan-tab .ngan-mui{min-width:40px;min-height:32px;font-size:15px}
 }
 @media(min-width:981px) and (min-height:600px) and (max-height:759px){:root .chartp:not(.max)>.stage{min-height:200px}}
 @media(min-width:981px) and (min-height:600px) and (max-width:1560px){:root .chartp:not(.max) #fs-btn{font-size:0;gap:0;width:40px;padding:0;justify-content:center}
@@ -94,12 +124,53 @@ new MutationObserver(()=>moPhai(toiThe)).observe(col,{attributes:true,attributeF
 // thoát Toàn màn hình: JS chính trả #pt về bảng phải; bảng đang gập thì mở ra để phân tích vừa đọc không biến mất
 let laMax=cp.classList.contains('max');new MutationObserver(()=>{const m=cp.classList.contains('max');if(laMax&&!m&&pt&&!pt.hidden)moPhai(toiPt);laMax=m}).observe(cp,{attributes:true,attributeFilter:['class']});
 document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('#pt-btn,.dvm'))moPhai(toiPt)});
-// thẻ điểm vào (#dv) dưới nến: nút nhỏ ở hàng dưới nến để ẩn/hiện; cửa sổ thấp hơn 1000px thì mặc định ẩn để nhường chỗ cho nến
-const dv=$('#dv'),chan=$('.ban-chan');if(dv&&chan){const db=document.createElement('button');db.type='button';db.id='dv-btn';db.className='ghost nho';db.textContent='Thẻ điểm vào';
- db.title='Ẩn hoặc hiện thẻ điểm vào dưới biểu đồ';chan.prepend(db);
- const dvDat=(hien,nho)=>{cp.classList.toggle('dv-an',!hien);db.setAttribute('aria-pressed',String(hien));if(nho)ghi('so-ban-dv',hien?'1':'0')};
- const n=doc('so-ban-dv');dvDat(n?n==='1':innerHeight>=1000,0);db.addEventListener('click',()=>dvDat(cp.classList.contains('dv-an'),1));
- const dvSoi=()=>{db.hidden=dv.hidden};dvSoi();new MutationObserver(dvSoi).observe(dv,{attributes:true,attributeFilter:['hidden']})}
+// Dùng chính DOM của thẻ trong cửa sổ đọc lớn: bộ lọc, giá trực tiếp và mọi listener vẫn hoạt động, không sao chép số liệu.
+const dv=$('#dv');if(dv){
+ const icon=path=>'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+path+'"/></svg>';
+ const head=document.createElement('div');head.id='dv-head';head.setAttribute('role','group');head.setAttribute('aria-label','Thẻ điểm vào');
+ const title=document.createElement('strong');title.textContent='Thẻ điểm vào';const hint=document.createElement('small');hint.textContent='Xem nhanh';
+ const actions=document.createElement('div');actions.className='dv-actions';
+ const expand=document.createElement('button');expand.type='button';expand.id='dv-expand';expand.className='ghost nho';
+ expand.innerHTML=icon('M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7');const label=document.createElement('span');label.textContent='Mở rộng';expand.append(label);
+ expand.setAttribute('aria-haspopup','dialog');expand.setAttribute('aria-controls','dv-reader');expand.setAttribute('aria-expanded','false');expand.title='Mở rộng thẻ điểm vào';
+ const db=document.createElement('button');db.type='button';db.id='dv-btn';db.className='ghost nho';db.title='Ẩn hoặc hiện thẻ điểm vào dưới biểu đồ';db.setAttribute('aria-controls','dv');
+ actions.append(expand,db);head.append(title,hint,actions);dv.before(head);const anchor=document.createComment('entry-card-home');dv.after(anchor);
+ const reader=document.createElement('dialog');reader.id='dv-reader';reader.setAttribute('aria-labelledby','dv-reader-title');
+ const rh=document.createElement('header');rh.className='dv-reader-head';const rhText=document.createElement('div');
+ const rt=document.createElement('h2');rt.id='dv-reader-title';rt.textContent='Thẻ điểm vào';const desc=document.createElement('p');desc.textContent='Đọc rõ các mức giá, điều kiện và số đo của phương pháp.';rhText.append(rt,desc);
+ const close=document.createElement('button');close.type='button';close.className='ghost';close.title='Thu nhỏ về biểu đồ';
+ close.innerHTML=icon('M20 10h-6V4M14 10l7-7M4 14h6v6M10 14l-7 7');const cl=document.createElement('span');cl.textContent='Thu nhỏ';close.append(cl);
+ const body=document.createElement('div');body.className='dv-reader-body';rh.append(rhText,close);reader.append(rh,body);cp.append(reader);
+ const dvDat=(hien,nho)=>{cp.classList.toggle('dv-an',!hien);db.setAttribute('aria-pressed',String(hien));db.setAttribute('aria-expanded',String(hien));
+  db.innerHTML=icon(hien?'M6 14l6-6 6 6':'M6 10l6 6 6-6');const text=document.createElement('span');text.textContent=hien?'Thu gọn':'Hiện thẻ';db.append(text);if(nho)ghi('so-ban-dv',hien?'1':'0')};
+ dvDat(doc('so-ban-dv')!=='0',0);db.addEventListener('click',()=>dvDat(cp.classList.contains('dv-an'),1));
+ const focusable=scope=>[...scope.querySelectorAll('button,a[href],input,select,textarea,summary,[tabindex]')].filter(e=>!e.disabled&&e.tabIndex>=0&&e.getClientRects().length);
+ let returnFocus=null,inlineScroll=0,cardFocus=null;
+ const restore=()=>{anchor.before(dv);dv.scrollTop=inlineScroll;document.documentElement.classList.remove('dv-reading');expand.setAttribute('aria-expanded','false');
+  cardFocus=null;if(returnFocus?.isConnected&&!head.hidden)returnFocus.focus({preventScroll:true});returnFocus=null};
+ const closeReader=()=>{if(reader.open)reader.close();restore()};
+ const keepMethodVisible=()=>{if(!reader.open)return;const tabs=dv.querySelector('.ppt'),selected=tabs?.contains(document.activeElement)?document.activeElement:tabs?.querySelector('[aria-selected="true"]');
+  if(tabs&&selected&&tabs.scrollWidth>tabs.clientWidth){const t=tabs.getBoundingClientRect(),s=selected.getBoundingClientRect();
+   if(s.left<t.left||s.right>t.right)tabs.scrollLeft+=s.left-t.left-(tabs.clientWidth-s.width)/2}};
+ reader.addEventListener('focusin',e=>{const el=e.target;if(!dv.contains(el)){cardFocus=null;return}
+  cardFocus={node:el,tag:el.tagName,attrs:['id','data-k','data-ma','data-i'].filter(a=>el.hasAttribute(a)).map(a=>[a,el.getAttribute(a)]),classes:el.className,index:focusable(dv).indexOf(el)}});
+ new MutationObserver(()=>{if(reader.open)requestAnimationFrame(()=>{if(!reader.open)return;
+  if(cardFocus&&!cardFocus.node.isConnected&&(document.activeElement===document.body||document.activeElement===reader)){
+   const all=focusable(dv),same=all.filter(el=>el.tagName===cardFocus.tag&&el.className===cardFocus.classes&&cardFocus.attrs.every(([a,v])=>el.getAttribute(a)===v));
+   const next=same.length===1?same[0]:all[cardFocus.index]||same[0]||close;next.focus({preventScroll:true})}
+  keepMethodVisible()})}).observe(dv,{childList:true});
+ expand.addEventListener('click',()=>{if(reader.open||dv.hidden)return;returnFocus=document.activeElement;inlineScroll=dv.scrollTop;body.append(dv);
+  try{reader.showModal()}catch(e){restore();return}document.documentElement.classList.add('dv-reading');expand.setAttribute('aria-expanded','true');
+  const detail=dv.querySelector('details.plct');if(detail)detail.open=true;keepMethodVisible();close.focus({preventScroll:true})});
+ close.addEventListener('click',closeReader);reader.addEventListener('close',()=>{if(!reader.open)restore()});
+ reader.addEventListener('cancel',e=>{e.preventDefault();closeReader()});
+ reader.addEventListener('keydown',e=>{e.stopPropagation();if(e.key!=='Tab')return;
+  const all=focusable(reader),first=all[0]||close,last=all.at(-1)||close;
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}});
+ reader.addEventListener('click',e=>{if(e.target.closest?.('.dvm,.dvv'))closeReader()});
+ const dvSoi=()=>{head.hidden=dv.hidden;if(dv.hidden&&reader.open)closeReader()};dvSoi();
+ new MutationObserver(dvSoi).observe(dv,{attributes:true,attributeFilter:['hidden']})}
 // cảnh báo mới không tự mở bảng: chỉ hiện chấm đỏ kèm số trên nút. Đọc SỐ đếm của #cb-moi chứ không đọc `hidden` của nó: JS chính luôn ẩn #cb-moi
 // khi thẻ Cảnh báo đang chọn (mặc định), kể cả lúc bảng đang gập; CSS đã ẩn chấm khi bảng mở.
 const cm=$('#cb-moi');if(cm){const soi=()=>{const n=+cm.textContent||0;pm.hidden=!n;pm.textContent=n};soi();new MutationObserver(soi).observe(cm,{attributes:true,childList:true,characterData:true,subtree:true})}

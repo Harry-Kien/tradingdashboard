@@ -429,17 +429,13 @@ def hien_tai(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, bid: float, ask: floa
     if s is None:
         return None, DS[ma]['khong']
     mua, sau = s['huong'] == 'MUA', m.iloc[s['i'] + 1:]
-    # Nến MT5 ở phía Bid. Chỉ ước lượng Ask trên nến lịch sử bằng spread vừa đọc.
-    # Với tick hiện tại dùng đúng hai phía và chỉ ghi nhận giá chạm, không suy ra lệnh đã khớp.
-    thap, cao = (float(sau['low'].min()), float(sau['high'].max())) if len(sau) else (float('inf'), float('-inf'))
-    sp = max(0., ask - bid)
-    if (mua and min(thap, bid) <= s['sl']) or (not mua and max(cao + sp, ask) >= s['sl']):
-        return None, 'Tín hiệu gần nhất đã qua mức dừng lỗ.'
-    if (mua and min(thap + sp, ask) <= s['vao']) or (not mua and max(cao, bid) >= s['vao']):
-        return None, 'Tín hiệu gần nhất đã qua mức chờ theo dữ liệu giá.'
+    thap = min(float(sau['low'].min()), bid) if len(sau) else bid
+    cao = max(float(sau['high'].max()), bid) if len(sau) else bid
+    if (mua and thap <= s['sl']) or (not mua and cao >= s['sl']):
+        return None, 'Tín hiệu gần nhất đã hỏng: giá đã chạm mức dừng lỗ trước khi khớp lệnh chờ.'
+    if (mua and (thap <= s['vao'] or ask <= s['vao'])) or (not mua and cao >= s['vao']):
+        return None, 'Tín hiệu gần nhất đã qua: giá đã quay về mức chờ rồi (lệnh chờ coi như đã khớp).'
     rui = abs(s['vao'] - s['sl'])
-    if (mua and cao >= s['vao'] + TP_R * rui) or (not mua and thap + sp <= s['vao'] - TP_R * rui):
-        return None, 'Tín hiệu gần nhất đã qua mục tiêu 2R trước khi có điểm vào mới.'
     con = CHO_NEN * 15 - int((now - s['t'].to_pydatetime()).total_seconds() // 60)
     if con <= 0:
         return None, 'Tín hiệu gần nhất đã quá 4 giờ mà giá chưa quay về mức chờ: lệnh chờ hết hạn.'

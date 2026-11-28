@@ -58,13 +58,15 @@ def ngan_han(kq: dict) -> list[dict]:
     ma, digits = kq['ma'], kq.get('so_le', 2)
     nhom: dict[tuple, list] = {}
     for a in kq['ds']:
-        if a['trang_thai'] == 'dat':
+        if a['trang_thai'] == 'dat' and a.get('channel') != 'research' and (not kq.get('shared_plan_version') or a.get('plan_id')):
             nhom.setdefault((a['dong'], a['huong']), []).append(a)
     res = []
     for (dong, huong), ds in nhom.items():
         noi_dung = ' · '.join(f'{a["tf"]} {tin_hieu_ngan.LOAI[a["loai"]]}: tham chiếu {a["vao"]:.{digits}f}, '
                              f'SL {a["sl"]:.{digits}f}, TP {a["tp"]:.{digits}f}' for a in ds)
-        res.append({'khoa': f'ngan_han|{kq.get("may_chu") or ""}|{ma}|{dong}|{huong}', 'ma': ma, 'tin_hieu': ds, 'phien_ban': kq['phien_ban'],
+        plan_ids = sorted(a['plan_id'] for a in ds if a.get('plan_id'))
+        key = 'plan|' + '|'.join(plan_ids) if plan_ids else f'ngan_han|{kq.get("may_chu") or ""}|{ma}|{dong}|{huong}'
+        res.append({'khoa': key, 'plan_ids': plan_ids, 'so_le': digits, 'ma': ma, 'tin_hieu': ds, 'phien_ban': kq['phien_ban'],
                     'tieu_de': f'Quan sát · {ma} · {huong} · {"/".join(a["tf"] for a in ds)}',
                     'noi_dung': f'{noi_dung}. Tín hiệu theo điều kiện, chưa chứng minh có lãi.'})
     return res
@@ -91,13 +93,25 @@ def ghi_moi(out: Path, alerts: list[dict], now: datetime) -> list[dict]:
         p = _so(out)
         old = [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()] if p.exists() else []
         seen = {r['khoa'] for r in old}
+        seen_plans = {ident for r in old for ident in r.get('plan_ids', [])}
         nid = max((r['id'] for r in old), default=0)
         new = []
         for a in alerts:
+            ids = set(a.get('plan_ids', []))
+            fresh = ids - seen_plans
+            if ids and not fresh:
+                continue
+            if fresh and fresh != ids:
+                rows = [r for r in a.get('tin_hieu', []) if r.get('plan_id') in fresh]
+                rebuilt = ngan_han({'ma': a['ma'], 'ds': rows, 'so_le': a.get('so_le', 2), 'phien_ban': a['phien_ban'], 'shared_plan_version': 'shared-entry-plan-v1'})
+                if not rebuilt:
+                    continue
+                a = rebuilt[0]
             if a['khoa'] in seen:
                 continue
             nid += 1
             seen.add(a['khoa'])
+            seen_plans.update(a.get('plan_ids', []))
             new.append({'id': nid, 'luc': now.isoformat(), **a})
         if new:
             out.mkdir(parents=True, exist_ok=True)
@@ -128,20 +142,22 @@ class VongCanh(threading.Thread):
         out = self.out_fn(cfg)
         cb = cfg.get('canh_bao') or {}
         if fr.get('nguon') == 'mt5' and cb.get('ngan_han', True):
-            for i, ma in enumerate(tin_hieu_tien_cuu.ma_theo_doi(cfg)):
+            for ma in tin_hieu_tien_cuu.ma_theo_doi(cfg):
                 try:
-                    ung_vien = tin_hieu_tien_cuu.cau_hinh_nghien_cuu() if i == 0 and cb.get('tien_cuu', True) else {}
-                    kq = tin_hieu_ngan.doc(cfg, ma, luc_thu, **({'ung_vien': ung_vien} if ung_vien else {}))
-                    alerts.extend(ngan_han(kq))
+                    kq = tin_hieu_ngan.doc(cfg, ma, luc_thu)
+                    from . import entry_feed
+                    shared = entry_feed.doc(cfg, ma, luc_thu, research=ma == tin_hieu_ngan.da_ma.ma_vang(cfg) and cb.get('tien_cuu', True), out=out)
+                    alerts.extend(ngan_han(shared))
                     if cb.get('tien_cuu', True):
                         tin_hieu_tien_cuu.ghi_cau_hinh(out, cfg, kq, luc_thu)
-                        tin_hieu_tien_cuu.ghi_nghien_cuu(out, cfg, kq)
                 except (ValueError, OSError, RuntimeError, sqlite3.Error) as e:
                     loi.append(f'{ma} · tín hiệu ngắn hạn: {e}')
         new = ghi_moi(out, alerts, now)
         if fr.get('nguon') == 'mt5' and cb.get('tien_cuu', True):
             try:
                 tin_hieu_tien_cuu.chuyen(out, luc_thu)
+                from . import entry_feed
+                entry_feed.update(cfg, out, luc_thu)
             except (ValueError, OSError, RuntimeError, sqlite3.Error) as e:
                 loi.append(f'Sổ tiến cứu: {e}')
         self.lan_cuoi, self.nguon, self.loi = now, fr.get('nguon'), '; '.join(loi) or None

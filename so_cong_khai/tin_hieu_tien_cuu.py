@@ -1,14 +1,11 @@
 """Lưu tín hiệu quan sát tại thời điểm phát sinh và chấm bằng tick Bid/Ask MT5."""
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 import sqlite3
 import threading
 from contextlib import closing
 from datetime import datetime, timezone
-from functools import lru_cache
 from pathlib import Path
 
 from . import da_ma, song, tin_hieu_ngan as T
@@ -21,11 +18,7 @@ KHOANG_TRONG_MS = 120_000
 CHO_DU_LIEU_MS = 24 * 60 * 60_000
 CUA_SO_MS = 180_000
 CHO_TICK_MS = 2_000
-UNG_VIEN_TEP = Path(__file__).resolve().parents[1] / 'tinh' / 'bo-loc-ngan-tien-cuu.json'
-PHI_MO_PHONG_XAU_MOI_LOT = 28.  # Khứ hồi USD trên 1 lot, tương ứng 0,28 USD trên 0,01 lot.
-KHOA_GHI = threading.Lock()
 SCHEMA = '''
-BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS tin_hieu (
     id INTEGER PRIMARY KEY,
     may_chu TEXT NOT NULL, ma TEXT NOT NULL, phien TEXT NOT NULL, tf TEXT NOT NULL,
@@ -37,7 +30,6 @@ CREATE TABLE IF NOT EXISTS tin_hieu (
     UNIQUE(may_chu, ma, phien, tf, nen_ms)
 );
 CREATE INDEX IF NOT EXISTS tien_cuu_cho ON tin_hieu(may_chu, ma, moc_ms) WHERE tt = 'cho';
-COMMIT;
 '''
 
 
@@ -45,22 +37,8 @@ def tep(out: Path) -> Path:
     return out / TEN_TEP
 
 
-def phien(ung_vien: str | None = None) -> str:
-    dau = f'{T.PHIEN_NGHIEN_CUU}:{ung_vien}' if ung_vien else T.PHIEN_BAN
-    return f'{dau}/{PHIEN_BAN_CHAM}'
-
-
-@lru_cache(maxsize=1)
-def cau_hinh_nghien_cuu() -> dict[str, str]:
-    """Chỉ mở theo dõi trên bộ mã nguồn và danh sách ứng viên đã khóa."""
-    try:
-        c = json.loads(UNG_VIEN_TEP.read_text(encoding='utf-8'))
-        dau = hashlib.sha256(Path(T.__file__).read_bytes()).hexdigest()
-        if c['version'] == T.PHIEN_NGHIEN_CUU and c['source_sha256'] == dau:
-            return {tf: u for tf, u in c['ung_vien'].items() if tf in T.KHUNG and u in T.UNG_VIEN}
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        pass
-    return {}
+def phien() -> str:
+    return f'{T.PHIEN_BAN}/{PHIEN_BAN_CHAM}'
 
 
 def _ms(x: datetime) -> int:
@@ -75,13 +53,8 @@ def _db(out: Path, viet: bool = False) -> sqlite3.Connection:
     p = tep(out)
     if viet:
         p.parent.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(p, timeout=60)
-        try:
-            if db.execute("SELECT 1 FROM sqlite_master WHERE type='index' AND name='tien_cuu_cho'").fetchone() is None:
-                db.executescript(SCHEMA)
-        except sqlite3.Error:
-            db.close()
-            raise
+        db = sqlite3.connect(p, timeout=5)
+        db.executescript(SCHEMA)
     else:
         db = sqlite3.connect(p.resolve().as_uri() + '?mode=ro', uri=True, timeout=5)
     db.row_factory = sqlite3.Row
@@ -93,7 +66,7 @@ def ma_theo_doi(cfg: dict) -> list[str]:
     return list(dict.fromkeys([da_ma.ma_vang(cfg), *str(cb.get('ma_ngan_han') or '').split()]))[:9]
 
 
-def ghi(out: Path, kq: dict, hoa_hong_usd: float, now: datetime | None = None, *, ung_vien: str | None = None) -> int:
+def ghi(out: Path, kq: dict, hoa_hong_usd: float, now: datetime | None = None) -> int:
     """Chỉ nhận ảnh chụp mới từ MT5. Ghi lần đầu và giữ nguyên mức giá ban đầu."""
     if kq.get('nguon') != 'mt5' or kq.get('phien_ban') != T.PHIEN_BAN or not kq.get('may_chu') or not any(x['trang_thai'] == 'dat' for x in kq['ds']):
         return 0
@@ -108,13 +81,6 @@ def ghi(out: Path, kq: dict, hoa_hong_usd: float, now: datetime | None = None, *
     phi = 0.0 if hoa_hong_usd == 0 else None
     if hoa_hong_usd > 0 and kq.get('tien_tk') == 'USD' and math.isfinite(gia_tick) and gia_tick > 0:
         phi = hoa_hong_usd * buoc / gia_tick
-    if ung_vien:
-        if ung_vien not in T.UNG_VIEN:
-            return 0
-        if kq.get('tien_tk') == 'USD' and math.isfinite(gia_tick) and gia_tick > 0 and phi is not None:
-            phi = max(phi, PHI_MO_PHONG_XAU_MOI_LOT * buoc / gia_tick - buoc)
-        else:
-            phi = None
     rows = []
     for a in kq['ds']:
         if a['trang_thai'] != 'dat':
@@ -128,17 +94,14 @@ def ghi(out: Path, kq: dict, hoa_hong_usd: float, now: datetime | None = None, *
         if not dong <= luc <= min(het, dong + T.HAN_GIAY * 1000) or tick < dong:
             continue
         han = dong + HET_NEN * T.KHUNG[a['tf']] * 60_000
-        rows.append((kq['may_chu'], kq['ma'], phien(ung_vien), a['tf'], dong, luc, tick, han, max(luc, tick),
+        rows.append((kq['may_chu'], kq['ma'], phien(), a['tf'], dong, luc, tick, han, max(luc, tick),
                      a['loai'], huong, vao, sl, tp, ask - bid, buoc, phi, bool(kq['lich_tin'])))
     if not rows:
         return 0
-    with KHOA_GHI, closing(_db(out, viet=True)) as db, db:
-        # Ứng viên mô phỏng một vị thế đồng thời cho mỗi mã và khung, như trong hồi cứu.
+    with closing(_db(out, viet=True)) as db, db:
         return db.executemany('''INSERT OR IGNORE INTO tin_hieu(
             may_chu, ma, phien, tf, nen_ms, luc_ms, tick_ms, han_ms, moc_ms, loai, huong, vao, sl, tp, spread, buoc, phi_gia, lich_tin
-        ) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE ?=0 OR NOT EXISTS (
-            SELECT 1 FROM tin_hieu WHERE may_chu=? AND ma=? AND phien=? AND tf=? AND tt='cho')''',
-                              [(*r, int(bool(ung_vien)), *r[:4]) for r in rows]).rowcount
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', rows).rowcount
 
 
 def cham_mot(s, ds, den_ms: int) -> tuple:
@@ -210,13 +173,13 @@ def cap_nhat(out: Path, mt5, may_chu: str, now: datetime | None = None) -> int:
                 thay.append((*kq, s['id'], s['moc_ms']))
     if not thay:
         return 0
-    with KHOA_GHI, closing(_db(out, viet=True)) as db, db:
+    with closing(_db(out, viet=True)) as db, db:
         return db.executemany('''UPDATE tin_hieu SET moc_ms=?, tt=?, ra_ms=?, ra=?, r_rong=?
             WHERE id=? AND moc_ms=? AND tt='cho' ''', thay).rowcount
 
 
-def tong_hop(out: Path, may_chu: str, ma: str, *, ung_vien: str | None = None) -> dict:
-    kq = {'ma': ma, 'may_chu': may_chu, 'phien': phien(ung_vien), 'ds': []}
+def tong_hop(out: Path, may_chu: str, ma: str) -> dict:
+    kq = {'ma': ma, 'may_chu': may_chu, 'phien': phien(), 'ds': []}
     if not may_chu or not tep(out).is_file():
         return kq
     sql = '''SELECT tf, loai, COUNT(*) AS so, SUM(tt='cho') AS cho, SUM(tt='thieu_tick') AS thieu_tick,
@@ -224,7 +187,7 @@ def tong_hop(out: Path, may_chu: str, ma: str, *, ung_vien: str | None = None) -
              COUNT(r_rong) AS da_cham, SUM(CASE WHEN r_rong>0 THEN 1 ELSE 0 END) AS thang, AVG(r_rong) AS r_moi
              FROM tin_hieu WHERE may_chu=? AND ma=? AND phien=? GROUP BY tf, loai'''
     with closing(_db(out)) as db:
-        rows = db.execute(sql, (may_chu, ma, phien(ung_vien)))
+        rows = db.execute(sql, (may_chu, ma, phien()))
         for r in rows:
             a = dict(r)
             n = a['da_cham']
@@ -236,19 +199,8 @@ def tong_hop(out: Path, may_chu: str, ma: str, *, ung_vien: str | None = None) -
     return kq
 
 
-def tong_hop_nghien_cuu(out: Path, may_chu: str, ma: str) -> list[dict]:
-    bang = {u: tong_hop(out, may_chu, ma, ung_vien=u)['ds'] for u in set(cau_hinh_nghien_cuu().values())}
-    return [{'tf': tf, 'ung_vien': u, 'rr': T.UNG_VIEN[u][1], 'ds': [x for x in bang[u] if x['tf'] == tf]}
-            for tf, u in cau_hinh_nghien_cuu().items()]
-
-
 def ghi_cau_hinh(out: Path, cfg: dict, kq: dict, now: datetime | None = None) -> int:
     return ghi(out, kq, float((cfg.get('hoc') or {}).get('hoa_hong_lot', 0)), now)
-
-
-def ghi_nghien_cuu(out: Path, cfg: dict, kq: dict) -> int:
-    hoa_hong = float((cfg.get('hoc') or {}).get('hoa_hong_lot', 0))
-    return sum(ghi(out, {**kq, 'ds': [a]}, hoa_hong, ung_vien=a['ung_vien']) for a in kq.get('nghien_cuu', []))
 
 
 def chuyen(out: Path, now: datetime | None = None) -> int:
@@ -268,8 +220,6 @@ class VongTienCuu(threading.Thread):
         self.nap, self.thu_muc = nap, thu_muc
         self.dung = threading.Event()
         self.loi = None
-        self.luc_quet = None
-        self.trang_thai = {}
 
     def run(self):
         while not self.dung.is_set():
@@ -283,21 +233,11 @@ class VongTienCuu(threading.Thread):
                         if self.dung.is_set():
                             return
                         try:
-                            ung_vien = cau_hinh_nghien_cuu() if ma == da_ma.ma_vang(cfg) else None
-                            kq = T.doc(cfg, ma, ung_vien=ung_vien) if ung_vien else T.doc(cfg, ma)
-                            ghi_cau_hinh(out, cfg, kq)
-                            ghi_nghien_cuu(out, cfg, kq)
-                            if kq.get('nguon') == 'mt5' and kq.get('tick_ms'):
-                                self.trang_thai[ma] = {'luc': kq['luc'], 'tick_ms': kq['tick_ms'],
-                                                      'nghien_cuu': {a['tf']: a['trang_thai'] for a in kq.get('nghien_cuu', [])}}
-                            else:
-                                self.trang_thai.pop(ma, None)
-                                loi.append(f'{ma}: Chưa có tick MT5')
+                            ghi_cau_hinh(out, cfg, T.doc(cfg, ma))
                         except (OSError, ValueError, RuntimeError, sqlite3.Error) as e:
                             loi.append(f'{ma}: {e}')
                     chuyen(out)
-                    self.luc_quet = datetime.now(timezone.utc).isoformat()
                     self.loi = '; '.join(loi) or None
             except (OSError, ValueError, RuntimeError, sqlite3.Error) as e:
                 self.loi = str(e)
-            self.dung.wait(5 if datetime.now(timezone.utc).minute % 5 < 2 else 15)
+            self.dung.wait(15)

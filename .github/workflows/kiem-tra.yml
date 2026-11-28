@@ -30,8 +30,14 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
+      - name: Cài Chromium cho hồi quy biểu đồ
+        run: python -m playwright install chromium
+
       - name: Dò lỗi mã và bảo mật bằng Ruff
         run: python -m ruff check so_cong_khai tests
+
+      - name: Chặn dữ liệu riêng và thông tin xác thực trong Git
+        run: python -X utf8 cong-cu/kiem_tra_ban_cong_khai.py
 
       - name: Biên dịch mọi tệp Python
         run: python -X utf8 -m compileall -q so_cong_khai kiem_nhanh.py
@@ -41,6 +47,9 @@ jobs:
 
       - name: Kiểm chức năng, JavaScript và hồi quy bảo mật
         run: python -X utf8 -m unittest discover -s tests -q
+
+      - name: Kiểm xuất demo bằng dữ liệu giả lập
+        run: python -X utf8 cong-cu/xuat_demo.py out/website-check
 
       - name: Bandit - chặn phát hiện mức cao
         run: python -X utf8 -m bandit -r so_cong_khai -lll

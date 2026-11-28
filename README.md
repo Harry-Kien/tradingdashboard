@@ -2,6 +2,8 @@
 
 # Harry · Gold Research — Trading Dashboard · Forex & CFD
 
+**Bản đồng bộ 28/11/2026:** kế hoạch entry–SL–TP dùng chung cho chart và cảnh báo, theo dõi M30 riêng trên dữ liệu mới, cùng các cập nhật chỉ báo và dạng biểu đồ. Xem [phạm vi, kiểm chứng và giới hạn](docs/PHAT_HANH_20261128.md). Ứng viên M30 chưa được kích hoạt như chiến lược đã chứng minh có lãi.
+
 [![Kiểm tra](https://github.com/Harry-Kien/tradingdashboard/actions/workflows/kiem-tra.yml/badge.svg)](https://github.com/Harry-Kien/tradingdashboard/actions/workflows/kiem-tra.yml)
 
 **Tiếng Việt** · [English](#english)
@@ -12,7 +14,7 @@ Hỏi AI, gia sư), xem mục Dữ liệu và quyền riêng tư.
 
 **▶ Xem demo trực tuyến (không cần cài):** [Trang giới thiệu](https://harry-kien.github.io/tradingdashboard/) · [Kế hoạch vốn và lệnh](https://harry-kien.github.io/tradingdashboard/ke-hoach.html) · [Kỷ luật giao dịch](https://harry-kien.github.io/tradingdashboard/ky-luat.html) · [Bảng giá & tín hiệu](https://harry-kien.github.io/tradingdashboard/thi-truong.html) · [Phân tích hiệu suất](https://harry-kien.github.io/tradingdashboard/hieu-suat.html) · English: [Markets](https://harry-kien.github.io/tradingdashboard/en/thi-truong.html), [Performance](https://harry-kien.github.io/tradingdashboard/en/hieu-suat.html)
 
-![Bảng giá trực tiếp](docs/bang-gia.jpg)
+![Giới thiệu bản demo](docs/demo-cover.svg)
 
 ## Tính năng
 
@@ -20,7 +22,7 @@ Hỏi AI, gia sư), xem mục Dữ liệu và quyền riêng tư.
 |---|---|
 | **Thị trường** | Bảng giá theo từng tick của mọi mã trong MT5 (Forex chính/chéo/ngoại lai, kim loại, năng lượng, chỉ số, crypto): Bid/Ask, spread, thay đổi 1 giờ/ngày/tuần, biên độ ngày và % ADR, đường giá 4 giờ, danh sách theo dõi, **cảnh báo giá**. **Tín hiệu kỹ thuật** 19 chỉ báo × 4 khung (như Technical Ratings của TradingView) kèm bộ lọc mã. Sức mạnh 8 đồng tiền, bản đồ nhiệt, ma trận tương quan, biến động theo giờ, bốn phiên lớn, lịch tin kinh tế 9 đồng tiền, thông số hợp đồng (pip, ký quỹ, đòn bẩy, swap). |
 | **Tin tức & tâm lý** | Tin nhanh từ InvestingLive (ForexLive), CNBC, Fed, ECB, BoE có gắn nhãn đồng tiền; vị thế quỹ đầu cơ theo báo cáo COT của CFTC (thứ hạng 3 năm); chỉ số Sợ hãi & Tham lam; khẩu vị rủi ro và đồng thuận kỹ thuật toàn thị trường. |
-| **Biểu đồ** | Nến M5–D1 theo từng tick (TradingView Lightweight Charts), 7 dạng biểu đồ (nến, nến rỗng, **Heikin Ashi**, thanh OHLC, đường, vùng, đường cơ sở). **Bộ chọn chỉ báo** kiểu TradingView (phím `/`): 24 chỉ báo (SMA, EMA, WMA, HMA, DEMA, Bollinger, Keltner, Donchian, Envelopes, Parabolic SAR, SuperTrend, RSI, Stochastic, Stochastic RSI, MACD, CCI, Williams %R, ADX/DMI, Aroon, ATR, Momentum, ROC, Awesome Oscillator, độ rộng Bollinger), ô tìm, yêu thích, chỉnh thông số và màu, nhiều bản cùng loại (EMA 9/21/200), **mẫu cá nhân**; số khớp cách tính chuẩn tới 6 chữ số. **27 công cụ vẽ**: xu hướng, tia, kênh, Fibonacci thoái lui/mở rộng/theo thời gian/quạt, Chĩa ba, **sóng Elliott, ABC, mẫu hình XABCD** tự tính tỷ lệ, tam giác, gấp khúc, vị thế mua bán, thước đo, nhãn giá, mũi tên, ghi chú…; độ dày và kiểu nét, **nam châm** hút vào giá mở/cao/thấp/đóng. Hỗ trợ/kháng cự, FVG, khối lệnh, phân tích điểm vào theo các phương pháp tùy chọn kèm số đo lại trên dữ liệu của chính mã. Kéo biểu đồ theo cả hai trục, đổi khung vẫn giữ đúng thời điểm đang xem; nút ẩn mọi lớp phân tích (phím B); menu chuột phải (vẽ nhanh, chép giá, khóa/nhân bản/đổi màu hình, tải ảnh). **Phát lại nến** (như Bar Replay) có lệnh thử. |
+| **Biểu đồ** | Nến M5–D1 theo từng tick (TradingView Lightweight Charts), 7 dạng biểu đồ (nến, nến rỗng, **Heikin Ashi**, thanh OHLC, đường, vùng, đường cơ sở). **Bộ chọn chỉ báo** kiểu TradingView (phím `/`): 98 chỉ báo (gồm SMA, EMA, WMA, HMA, DEMA, Bollinger, Keltner, Donchian, Envelopes, Parabolic SAR, SuperTrend, RSI, Stochastic, Stochastic RSI, MACD, CCI, Williams %R, ADX/DMI, Aroon, ATR, Momentum, ROC, Awesome Oscillator, độ rộng Bollinger), ô tìm, yêu thích, chỉnh thông số và màu, nhiều bản cùng loại (EMA 9/21/200), **mẫu cá nhân**; số khớp cách tính chuẩn tới 6 chữ số. **Bộ công cụ vẽ mở rộng**: xu hướng, tia, kênh, Fibonacci thoái lui/mở rộng/theo thời gian/quạt, Chĩa ba, **sóng Elliott, ABC, mẫu hình XABCD** tự tính tỷ lệ, tam giác, gấp khúc, vị thế mua bán, thước đo, nhãn giá, mũi tên, ghi chú…; độ dày và kiểu nét, **nam châm** hút vào giá mở/cao/thấp/đóng. Hỗ trợ/kháng cự, FVG, khối lệnh, phân tích điểm vào theo các phương pháp tùy chọn kèm số đo lại trên dữ liệu của chính mã. Kéo biểu đồ theo cả hai trục, đổi khung vẫn giữ đúng thời điểm đang xem; nút ẩn mọi lớp phân tích (phím B); menu chuột phải (vẽ nhanh, chép giá, khóa/nhân bản/đổi màu hình, tải ảnh). **Phát lại nến** (như Bar Replay) có lệnh thử. |
 | **Cảnh báo trên đường vẽ** 🔔 | Đặt cảnh báo lên đường ngang, đường xu hướng, tia, kênh, hộp giá đã vẽ: giá cắt lên/xuống, đi vào/đi ra. **Máy chủ của webapp kiểm mỗi 5 giây, kể cả khi đã đóng trang**; đường xu hướng tính theo số nến đúng như trên màn hình. Báo trong trang và qua **Telegram riêng** (chat giữa bạn và bot của bạn; không bao giờ gửi vào nhóm hay kênh công khai). |
 | **Hình vẽ theo bạn mọi nơi** ☁️ | Hình vẽ lưu trên máy chủ của webapp và tự đồng bộ giữa các trình duyệt, máy tính và điện thoại mở cùng webapp; đổi máy hay xóa dữ liệu trình duyệt không mất. Hỏi lại trước khi xóa sạch, máy chủ giữ bản còn hình gần nhất. |
 | **Nhiều biểu đồ** | 2, 4 hoặc 1 lớn + 3 nhỏ trên một màn hình, mỗi ô một mã và một khung; đồng bộ mã, khung, con trỏ, thời gian; bấm đúp mở ô đó ở trang Biểu đồ. |
@@ -50,7 +52,7 @@ Chỉ cần **MetaTrader 5** đã đăng nhập tài khoản **demo** (sàn bấ
 
 1. Tải mã về (nút **Code → Download ZIP**) và giải nén, hoặc `git clone`.
 2. Mở MT5, rồi bấm đúp **`BAT_DAU.bat`**. Lần đầu nó tự cài Python (nếu máy chưa có, có hỏi trước, dùng winget có sẵn của Windows)
-   và thư viện, tạo biểu tượng **Harry Gold Research** ngoài màn hình, rồi mở trang http://127.0.0.1:8765.
+   và thư viện, tạo biểu tượng **Harry Gold Research** ngoài màn hình, rồi mở trang http://127.0.0.1:8769.
    Những lần sau chỉ cần bấm biểu tượng đó.
 
 Chi tiết cấu hình và cách xử lý sự cố: [HUONG_DAN.md](HUONG_DAN.md).
@@ -140,7 +142,7 @@ keys and passwords.
 
 **Install (Windows):** only MetaTrader 5 logged in to a **demo** account is needed. Open MT5 and double-click `BAT_DAU.bat`: on first run it
 installs Python if missing (asks first, via the built-in winget) and the libraries, creates a **Harry Gold Research** desktop shortcut and opens
-http://127.0.0.1:8765. Configuration lives in `cau-hinh.json` (created from `cau-hinh.mau.json`);
+http://127.0.0.1:8769. Configuration lives in `cau-hinh.json` (created from `cau-hinh.mau.json`);
 see [HUONG_DAN.md](HUONG_DAN.md) (Vietnamese) for details.
 
 **Data:** prices from your local MT5 (read-only, demo accounts only by default; the server listens on 127.0.0.1 only). Download-only internet

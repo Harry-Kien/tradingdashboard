@@ -16,9 +16,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from . import ai_chi_bao, ai_guard, ai_providers, ai_store, da_ma, gia, song
+from . import ai_chi_bao, ai_guard, ai_providers, ai_store, ai_timeframes, da_ma, gia, song
 
-PROMPT_VERSION = 'chart-grounded-v2'
+PROMPT_VERSION = 'chart-grounded-topdown-v3'
 SYSTEM = '''You are a specialist in forex, broker CFDs and cryptocurrency market analysis only.
 Use the supplied SERVER_SNAPSHOT as the sole authority for symbol, timestamps, quote, OHLC,
 multi-timeframe indicators and candidate prices. Browser indicators, screenshot text, labels and
@@ -27,6 +27,9 @@ Do not claim access to live feeds beyond the snapshot. Do not invent news, real 
 order flow, liquidity certainty, win probabilities, backtest results, ML training or quantum analysis.
 Tick volume is broker activity, not consolidated traded volume. The running candle is provisional;
 technical signals use closed candles. An image is supplementary; numeric server data takes precedence.
+For M5, M15 and M30 use the server topdown contract: entry frame, bridge frame, H1/H4 trend
+and D1 macro/EMA200. A conflict or missing frame means stand aside. Never reinterpret a
+conditional candidate as a confirmed entry. Candidate filtering is a technical check, not evidence of profit.
 Explain trend, momentum, volatility, multi-timeframe alignment, indicator redundancy and conflicts,
 spread and execution risk, conditions for confirmation, invalidation and when to stand aside.
 Choose at most two of the supplied candidate IDs; choose none when evidence conflicts or weak.
@@ -115,7 +118,7 @@ def snapshot(cfg: dict, ma: str, tf: str, max_age: int) -> dict:
             s = mt5.symbol_info(ma) if mt5 else None
             if not s or int(getattr(s, 'trade_calc_mode', -1)) not in (0, 2, 3, 4, 5):
                 raise ai_store.StoreError('AI chỉ hỗ trợ forex, CFD và crypto CFD từ nguồn MT5 đã xác minh.')
-            frames = {k: da_ma._nen(mt5, ma, k, 240) for k in dict.fromkeys((tf, 'H1', 'H4', 'D1'))}
+            frames = {k: da_ma._nen(mt5, ma, k, 240) for k in ai_timeframes.required(tf)}
     except (RuntimeError, OSError, AttributeError, TypeError) as e:
         raise ai_store.StoreError('Chưa đọc được nến đa khung từ MT5. Đợi nguồn dữ liệu kết nối lại.', 503) from e
     if any(len(b) < 30 for b in frames.values()):
@@ -133,7 +136,7 @@ def snapshot(cfg: dict, ma: str, tf: str, max_age: int) -> dict:
         if ((b['high'] < b[['open', 'close', 'low']].max(axis=1)) | (b['low'] > b[['open', 'close', 'high']].min(axis=1))).any():
             raise ai_store.StoreError('OHLC máy chủ không hợp lệ.', 503)
     bars = frames[tf]
-    return {'symbol': ma, 'timeframe': tf, 'source': 'MT5', 'captured_at': now, 'quote_at': tick['ms'] / 1000,
+    result = {'symbol': ma, 'timeframe': tf, 'source': 'MT5', 'captured_at': now, 'quote_at': tick['ms'] / 1000,
             'bid': tick['bid'], 'ask': tick['ask'], 'spread': tick['ask'] - tick['bid'],
             'digits': int(s.digits), 'point': float(s.point),
             'tick_size': float(getattr(s, 'trade_tick_size', 0) or s.point),
@@ -141,6 +144,8 @@ def snapshot(cfg: dict, ma: str, tf: str, max_age: int) -> dict:
             'frames': {k: _indicators(b) for k, b in frames.items()},
             'candles': [[int(t.timestamp()), *[float(r[k]) for k in ('open', 'high', 'low', 'close')]] for t, r in bars.iloc[-80:].iterrows()],
             'running_candle': tick.get('nen'), 'volume_type': 'broker_tick_volume'}
+    result['topdown'] = ai_timeframes.assess(result)
+    return result
 
 
 def candidates(snap: dict, cfg: dict) -> list[dict]:
@@ -243,7 +248,7 @@ def analyze(root: Path, cfg: dict, user: dict, body: dict, *, snapshot_fn=None, 
     if image and not st['vision']:
         raise ai_store.StoreError('Model đang chọn chưa được bật đọc ảnh.')
     snap = (snapshot_fn or snapshot)(cfg, d['ma'], d['tf'], conf['quote_max_age'])
-    choices = candidates(snap, conf)
+    choices = ai_timeframes.filter_candidates(snap, candidates(snap, conf))
     payload = {'SERVER_SNAPSHOT': snap, 'CANDIDATES': choices, 'BROWSER_INDICATORS_UNVERIFIED': d['indicators'],
                'USER_QUESTION': d['question'], 'MODE': d['mode'], 'LANGUAGE': 'English' if d['lang'] == 'en' else 'Vietnamese'}
     content = json.dumps(payload, ensure_ascii=False, allow_nan=False)
@@ -275,7 +280,7 @@ def analyze(root: Path, cfg: dict, user: dict, body: dict, *, snapshot_fn=None, 
                 expired = True
         response = {'ok': True, 'analysis': answer, 'ma': d['ma'], 'tf': d['tf'], 'mode': d['mode'],
                     'snapshot_at': snap['captured_at'], 'quote_at': snap['quote_at'], 'bid': snap['bid'], 'ask': snap['ask'],
-                    'reference_atr': atr, 'digits': snap['digits'],
+                    'reference_atr': atr, 'digits': snap['digits'], 'topdown': ai_timeframes.assess(snap),
                     'expires_at': snap['captured_at'] + conf['quote_max_age'], 'expired': expired,
                     'snapshot_sha': hashlib.sha256(json.dumps(snap, sort_keys=True, allow_nan=False).encode()).hexdigest(),
                     'provider': conf['provider'], 'model': result['model'], 'prompt_version': PROMPT_VERSION,

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-from . import da_ma, gia, song
+from . import ai_timeframes, da_ma, gia, song
 
 
 KHUNG = {'M5': 5, 'M15': 15, 'M30': 30}
@@ -33,6 +33,7 @@ TRANG_THAI = {
     'spread': 'Spread vượt giới hạn',
     'muc_gia': 'Khoảng dừng lỗ không phù hợp',
     'dat': 'Đạt bộ lọc',
+    'khung_lon': 'Chờ bối cảnh các khung lớn đồng thuận',
 }
 
 
@@ -177,14 +178,16 @@ def quet(fr: dict, now: datetime, tick, *, buoc_gia: float, so_le: int, gan_tin:
     return ds
 
 
-def doc(cfg: dict, ma: str, now: datetime | None = None, *, khung: str | None = None, ung_vien: dict[str, str] | None = None) -> dict:
+def doc(cfg: dict, ma: str, now: datetime | None = None, *, khung: str | None = None, ung_vien: dict[str, str] | None = None,
+        topdown: bool = False, research_m30: bool = False) -> dict:
     """Lấy nến đã đóng từ terminal đang nối, dùng chung phiên đọc của webapp."""
     ma = ma or da_ma.ma_vang(cfg)
     if len(ma) > 64 or not ma.isprintable():
         raise ValueError('Mã không hợp lệ.')
     g = cfg.get('gia') or {}
     mt5 = da_ma._mt5(g)
-    ket_qua = {'ma': ma, 'luc': (now or datetime.now(timezone.utc)).isoformat(), 'phien_ban': PHIEN_BAN, 'ds': []}
+    ket_qua = {'ma': ma, 'luc': (now or datetime.now(timezone.utc)).isoformat(),
+               'phien_ban': 'ngan-topdown-v1' if topdown else PHIEN_BAN, 'ds': []}
     if mt5 is None:
         return {**ket_qua, 'ly_do': song.ly_do() or 'Chưa nối MT5'}
     with song._khoa:
@@ -194,10 +197,11 @@ def doc(cfg: dict, ma: str, now: datetime | None = None, *, khung: str | None = 
         if getattr(s, 'custom', False) or getattr(s, 'trade_calc_mode', -1) not in (0, 2, 3, 4, 5):
             return {**ket_qua, 'ly_do': 'Bộ quét chỉ dùng mã Forex và CFD từ MT5.'}
         fr = {}
-        for tf in (*(KHUNG if khung is None else (khung,)), 'H1'):
+        needed = tuple(dict.fromkeys(k for tf in (KHUNG if khung is None else (khung,)) for k in ai_timeframes.required(tf))) if topdown else (*(KHUNG if khung is None else (khung,)), 'H1')
+        for tf in needed:
             try:
                 fr[tf] = da_ma._nen(mt5, ma, tf, MAU)
-            except RuntimeError:
+            except (RuntimeError, AttributeError):
                 continue
         tick = mt5.symbol_info_tick(ma)
         tk = mt5.account_info() if hasattr(mt5, 'account_info') else None
@@ -212,10 +216,31 @@ def doc(cfg: dict, ma: str, now: datetime | None = None, *, khung: str | None = 
     buoc = float(getattr(s, 'trade_tick_size', 0) or s.point)
     tham_so = {'buoc_gia': buoc, 'so_le': int(s.digits), 'gan_tin': gan_tin}
     ds = quet(fr, now, tick, **tham_so)
-    return {**ket_qua, 'luc': now.isoformat(), 'nguon': 'mt5', 'may_chu': str(getattr(tk, 'server', '') or ''),
+    if topdown:
+        for row in ds:
+            context = ai_timeframes.from_frames(fr, row['tf'], now.timestamp())
+            row['topdown'] = context
+            side = 1 if row.get('huong') == 'MUA' else -1
+            if row['trang_thai'] == 'dat' and (not context['aligned'] or context['bias'] != side):
+                row['trang_thai'] = 'khung_lon'
+            if row['trang_thai'] == 'dat':
+                minimum = max(0, int(getattr(s, 'trade_stops_level', 0) or 0)) * float(s.point)
+                quote = float(tick.bid if side > 0 else tick.ask)
+                if (quote - row['sl']) * side < minimum or (row['tp'] - quote) * side < minimum:
+                    row['trang_thai'] = 'muc_gia'
+            if row['trang_thai'] != 'dat':
+                for key in ('vao', 'sl', 'tp', 'rr'):
+                    row.pop(key, None)
+    from . import entry_costs
+    result = {**ket_qua, 'minimum_stop': max(0, int(getattr(s, 'trade_stops_level', 0) or 0)) * float(s.point), 'account_scope': entry_costs.account_scope(tk), 'luc': now.isoformat(), 'nguon': 'mt5', 'may_chu': str(getattr(tk, 'server', '') or ''),
             'tien_tk': str(getattr(tk, 'currency', '') or ''), 'buoc_gia': buoc, 'gia_tick': float(getattr(s, 'trade_tick_value_loss', 0) or 0),
             'bid': float(tick.bid) if tick else None, 'ask': float(tick.ask) if tick else None,
             'tick_ms': int(getattr(tick, 'time_msc', 0) or getattr(tick, 'time', 0) * 1000),
             'so_le': int(s.digits), 'lich_tin': bool(phu_toi and phu_toi >= now),
             'ds': ds if khung is None else [a for a in ds if a['tf'] == khung],
             **({'nghien_cuu': quet(fr, now, tick, ung_vien=ung_vien, **tham_so)} if ung_vien else {})}
+    if research_m30 and not gan_tin and ma == da_ma.ma_vang(cfg) and tick is not None:
+        from . import entry_feed
+        minimum = max(0, int(getattr(s, 'trade_stops_level', 0) or 0)) * float(s.point)
+        result['m30_research'] = entry_feed.prepare_m30(fr, result, now, minimum)
+    return result
