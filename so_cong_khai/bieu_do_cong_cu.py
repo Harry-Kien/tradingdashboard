@@ -118,10 +118,68 @@ const be=(a,b,c,d,t)=>{const u=1-t;return[u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t
 const xoayC=h=>({t:(h.a.t+h.b.t)/2,p:h.b.p+(h.b.p-h.a.p||1)*.5});
 const muiNgang=sgn=>function(h,C,sel,col,xa,ya){const X=C.X,ps=[[xa,ya],[xa-sgn*11,ya-8],[xa-sgn*11,ya-3],[xa-sgn*25,ya-3],[xa-sgn*25,ya+3],[xa-sgn*11,ya+3],[xa-sgn*11,ya+8]];
  X.beginPath();ps.forEach((p,i)=>i?X.lineTo(...p):X.moveTo(...p));X.closePath();X.save();X.fillStyle=col;X.fill();X.restore();return{nut:[],trong:(x,y)=>pip(ps,x,y)||bat(C,ps.concat([ps[0]]),x,y)}};
+// ---------- Volume Profile: khối lượng tick MT5 phân theo mức giá (27–28/11/2026)
+// Mỗi nến chia khối lượng đều trên đoạn Thấp–Cao của nó cho các hàng giá chạm tới; tách phần nến tăng và nến giảm.
+// POC = hàng có khối lượng lớn nhất; vùng giá trị = mở rộng từ POC sang hàng kề lớn hơn tới khi đủ 70% tổng (cách tính phổ biến).
+// Đây là khối lượng TICK (số lần giá đổi), không phải khối lượng hợp đồng thật: vàng giao ngay không có sàn tập trung.
+const vpTinh=(cs,vol,i0,i1,R)=>{let lo=Infinity,hi=-Infinity,thieu=0,co=0;for(let i=i0;i<=i1;i++){lo=Math.min(lo,cs[i][3]);hi=Math.max(hi,cs[i][2])}if(!(hi>lo))return null;
+ const st=(hi-lo)/R,up=new Float64Array(R),dn=new Float64Array(R);
+ for(let i=i0;i<=i1;i++){const c=cs[i],v=vol&&vol[c[0]];if(typeof v!=='number'||!Number.isFinite(v)||v<0){thieu++;continue}co++;const l=c[3],h=c[2],arr=c[4]>=c[1]?up:dn;
+  if(!(h>l)){arr[Math.max(0,Math.min(R-1,Math.floor((l-lo)/st)))]+=v;continue}const k0=Math.max(0,Math.floor((l-lo)/st)),k1=Math.min(R-1,Math.floor((h-lo)/st));
+  for(let k=k0;k<=k1;k++){const a=Math.max(l,lo+k*st),b=Math.min(h,lo+(k+1)*st);if(b>a)arr[k]+=v*(b-a)/(h-l)}}
+ if(!co)return{loi:'Thiếu tick volume cho đoạn này'};const tot=new Float64Array(R);let poc=0,sum=0;for(let k=0;k<R;k++){tot[k]=up[k]+dn[k];sum+=tot[k];if(tot[k]>tot[poc])poc=k}
+ let a=poc,b=poc,va=tot[poc];while(va<sum*.7&&(a>0||b<R-1)){const lv=a>0?tot[a-1]:-1,hv=b<R-1?tot[b+1]:-1;if(hv>=lv){b++;va+=tot[b]}else{a--;va+=tot[a]}}
+ return{lo,hi,st,R,up,dn,tot,poc,va:[a,b],sum,co,thieu,giaPoc:lo+(poc+.5)*st,vah:lo+(b+1)*st,val:lo+a*st}};
+const VP_CACHE=new WeakMap(),VP_MAU='#f5c400';
+const vpCua=(h,C,i0,i1,R,them)=>{const cs=C.cs,last=cs[i1]||[],key=[i0,i1,R,cs.length,cs[0]&&cs[0][0],...last,C.vol&&C.vol[last[0]],them||''].join('|'),cu=VP_CACHE.get(h);
+ if(cu&&cu.cs===cs&&cu.vol===C.vol&&cu.key===key)return cu.r;const r=vpTinh(cs,C.vol,i0,i1,R);VP_CACHE.set(h,{cs,vol:C.vol,key,r});return r};
+const vpCau=(s,o)=>s.replace(/%([a-z])/g,(m,k)=>o[k]==null?m:o[k]);
+// vẽ một hồ sơ: thanh mọc từ x0 sang phải, rộng tối đa W; nhãn POC/VAH/VAL ở bên phải x1
+function vpVe(C,r,x0,x1,col,W,nhan){const X=C.X,mx=Math.max(...r.tot)||1;X.save();X.setLineDash([]);
+ for(let k=0;k<r.R;k++){const yA=C.y(r.lo+(k+1)*r.st),yB=C.y(r.lo+k*r.st);if(yA==null||yB==null)continue;const hh=Math.max(1,Math.abs(yB-yA)-1),yt=Math.min(yA,yB)+.5,trong=k>=r.va[0]&&k<=r.va[1],wu=r.up[k]/mx*W,wd=r.dn[k]/mx*W;
+  X.globalAlpha=trong?.55:.22;X.fillStyle=C.P.tp;X.fillRect(x0,yt,wu,hh);X.fillStyle=C.P.sl;X.fillRect(x0+wu,yt,wd,hh)}
+ X.globalAlpha=1;const yP=C.y(r.giaPoc),yH=C.y(r.vah),yL=C.y(r.val);if(yP!=null){X.strokeStyle=VP_MAU;X.lineWidth=2;L2(X,x0,yP,x1,yP)}
+ if(nhan&&yH!=null&&yL!=null){X.lineWidth=1;X.setLineDash([4,3]);X.strokeStyle=col;L2(X,x0,yH,x1,yH);L2(X,x0,yL,x1,yL)}X.restore();
+ if(nhan){if(yP!=null)C.chu('POC '+C.fp(r.giaPoc),x1+4,yP+4,VP_MAU);if(yH!=null)C.chu('VAH '+C.fp(r.vah),x1+4,yH+4,col);if(yL!=null)C.chu('VAL '+C.fp(r.val),x1+4,yL+4,col)}
+ else if(yP!=null)C.chu(C.fp(r.giaPoc),x0+2,yP-3,VP_MAU)}
+const vpChiSo=(C,t0,t1)=>{const n=C.cs.length;let i0=Math.max(0,Math.round(C.ix(Math.min(t0,t1)))),i1=Math.min(n-1,Math.round(C.ix(Math.max(t0,t1))));if(i1-i0>3000)i0=i1-3000;return[i0,i1]};
+const vpHop=(C,r,x0,x1)=>{const yT=C.y(r.hi),yD=C.y(r.lo);return[x0,Math.min(yT,yD),x1-x0,Math.abs(yD-yT)]};
+function vpMot(h,C,sel,col,i0,i1,xa,ya,neo){const X=C.X;if(i1-i0<1)return null;const r=vpCua(h,C,i0,i1,24);const x0=C.vx(C.cs[i0][0]),x1=C.vx(C.cs[i1][0]);if(x0==null||x1==null)return null;
+ if(!r||r.loi){C.chu(r&&r.loi?r.loi:'Chưa đủ nến',x0+4,ya-6,col);return{nut:neo?[]:[['a',xa,ya]],trong:(x,yy)=>Math.abs(x-xa)<=8&&Math.abs(yy-ya)<=8}}
+ const b=vpHop(C,r,x0,x1),W=Math.max(50,Math.min(240,(x1-x0)*.35));X.save();X.setLineDash([3,3]);X.lineWidth=1;X.strokeStyle=C.P.mute;X.globalAlpha=.7;L2(X,x0,b[1],x0,b[1]+b[3]);L2(X,x1,b[1],x1,b[1]+b[3]);X.restore();
+ vpVe(C,r,x0,x1,col,W,true);
+ C.chu(vpCau(r.thieu?'Volume Profile · tick volume MT5 · %n nến (thiếu %m nến) · vùng giá trị 70%':'Volume Profile · tick volume MT5 · %n nến · vùng giá trị 70%',{n:r.co,m:r.thieu}),x0+4,b[1]-6,col);
+ return{nut:neo?[['a',x0,b[1]]]:[['a',x0,b[1]],['b',x1,b[1]]],trong:(x,yy)=>trongHop(b,x,yy,4)}}
+let VPVR=null;const vpvrOn=()=>{if(VPVR===null)VPVR=docLS('so-vpvr',0)===1;return VPVR};   // đọc lúc cần: docLS khai báo phía sau
+const VPVR_ICON='M16 3v12M16 5h-5M16 8h-9M16 11h-6M16 14h-3M2 9h14';
+// Volume Profile vùng đang xem (VPVR): tính trên đúng đoạn nến đang nhìn, vẽ sát thang giá; POC kẻ mờ ngang cả biểu đồ để so với giá hiện tại
+function veVpvr(C){if(!vpvrOn()||!C.cs.length)return null;let lr=null;try{lr=C.ts.getVisibleLogicalRange()}catch(e){}if(!lr)return null;const n=C.cs.length,i0=Math.max(0,Math.ceil(lr.from)),i1=Math.min(n-1,Math.floor(lr.to));
+ if(i1-i0<2)return null;const X=C.X,xr=C.pw-6,W=Math.max(60,Math.min(C.pw*.24,220)),R=Math.max(20,Math.min(60,Math.round(C.ph/14))),r=vpTinh(C.cs,C.vol,i0,i1,R);
+ if(!r||r.loi){C.chu(r&&r.loi?r.loi:'Chưa đủ nến',xr,16,C.P.mute,1);return r}
+ const mx=Math.max(...r.tot)||1;X.save();X.setLineDash([]);
+ for(let k=0;k<R;k++){const yA=C.y(r.lo+(k+1)*r.st),yB=C.y(r.lo+k*r.st);if(yA==null||yB==null)continue;const hh=Math.max(1,Math.abs(yB-yA)-1),yt=Math.min(yA,yB)+.5,trong=k>=r.va[0]&&k<=r.va[1],wu=r.up[k]/mx*W,wd=r.dn[k]/mx*W;
+  X.globalAlpha=trong?.45:.18;X.fillStyle=C.P.tp;X.fillRect(xr-wu,yt,wu,hh);X.fillStyle=C.P.sl;X.fillRect(xr-wu-wd,yt,wd,hh)}
+ const yP=C.y(r.giaPoc),yH=C.y(r.vah),yL=C.y(r.val);
+ if(yP!=null){X.globalAlpha=.45;X.strokeStyle=VP_MAU;X.lineWidth=1;L2(X,0,yP,xr-W,yP);X.globalAlpha=1;X.lineWidth=2;L2(X,xr-W,yP,xr,yP)}
+ X.globalAlpha=.9;X.lineWidth=1;X.setLineDash([4,3]);X.strokeStyle=C.P.mute;if(yH!=null)L2(X,xr-W,yH,xr,yH);if(yL!=null)L2(X,xr-W,yL,xr,yL);X.restore();
+ if(yP!=null)C.chu('POC '+C.fp(r.giaPoc),xr-W-4,yP+4,VP_MAU,1);if(yH!=null)C.chu('VAH '+C.fp(r.vah),xr-W-4,yH+4,C.P.mute,1);if(yL!=null)C.chu('VAL '+C.fp(r.val),xr-W-4,yL+4,C.P.mute,1);
+ const yDinh=C.y(r.hi);C.chu(vpCau('Khối lượng theo vùng đang xem · tick volume MT5 · %n nến',{n:r.co}),xr,Math.max(40,Math.min(C.ph-8,(yDinh==null?40:yDinh)-6)),C.P.mute,1);return r}   // dưới dòng giá OHLC ở góc trên
 const VEX={
  avwap:{ten:'VWAP neo · khối lượng tick',d:'M2 13c4-12 6 5 14-8M4 3v12M2 3h4',goi:'Bấm nến bắt đầu: HLC3 × tick volume MT5, tính đến nến đã đóng; đây không phải khối lượng giao dịch tập trung',tao:1,
   ve(h,C,sel,col,xa,ya){const r=vwapCua(h,C),ps=r.ds.map(([t,p])=>[C.vx(t),C.y(p)]).filter(p=>p.every(v=>v!=null));if(ps.length)noi(C.X,ps);
    C.cham(xa,ya,col);C.chu(r.loi||'VWAP neo · tick volume · nến đóng',xa+8,ya-10,col);return{nut:[['a',xa,ya]],trong:(x,y)=>Math.hypot(x-xa,y-ya)<=7||bat(C,ps,x,y)}}},
+ vpvung:{ten:'Volume Profile vùng chọn',d:'M3 3v12M3 5h6M3 8h11M3 11h7M3 14h4M15 3v12',goi:'Kéo từ nến đầu tới nến cuối. Vàng là POC (mức giá có nhiều tick volume nhất), hai đường nét đứt VAH/VAL bao 70% khối lượng. Dựa trên tick volume MT5, không phải khối lượng hợp đồng thật',
+  ve(h,C,sel,col,xa,ya,xb){const[i0,i1]=vpChiSo(C,h.a.t,h.b.t);return vpMot(h,C,sel,col,i0,i1,xa,ya,false)}},
+ vpneo:{ten:'Volume Profile neo',d:'M3 2v14M3 5h5M3 8h11M3 11h6M3 14h3M1 3l2-2 2 2',goi:'Bấm nến bắt đầu; hồ sơ tính từ nến đó tới nến mới nhất và tự cập nhật theo giá. Vàng là POC, VAH/VAL bao 70% khối lượng (tick volume MT5)',tao:1,
+  ve(h,C,sel,col,xa,ya){const n=C.cs.length,[i0]=vpChiSo(C,h.a.t,h.a.t);return vpMot(h,C,sel,col,i0,n-1,xa,ya,true)}},
+ vpphien:{ten:'Volume Profile theo phiên (ngày)',d:'M2 3v12M2 6h4M2 9h6M2 12h3M10 3v12M10 7h5M10 10h3M10 13h2',goi:'Kéo qua các ngày cần xem; mỗi ngày (theo giờ UTC) một hồ sơ, vàng là POC của ngày. Dựa trên tick volume MT5',
+  ve(h,C,sel,col,xa,ya,xb,yb){const[i0,i1]=vpChiSo(C,h.a.t,h.b.t),cs=C.cs,ngay=[];let dau=i0;for(let i=i0+1;i<=i1+1;i++)if(i>i1||Math.floor(cs[i][0]/86400)!==Math.floor(cs[dau][0]/86400)){if(i-1-dau>=2)ngay.push([dau,i-1]);dau=i}
+   let lo=Infinity,hi=-Infinity,x0=Infinity,x1=-Infinity;const X=C.X;
+   for(const[a,b]of ngay.slice(-40)){const r=vpCua({},C,a,b,16,'p');if(!r||r.loi)continue;const xa0=C.vx(cs[a][0]),xb0=C.vx(cs[b][0]);if(xa0==null||xb0==null)continue;
+    X.save();X.setLineDash([2,3]);X.lineWidth=1;X.strokeStyle=C.P.mute;X.globalAlpha=.5;const yT=C.y(r.hi),yD=C.y(r.lo);L2(X,xa0,yT,xa0,yD);X.restore();
+    vpVe(C,r,xa0,xb0,col,Math.max(20,Math.min(120,(xb0-xa0)*.6)),false);lo=Math.min(lo,r.lo);hi=Math.max(hi,r.hi);x0=Math.min(x0,xa0);x1=Math.max(x1,xb0)}
+   if(!(x1>x0)){L2(X,xa,ya,xb,yb);return g2(C,xa,ya,xb,yb)}const yT=C.y(hi),yD=C.y(lo),bx=[x0,Math.min(yT,yD),x1-x0,Math.abs(yD-yT)];
+   C.chu(vpCau('Volume Profile theo ngày · %n ngày · tick volume MT5',{n:ngay.length}),x0+4,bx[1]-6,col);return{nut:[['a',x0,bx[1]],['b',x1,bx[1]]],trong:(x,yy)=>trongHop(bx,x,yy,4)}}},
  fibnem:{ten:'Nêm Fibonacci',d:'M3 15V3M3 15h12M3 5a10 10 0 0 1 10 10M3 9a6 6 0 0 1 6 6',goi:'Kéo từ tâm tới bán kính; kéo chấm C để đổi góc nêm. Các cung theo tỷ lệ Fibonacci',c:xoayC,
   ve(h,C,sel,col,xa,ya,xb,yb){const q=pc(C,h,'c');if(!q)return g2(C,xa,ya,xb,yb);const r=Math.hypot(xb-xa,yb-ya),a=Math.atan2(yb-ya,xb-xa),b=Math.atan2(q[1]-ya,q[0]-xa);let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d< -Math.PI)d+=2*Math.PI;
    const ps=[],X=C.X;let nhan=null;for(const f of[.236,.382,.5,.618,.786,1,1.618]){const arc=[];for(let i=0;i<=48;i++)arc.push([xa+r*f*Math.cos(a+d*i/48),ya+r*f*Math.sin(a+d*i/48)]);noi(X,arc);ps.push(arc);const m=arc[48];if(!nhan||Math.hypot(m[0]-nhan[0],m[1]-nhan[1])>=14){C.chu(C.vePct(f),m[0]+3,m[1]-3,col);nhan=m}}   // nhãn ở đầu cung, bỏ nhãn khi quá sát nhãn trước (nêm nhỏ)
@@ -290,10 +348,10 @@ const VETEN={xu:'Đường xu hướng',tia:'Tia',ngang:'Đường nằm ngang',
  hop:'Hình chữ nhật',chu:'Văn bản',do:'Thước đo nhanh',vt:'Vị thế mua/bán (R:R)',fib:'Fibonacci thoái lui',dogia:'Đo khoảng giá',dotg:'Đo khoảng thời gian',dovung:'Đo vùng giá và thời gian'};
 const NHOM=[
  {id:'duong',ten:'Đường, kênh và pitchfork',ds:['Đường',['xu','Alt + T'],['tia'],['ttin'],['mrong'],['goc'],['ngang','Alt + H'],['tngang','Alt + J'],['doc','Alt + V'],['cheo'],
-  'Kênh',['kenh'],['hoiquy'],['phang'],['roirac'],'Pitchfork',['chia'],['schiff'],['schiffs'],['chiatr'],'Khối lượng',['avwap']]},
+  'Kênh',['kenh'],['hoiquy'],['phang'],['roirac'],'Pitchfork',['chia'],['schiff'],['schiffs'],['chiatr']]},
  {id:'fib',ten:'Fibonacci và Gann',ds:['Fibonacci',['fib','Alt + F'],['fibmr'],['fibk'],['fibtg'],['fibtgx'],['quat'],['fibvong'],['fibcung'],['fibxoan'],['fibnem'],['pitchfan'],'Gann',['gannh'],['gannv'],['gannq']]},
  {id:'mau',ten:'Mẫu hình',ds:['Mẫu hình giá',['xabcd'],['cypher'],['abcd'],['dauvai'],['tamgm'],['badinh'],'Sóng Elliott',['elliott'],['abc'],['elltg'],['ellwxy'],['ellwxyxz'],['ellcheo'],'Chu kỳ thời gian',['chuky'],['chukynen'],['sin']]},
- {id:'dubao',ten:'Dự báo và đo lường',ds:['Dự báo',['vt'],['dubao'],['duongdi'],['mauthanh'],'Đo lường',['do'],['dogia'],['dotg'],['dovung']]},
+ {id:'dubao',ten:'Dự báo và đo lường',ds:['Dự báo',['vt'],['dubao'],['duongdi'],['mauthanh'],'Đo lường',['do'],['dogia'],['dotg'],['dovung'],'Khối lượng',['vpvung'],['vpneo'],['vpphien'],['avwap']]},
  {id:'hinh',ten:'Hình học',ds:['Bút vẽ',['but'],['dabut'],'Mũi tên',['mt'],['muilen'],['muixuong'],['muitrai'],['muiphai'],'Hình',['hop','Alt + Shift + R'],['hcnxoay'],['elip'],['tron'],['tamg'],['binhh'],['cong'],['congkep'],['cung'],['vungquat'],['gap'],['dagiac']]},
  {id:'chu',ten:'Chữ và chú thích',ds:['Chữ',['chu'],['chuthich'],['binhluan'],['ghim'],['bienbao'],'Đánh dấu',['nhan'],['ghichugia'],['co']]},
  {id:'bt',ten:'Biểu tượng',bt:1,ds:[['bieu']]}];
@@ -337,12 +395,14 @@ document.addEventListener('keydown',e=>{if(POP&&e.key==='Escape'&&!POP.contains(
 addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||''))return;const k=e.code==='KeyT'&&!e.shiftKey?'xu':e.code==='KeyF'&&!e.shiftKey?'fib':e.code==='KeyR'&&e.shiftKey?'hop':null;
  if(!k||!window.BDMN)return;const g=window.BDMN();if(!g||!g.LW)return;e.preventDefault();e.stopPropagation();g.veCong(k)});
 window.VEX=VEX;window.VETEN=VETEN;window.VEBT=BT;
-window.VNH={NHOM,tinhVwap,
+window.VNH={NHOM,tinhVwap,vpTinh,veVpvr,datVpvr:on=>{VPVR=!!on},
  html(VE,VEC,nut){if(VE.bt==null)VE.bt=docLS('so-ve-bt',0)|0;let s=nut('tro',VEC.tro,'c'),doi=0;
   for(const g of cacNhom(VEC)){const ks=cungNhom(g,VEC);if(!ks.length)continue;let k=ks.includes(VE.cong)?VE.cong:ks.includes(CUOI[g.id])?CUOI[g.id]:ks[0];if(ks.includes(VE.cong)&&CUOI[g.id]!==VE.cong&&g.id!=='yt'){CUOI[g.id]=VE.cong;doi=1}
    s+=`<span class="vnh" data-g="${g.id}">${nut(k,VEC[k],'c')}<button type="button" class="vnh-mo" data-nh="${g.id}" title="${esc(g.ten)}" aria-label="${esc(g.ten)}" aria-haspopup="menu" aria-expanded="${MO===g.id}">${MUI}</button></span>`}
-  if(doi)ghiLS('so-ve-nhom',CUOI);return s},
+  if(doi)ghiLS('so-ve-nhom',CUOI);
+  s+=`<button type="button" class="vpvr-nut" data-vpvr="1" title="${esc('Volume Profile vùng đang xem (VPVR): bật hoặc tắt hồ sơ khối lượng của đoạn biểu đồ đang nhìn')}" aria-label="${esc('Volume Profile vùng đang xem')}" aria-pressed="${vpvrOn()}">${SVG(VPVR_ICON,18)}</button>`;return s},
  gan(VTB,ctx){CTX={VTB,...ctx};VTB.classList.add('nhom');
+  const vb=VTB.querySelector('[data-vpvr]');if(vb)vb.addEventListener('click',()=>{VPVR=!vpvrOn();ghiLS('so-vpvr',VPVR?1:0);CTX.veTb();try{window.BDMN().lwPhu()}catch(e){}});
   VTB.querySelectorAll('.vnh-mo').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const gid=b.dataset.nh;if(MO===gid)dongPop();else moPop(gid,b.closest('.vnh'))}));
   VTB.querySelectorAll('.vnh').forEach(w=>{w.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();moPop(w.dataset.g,w)});
    w.addEventListener('click',e=>{if(e.target.closest('.vnh-mo'))return;if(matchMedia('(pointer:coarse)').matches){e.stopPropagation();e.preventDefault();if(MO===w.dataset.g)dongPop();else moPop(w.dataset.g,w)}},true)});
