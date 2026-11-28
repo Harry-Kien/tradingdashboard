@@ -57,6 +57,14 @@ CSS = r"""
 .vp-trong{padding:12px 16px;color:var(--mute);font-size:13px}
 @media(max-width:640px){.vpop{width:auto;left:52px!important;right:8px}}
 html.anh .vpop{display:none!important}
+/* 28/11/2026: máy tính — biểu đồ phủ kín chiều cao khung như TradingView. Chỉ bật khi JS đã tính chiều cao (lớp bd-day); hàng phụ xuống dưới biểu đồ. */
+@media(min-width:981px) and (min-height:600px){
+:root body .chartp.bd-day:not(.max)>.stage{flex:none;height:max(320px,var(--cao-bd,320px));min-height:0;order:1}
+:root body .chartp.bd-day:not(.max)>#dv-head,:root body .chartp.bd-day:not(.max)>#dv{order:2}
+:root body .chartp.bd-day:not(.max)>.pt-presentation,:root body .chartp.bd-day:not(.max)>.ptk,:root body .chartp.bd-day:not(.max)>.ct-note,
+:root body .chartp.bd-day:not(.max)>.hv-save,:root body .chartp.bd-day:not(.max)>.hv-health{order:3}
+:root body .chartp.bd-day:not(.max)>.pt-presentation{margin-top:8px}
+:root body .chartp.bd-day:not(.max)>.ban-chan{order:1}}   /* dòng ghi công Lightweight Charts luôn trong màn hình đầu */
 """
 
 JS = r"""
@@ -410,4 +418,20 @@ window.VNH={NHOM,tinhVwap,vpTinh,veVpvr,datVpvr:on=>{VPVR=!!on},
   if(POP&&MO){const bb=VTB.querySelector(`.vnh-mo[data-nh="${MO}"]`);if(bb)bb.setAttribute('aria-expanded','true');else dongPop()}},
  dong:dongPop};
 })();
+// 28/11/2026: máy tính — chiều cao biểu đồ = chiều cao khung #cp trừ các hàng còn nằm phía trên (thanh công cụ, dải bot). Hàng phụ có order ≥ 2 nằm dưới; .ban-chan (order 1, ngay sau biểu đồ) được trừ ra để luôn thấy.
+(()=>{if(typeof document==='undefined'||typeof document.getElementById!=='function'||typeof matchMedia!=='function'||typeof requestAnimationFrame!=='function')return;
+ const mq=matchMedia('(min-width:981px) and (min-height:600px)');let rq=0;
+ const tinh=()=>{rq=0;const cp=document.getElementById('cp'),st=cp&&cp.querySelector(':scope>.stage');if(!st)return;
+  if(!mq.matches||cp.classList.contains('max')){cp.classList.remove('bd-day');cp.style.removeProperty('--cao-bd');return}
+  cp.classList.add('bd-day');const cs=getComputedStyle(cp),g=parseFloat(cs.rowGap)||0;let h=cp.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),n=0;
+  for(const e of cp.children){if(e===st)continue;const s=getComputedStyle(e);if(s.display==='none'||s.position==='absolute'||s.position==='fixed'||(parseInt(s.order)||0)>=2)continue;
+   h-=e.offsetHeight+parseFloat(s.marginTop)+parseFloat(s.marginBottom);n++}
+  const ss=getComputedStyle(st),v=Math.max(320,Math.floor(h-g*n-parseFloat(ss.marginTop)-parseFloat(ss.marginBottom)-1))+'px';
+  if(cp.style.getPropertyValue('--cao-bd')!==v)cp.style.setProperty('--cao-bd',v)};
+ const hen=()=>{if(!rq)rq=requestAnimationFrame(tinh)};
+ const gan=()=>{const cp=document.getElementById('cp');if(!cp)return;hen();addEventListener('resize',hen);if(mq.addEventListener)mq.addEventListener('change',hen);
+  if(window.ResizeObserver){const ro=new ResizeObserver(hen),theo=()=>{ro.observe(cp);for(const e of cp.children)ro.observe(e)};theo();
+   new MutationObserver(()=>{theo();hen()}).observe(cp,{childList:true,attributes:true,attributeFilter:['class']})}};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',gan);else gan();
+ window.BDDAY=tinh})();
 """
