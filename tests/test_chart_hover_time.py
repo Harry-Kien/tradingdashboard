@@ -50,7 +50,8 @@ LW.hov=false;LW.hoverTime=null;lwDoc(null);const leave=R.innerHTML;
 console.log(JSON.stringify({before,tick,history,leave}));
 """)
         self.assertEqual(r['before'], r['tick'])
-        self.assertEqual(r['before'], r['history'])
+        self.assertEqual(r['before'], r['history'].split(' &nbsp;<b style=')[0])        # cùng nến, cùng OHLC sau khi nạp thêm lịch sử
+        self.assertIn('+10 (+1000,00%)', r['history'])                                  # có nến trước thì hiện thay đổi như TradingView
         self.assertIn('26/11/2026', r['tick'])
         self.assertIn('07:00', r['tick'])
         self.assertIn('UTC+7', r['tick'])

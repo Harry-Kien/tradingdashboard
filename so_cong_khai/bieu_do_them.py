@@ -19,13 +19,16 @@ CSS = r"""
 border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.3);font-size:13px}
 .cbcn-them .pop label{display:flex;gap:8px;align-items:center;color:var(--ink2)}.cbcn-them .pop select{flex:1;min-height:32px}
 .cbcn-them .pop small{color:var(--mute);font-size:11.5px;line-height:1.4}
+.kg-hang{display:flex;flex-wrap:wrap;gap:2px;align-items:center}.kg-hang button{min-height:24px;padding:0 8px;border:0;border-radius:6px;background:none;color:var(--ink2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.kg-hang button:hover{background:var(--card2);color:var(--ink)}.kg-hang button:focus-visible{outline:2px solid var(--series);outline-offset:1px}
+@media(pointer:coarse){.kg-hang button{min-height:32px;padding:0 10px}}
 .aicb .noi{padding:12px 16px 16px;overflow:auto;font-size:13.5px;line-height:1.55}.aicb .noi p{margin:0 0 10px}
 .aicb .noi .why{color:var(--mute);font-size:12.5px}.aicb .noi .tl{border-left:3px solid var(--series);padding-left:12px;margin:8px 0 12px}
 """
 
 JS = r"""
 (()=>{if(!window.CBCN||!window.LightweightCharts)return;const BD=()=>window.BDCB&&window.BDCB(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-let ON={phien:0,hoso:0,thang:0,ss:''};try{ON={...ON,...JSON.parse(localStorage.getItem('so-cbcn-them')||'{}')}}catch(e){}
+let ON={phien:0,hoso:0,thang:0,ss:'',kl:1};try{ON={...ON,...JSON.parse(localStorage.getItem('so-cbcn-them')||'{}')}}catch(e){}
 const luu=()=>{try{localStorage.setItem('so-cbcn-them',JSON.stringify(ON))}catch(e){}};
 // ---------------------------------------------------------------- phiên giao dịch (giờ địa phương của từng thị trường, nhớ theo từng giờ)
 const PH=[['Phiên Á','Asia/Tokyo',9,18,'79,140,255'],['Phiên Âu','Europe/London',8,17,'240,180,41'],['Phiên Mỹ','America/New_York',8,17,'232,107,216']],GIO={},
@@ -97,24 +100,51 @@ async function ssNap(B){if(!B?.D||!B.LW)return;const c=B.LW.chart,tf=B.D.tf||'M1
  SS.applyOptions({title:ON.ss+' %'+(tq!=null&&isFinite(tq)?' · tương quan '+tq.toFixed(2):'')});
  if(!ssSource||ssSource.main!==cs||ssSource.compare!==j.candles||ssSource.first!==ds[0][0])ssSource={main:cs,compare:j.candles,first:ds[0][0]};
  CHART_RT.gui(SS,ds.length,i=>({time:ds[i][0],value:(ds[i][1]/goc-1)*100}),ssSource)}
+// ---------------------------------------------------------------- khối lượng ở đáy biểu đồ chính (như TradingView): thang riêng ẩn, chiếm 18% dưới cùng
+let KLS=null,klK='',klRong='';
+function klBo(c){if(KLS){try{c.removeSeries(KLS)}catch(e){}KLS=null}klK=''}
+function klVe(B){const c=B.LW.chart,cs=B.D.candles,v=B.D.vol;
+ if(!ON.kl||CBCN.dung('vol')||!v||!cs||!cs.length){if(KLS)klBo(c);return}
+ const k=(B.D.khac_vang?B.D.ma:'')+'|'+(B.D.tf||'')+'|'+cs.length+'|'+cs[0][0]+'|'+(B.D._kl||'');
+ if(k!==klK){if(k===klRong)return;if(!cs.some(r=>v[r[0]]!=null)){klRong=k;if(KLS)klBo(c);return}}   // chưa có tick volume cho nến nào: không tạo chuỗi rỗng
+ if(!KLS){KLS=c.addSeries(LightweightCharts.HistogramSeries,{priceScaleId:'kl-day',priceFormat:{type:'volume'},priceLineVisible:false,lastValueVisible:false,title:''},0);
+  try{c.priceScale('kl-day').applyOptions({scaleMargins:{top:.82,bottom:0},visible:false})}catch(e){}}
+ const pt=i=>{const r=cs[i],x=v[r[0]];return x==null?{time:r[0]}:{time:r[0],value:+x,color:r[4]>=r[1]?'rgba(38,166,154,.42)':'rgba(239,83,80,.42)'}};
+ try{if(k!==klK){klK=k;KLS.setData(cs.map((_,i)=>pt(i)))}else KLS.update(pt(cs.length-1))}catch(e){klK=''}}
 // ---------------------------------------------------------------- tick volume của nến cũ: tải một lần mỗi mã và khung (tới 30.000 nến MT5 còn giữ), ghép theo giờ nến
 const KLM=new Map();let klDang='';
-async function napKL(B){if(!(ON.hoso||CBCN.dung('kld')||CBCN.dung('kldg'))||!B.D||B.D.nguon!=='mt5')return;const ma=B.D.khac_vang?B.D.ma:'',tf=B.D.tf||'',k=ma+'|'+tf,c=KLM.get(k);
+async function napKL(B){if(!(ON.hoso||ON.kl||CBCN.dung('kld')||CBCN.dung('kldg'))||!B.D||B.D.nguon!=='mt5')return;const ma=B.D.khac_vang?B.D.ma:'',tf=B.D.tf||'',k=ma+'|'+tf,c=KLM.get(k);
  if(c&&c.m){const v=B.D.vol||(B.D.vol={});if(B.D._kl!==k){for(const[t,x]of c.m)if(v[t]==null)v[t]=x;B.D._kl=k;const F=window.CBPL&&CBPL.PL.on&&CBPL.PL.F;if(F){F._kl=k;F.vol=v}CBCN.tinhLai();capNhat()}return}
  if(klDang===k||(c&&Date.now()-c.luc<600000))return;klDang=k;
  try{const j=await(await fetch('/api/khoi-luong?tf='+tf+'&n=30000'+(ma?'&ma='+encodeURIComponent(ma):''),{cache:'no-store'})).json();
   KLM.set(k,{luc:Date.now(),m:j.t&&j.t.length?j.t.map((t,i)=>[t,j.v[i]]):null});while(KLM.size>6)KLM.delete(KLM.keys().next().value)}catch(e){KLM.set(k,{luc:Date.now(),m:null})}
  klDang='';const B2=BD();if(B2)napKL(B2)}
+// ---------------------------------------------------------------- hàng khoảng thời gian dưới biểu đồ (như TradingView): chọn khung phù hợp rồi xem đúng khoảng
+const KG=[['1 ngày','Xem 1 ngày gần nhất trên khung M5',86400,'M5'],['5 ngày','Xem 5 ngày gần nhất trên khung M15',432000,'M15'],
+ ['1 tháng','Xem 1 tháng gần nhất trên khung H1',2592000,'H1'],['3 tháng','Xem 3 tháng gần nhất trên khung H4',7862400,'H4'],
+ ['6 tháng','Xem 6 tháng gần nhất trên khung H4',15724800,'H4'],['YTD','Xem từ đầu năm tới nay trên khung D1',0,'D1'],
+ ['1 năm','Xem 1 năm gần nhất trên khung D1',31536000,'D1'],['Tất cả','Xem toàn bộ nến đã tải của khung đang xem',-1,null]];
+function xemKhoang(g){const giay=g[2],tf=g[3],B=BD();if(!B||!B.D)return;
+ const dat=()=>{const B=BD();if(!B||!B.LW||!B.D||!B.D.candles||!B.D.candles.length||(tf&&B.D.tf!==tf))return false;const cs=B.D.candles,n=cs.length,t1=cs[n-1][0],
+   t0=giay===-1?cs[0][0]:giay===0?Date.UTC(new Date(t1*1000).getUTCFullYear(),0,1)/1000:t1-giay;let i=cs.findIndex(r=>r[0]>=t0);if(i<0)i=0;
+  try{B.LW.chart.timeScale().setVisibleLogicalRange({from:i-.5,to:n-1+Math.max(3,(n-i)*.04)})}catch(e){return false}return true};
+ if(tf&&B.D.tf!==tf){const nut=document.querySelector('.seg.tf [data-tf="'+tf+'"],.tfk [data-tf="'+tf+'"]');if(nut)nut.click()}
+ let lan=0;const thu=()=>{if(dat()){setTimeout(dat,700);setTimeout(dat,1800);return}if(++lan<60)setTimeout(thu,150)};thu()}
+{const hang=document.createElement('div');hang.className='kg-hang';hang.setAttribute('role','group');hang.setAttribute('aria-label','Khoảng thời gian');
+ hang.innerHTML=KG.map((g,i)=>`<button type="button" data-kg="${i}" title="${esc(g[1])}">${esc(g[0])}</button>`).join('');
+ hang.addEventListener('click',e=>{const b=e.target.closest('[data-kg]');if(b)xemKhoang(KG[+b.dataset.kg])});
+ let lan=0;const gan=()=>{const bc=document.querySelector('#cp>.ban-chan'),st=document.querySelector('#cp>.stage');if(bc){bc.prepend(hang);return}if(++lan<20)return setTimeout(gan,150);if(st)st.after(hang)};gan()}
 // ---------------------------------------------------------------- móc vào mỗi lần vẽ biểu đồ
 let mau=null;
 CBCN.moc.push(B=>{const s=B.LW.nen;if(s&&GAN!==s){try{if(GAN)GAN.detachPrimitive(PRIM)}catch(e){}try{s.attachPrimitive(PRIM);GAN=s}catch(e){console.warn('Primitive:',e)}}
  try{const ps=B.LW.chart.priceScale('right');if(ps.options().mode!==ON.thang)ps.applyOptions({mode:ON.thang})}catch(e){}
- const k=(B.D.khac_vang?B.D.ma:'')+'|'+(B.D.tf||'');if(mau!==k){if(mau!==null&&SS)ssBo(B.LW.chart);mau=k}ssNap(B);napKL(B);capNhat()});
+ const k=(B.D.khac_vang?B.D.ma:'')+'|'+(B.D.tf||'');if(mau!==k){if(mau!==null&&SS)ssBo(B.LW.chart);mau=k}ssNap(B);napKL(B);try{klVe(B)}catch(e){console.warn('Khối lượng đáy:',e)}capNhat()});
 // ---------------------------------------------------------------- menu Công cụ
 const t2=document.querySelector('.tools.t2'),moc=document.querySelector('.cbcn-mo');if(!t2)return;
 const dt=document.createElement('details');dt.className='cbcn-them';
 dt.innerHTML='<summary class="ghost nho" title="Phiên giao dịch, hồ sơ khối lượng, thang giá, so sánh mã">Công cụ</summary><div class="pop">'
  +'<label><input type="checkbox" data-k="phien"> Tô nền phiên Á, Âu, Mỹ</label>'
+ +'<label><input type="checkbox" data-k="kl"> Khối lượng ở đáy biểu đồ (tick volume)</label>'
  +'<label><input type="checkbox" data-k="hoso"> Hồ sơ khối lượng theo giá (đoạn đang xem)</label>'
  +'<small>Tính từ tick volume của MT5 (số lần giá đổi), không phải khối lượng giao dịch thật; chỉ có khi nối MT5, cho các nến MT5 còn giữ (tới 30.000 nến gần nhất).</small>'
  +'<label>Thang giá <select data-k="thang"><option value="0">Thường</option><option value="1">Logarit</option><option value="2">Phần trăm</option></select></label>'
@@ -126,7 +156,7 @@ dt.querySelectorAll('input[type=checkbox]').forEach(i=>{i.checked=!!ON[i.dataset
 const st=dt.querySelector('[data-k=thang]'),sm=dt.querySelector('[data-k=ss]');st.value=String(ON.thang||0);
 st.addEventListener('change',()=>{ON.thang=+st.value;luu();const B=BD();try{B.LW.chart.priceScale('right').applyOptions({mode:ON.thang})}catch(e){}ve()});
 sm.addEventListener('change',()=>{const B=BD();if(B?.LW)ssBo(B.LW.chart);ON.ss=sm.value;luu();ve()});
-addEventListener('chart-context-changing',()=>{const B=BD();if(B?.LW)ssBo(B.LW.chart)});
+addEventListener('chart-context-changing',()=>{const B=BD();if(B?.LW){ssBo(B.LW.chart);klBo(B.LW.chart)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')ssDong()});
 const pop=dt.querySelector('.pop');dt.addEventListener('toggle',()=>{if(!dt.open)return;const dl=v=>{pop.style.setProperty('left',v,'important');pop.style.setProperty('right','auto','important')};dl('0px');const r=pop.getBoundingClientRect(),o=dt.getBoundingClientRect(),mx=document.documentElement.clientWidth-12;if(r.right>mx)dl(Math.max(12-o.left,mx-r.right)+'px')});   // dời sang trái cho vừa màn hình hẹp
 let dsNap=0;dt.addEventListener('toggle',async()=>{if(!dt.open||dsNap)return;dsNap=1;try{const j=await(await fetch('/api/ma?gon=1',{cache:'no-store'})).json(),B=BD(),hien=B&&B.D&&B.D.khac_vang?B.D.ma:'';
@@ -138,5 +168,5 @@ addEventListener('click',e=>{if(dt.open&&!dt.contains(e.target))dt.open=false});
 for(const [mode,label] of [['indicators','AI đọc chỉ báo'],['explain','AI giải thích']]){
  const button=document.createElement('button');button.type='button';button.className='ghost nho';button.textContent=label;
  button.addEventListener('click',()=>window.AI_CHART?.open(mode));dt.after(button)}
-window.CBTH={ON,phien,PRIM,ssNap}})();
+window.CBTH={ON,phien,PRIM,ssNap,klVe,xemKhoang,KG}})();
 """

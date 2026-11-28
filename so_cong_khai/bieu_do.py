@@ -226,6 +226,7 @@ catch(e){LW=null;document.body.removeAttribute('data-lw');console.warn('Không d
 function lwDoc(k){if(!D||!D.candles.length)return;const cs=D.candles;if(k==null&&LW&&LW.hov)k=LW.idx.get(LW.hoverTime);if(k==null||k<0||k>=cs.length)k=cs.length-1;const c=cs[k],P=pal(),g=(arr,nm,co)=>{const v=arr&&(arr[k]!=null?arr[k]:arr[k-1]);return v!=null?` &nbsp;${nm} <b>${(co?f2:fp)(v)}</b>`:''};
  R.style.color=P.fg;R.style.background=kieu!=='sang'?'rgba(0,0,0,.55)':'rgba(255,255,255,.78)';
  R.innerHTML=(window.CBCN?.kieu()==='ha'?'<span class="ct-raw-label">'+(document.documentElement.lang==='en'?'Raw OHLC':'OHLC gốc')+'</span> · ':'')+`<b>${D.khac_vang?esc(D.ma):'XAUUSD'}, ${tf}</b>${k===D.live?' (đang chạy)':''} &nbsp;${gioNen(c[0])} &nbsp;M <b>${fp(c[1])}</b> C <b>${fp(c[2])}</b> T <b>${fp(c[3])}</b> Đ <b>${fp(c[4])}</b>`
+  +(k>0&&cs[k-1][4]&&LWE.clientWidth>=420?(()=>{const d=c[4]-cs[k-1][4],p=d/cs[k-1][4]*100,s=d>=0?'+':'−';return ` &nbsp;<b style="color:${d>=0?'#26a69a':'#ef5350'}">${s}${fp(Math.abs(d))} (${s}${Math.abs(p).toFixed(2).replace('.',globalThis.document?.documentElement?.lang==='en'?'.':',')}%)</b>`})():'')   // thay đổi so với nến trước, như TradingView
   +(LWE.clientWidth<560?'':(on.ema20?g(D.ema20,'EMA20'):'')+(on.ema50?g(D.ema50,'EMA50'):'')+(on.rsi?g(D.rsi,'RSI14',1):''))}
 // Yêu cầu về hiện tại tồn tại tới khi đúng dữ liệu mã/khung được vẽ, kể cả đổi A → B → A trước khi B tải xong.
 function lwNay(){if(!LW)return;LW.cho=null;LW.veMoi=true;LW.hov=false;LW.hoverTime=null;
