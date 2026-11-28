@@ -116,6 +116,8 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     out: dict = {'luc': now.isoformat(), 'het': het.isoformat(), 'tuoi_phut': tuoi, 'nguon': fr.get('nguon', 'kho'), 'bid': _r(bid), 'ask': _r(ask),
                  'tick_ms': int(het.timestamp() * 1000) if fr.get('nguon') == 'mt5' and fr.get('bid') and fr.get('ask') else None,
                  'phuong_an': [], 'canh_bao': [], 'loi': [], 'ms': ms}
+    # Bối cảnh đa khung không phụ thuộc luật riêng của chủ dự án: bản cài mới (không có mã luật) vẫn có, không bịa tín hiệu.
+    out['boi_canh'] = {'topdown': ai_timeframes.from_frames(fr, 'M15', now.timestamp()), 'spread': _r(ask - bid)}
     if tuoi > 20:
         out['canh_bao'].append(f'Giá đã cũ {tuoi} phút (thị trường nghỉ, MT5 mất kết nối, hoặc đang dùng kho nến). Các mức dưới đây tính trên giá cũ, không dùng để vào lệnh.')
     try:

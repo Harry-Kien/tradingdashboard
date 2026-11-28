@@ -10,6 +10,7 @@ import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -45,6 +46,11 @@ class TomTest(unittest.TestCase):
 
 class KiemChungTest(unittest.TestCase):
     def setUp(self):
+        # These tests exercise private-rule cache orchestration using a fake
+        # calculation, independently of whether the author's rule folders exist.
+        private_mode = patch.object(gia, 'ban_chia_se', return_value=False)
+        private_mode.start()
+        self.addCleanup(private_mode.stop)
         gia._nho.clear()
         song._tt.update(deps=None, mt5=None, fr=None, thu=0.0, luc=0.0)
         kiem_chung._tt.update(key=None, kq=None, dang=False, loi=None, bat_dau=None)

@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from so_cong_khai import bieu_do, gia, web  # noqa: E402
 
-MA_THAT = [r'D:\Tele dự báo', r'D:\EA Promax']
+MA_THAT = [os.environ.get('HGR_TEST_RULES_A', 'test-fixtures/missing-rules-a'), os.environ.get('HGR_TEST_RULES_B', 'test-fixtures/missing-rules-b')]
 
 
 def _kho(d: Path, start: datetime, minutes: int) -> None:

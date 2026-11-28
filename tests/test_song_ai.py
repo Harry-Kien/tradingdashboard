@@ -7,6 +7,7 @@ import types
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -28,6 +29,11 @@ class _Deps:
 
 class SongTest(unittest.TestCase):
     def setUp(self):
+        # The fake MT5 below supplies the legacy private-rule price interface.
+        # Do not choose that interface based on private folders on the host.
+        private_mode = patch.object(gia, 'ban_chia_se', return_value=False)
+        private_mode.start()
+        self.addCleanup(private_mode.stop)
         gia._nho.clear()
         song._tt.update(deps=None, mt5=None, fr=None, thu=0.0, luc=0.0, ly_do='chưa thử nối')
         self.tmp = tempfile.TemporaryDirectory()
