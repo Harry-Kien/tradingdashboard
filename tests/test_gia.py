@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from so_cong_khai import bieu_do, gia, web  # noqa: E402
 
-MA_THAT = [os.environ.get('HGR_TEST_RULES_A', 'test-fixtures/missing-rules-a'), os.environ.get('HGR_TEST_RULES_B', 'test-fixtures/missing-rules-b')]
+MA_THAT = [r'D:\Tele dự báo', r'D:\EA Promax']
 
 
 def _kho(d: Path, start: datetime, minutes: int) -> None:
@@ -144,7 +144,8 @@ class GiaTest(unittest.TestCase):
         # Thẻ phương pháp được nhớ giữa các lần mở trang. Người dùng bấm "Phân tích điểm vào" khi thẻ đang nhớ (ví dụ ICT/SMC) chưa có điểm vào
         # thì chỉ thấy "Chưa có điểm vào", dù phương pháp khác đang có. Bấm nút phải đưa về thẻ có điểm vào, và thẻ trống phải chỉ sang thẻ có.
         html = bieu_do.trang_bieu_do('Thử')
-        for must in ("if(!tu&&ppChon!=='tat'&&!ppNhom(ppChon).some(p=>p.co)&&ppNhom('tat').some(p=>p.co)){ppChon='tat'",
+        for must in ("!['harry_smc','harry_xu_huong'].includes(ppChon)",  # giữ hai thẻ có vùng theo dõi khi đang chờ
+                     "!ppNhom(ppChon).some(p=>p.co)&&ppNhom('tat').some(p=>p.co)){ppChon='tat'",
                      'Phương pháp khác đang có điểm vào', 'class="ictb ppj"', "el.querySelectorAll('.ppx,.ppj')",
                      'Webapp không trả lời'):
             self.assertIn(must, html)

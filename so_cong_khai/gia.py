@@ -463,7 +463,7 @@ def goi(cfg: dict, tf: str = 'M15', n: int = 600, now: datetime | None = None) -
                                  zip(view.index, view['open'], view['high'], view['low'], view['close'])],
            **{k: _day(v.iloc[-n:]) for k, v in over.items()}, 'vung': [], 'tin': [],
            'nguon': fr['nguon'], 'bid': _so(fr.get('bid')), 'ask': _so(fr.get('ask')),
-           'tick_ms': int(fr['het'].timestamp() * 1000) if fr['nguon'] == 'mt5' else None,
+           'tick_ms': int(fr['het'].timestamp() * 1000) if fr['nguon'] == 'mt5' and fr.get('bid') and fr.get('ask') else None,
            'ly_do_khong_song': song.ly_do() if fr['nguon'] != 'mt5' else None,
            'lenh': lenh_cho_vang(cfg)}   # so đúng mã; XAUEUR, XAUJPY, XAUUSD247 là những tài sản khác
     try:                                                          # chỉ báo thêm (EMA200, MACD, Stochastic, ATR, SuperTrend, Ichimoku, pivot)

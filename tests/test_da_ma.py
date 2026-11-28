@@ -37,6 +37,12 @@ class MT5Gia:
     def symbols_get(self):
         return [SimpleNamespace(name=k, digits=v[0], path=v[2], description=v[3], visible=v[4]) for k, v in self.ma.items()]
 
+    def symbol_info(self, ten):
+        s = next((s for s in self.symbols_get() if s.name == ten), None)
+        if s:
+            s.point = 10. ** -s.digits
+        return s
+
     def symbol_info_tick(self, ten):
         g = self.ma[ten][1]
         return SimpleNamespace(bid=g, ask=g * 1.0001, time=int(HET.timestamp()))
@@ -131,7 +137,10 @@ class DaMaTest(unittest.TestCase):
                 with mo('/api/gia?ma=EURUSDp&tf=H1&n=60') as r:
                     self.assertTrue(json.loads(r.read())['khac_vang'])
                 with mo('/api/phan-tich?ma=EURUSDp') as r:
-                    self.assertEqual(json.loads(r.read())['phuong_an'], [])
+                    data = json.loads(r.read())
+                    self.assertEqual(data['phuong_an'], [])
+                    self.assertEqual({p['ma'] for p in data['phuong_phap'] if p.get('chip', '').startswith('harry_')},
+                                     {'harry_smc:M15', 'harry_xu_huong:M15'})
                 with self.assertRaises(urllib.error.HTTPError) as e:
                     mo('/api/gia?ma=AUDUSDp').close()
                 self.assertEqual(e.exception.code, 400)

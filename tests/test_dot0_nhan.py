@@ -13,10 +13,9 @@ from so_cong_khai import bieu_do, trang
 NODE = shutil.which('node')
 VO = r"""
 const noop=()=>{},el=()=>({className:'',textContent:'',hidden:true,setAttribute:noop,before:noop,after:noop});
-globalThis.document={createElement:el,querySelector:s=>s==='#pt-source-mode'?null:el(),getElementById:()=>el(),addEventListener:noop,head:{insertAdjacentHTML:noop}};
-const $=s=>document.querySelector(s);
-globalThis.window=globalThis;globalThis.addEventListener=noop;globalThis.setInterval=noop;globalThis.matchMedia=()=>({matches:false});
-let PTR=null,plan=null,tf='H4',ve=0;const PTB={hidden:true},ptVe=noop,dvVe=()=>{ve++},draw=noop;
+globalThis.document={createElement:el,querySelector:()=>el(),getElementById:()=>el(),addEventListener:noop,head:{insertAdjacentHTML:noop}};
+globalThis.window=globalThis;globalThis.$=()=>null;globalThis.addEventListener=noop;globalThis.setInterval=noop;globalThis.matchMedia=()=>({matches:false});
+let PTR=null,plan=null,planTat=1,tf='H4',ve=0;const PTB={hidden:true},ptVe=noop,dvVe=()=>{ve++},draw=noop;
 """
 
 
@@ -31,7 +30,7 @@ class MaTrang(unittest.TestCase):
         js = bieu_do.JS
         self.assertIn('PTR_GOC=j;j._nhan=Date.now();ptLoi=0;ptApDung();', js)
         self.assertIn('catch(e){if(epoch0===chartEpoch){ptLoi++;ptDoi();', js)
-        self.assertIn('AbortSignal.timeout(20000)', js)                       # phân tích treo không giữ ptDang mãi
+        self.assertIn('setTimeout(()=>ctl.abort(),20000)', js)                # phân tích treo không giữ ptDang mãi
         self.assertEqual(js.count("tk_dung:['xau','Đủ điều kiện kỹ thuật · tài khoản đang dừng']"), 2)
         self.assertIn("dispatchEvent(new Event('gsr'))", trang.GIAM_SAT)       # băng giám sát báo trạng thái cho trang Biểu đồ
         self.assertNotIn('rk.sl*100', js)                                     # tab Tính lot không còn hằng số 100 ounce

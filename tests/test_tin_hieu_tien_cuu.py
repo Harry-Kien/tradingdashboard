@@ -63,6 +63,24 @@ class TienCuuTest(unittest.TestCase):
         self.assertEqual(S.ghi(self.out, p, 0, NOW), 0)
         self.assertFalse(S.tep(self.out).exists())
 
+    def test_ung_vien_cach_ly_phien_va_giu_mot_vi_the_moi_khung(self):
+        ung_vien = 'goc-0.35'
+        p = _goi()
+        p['gia_tick'] = 1  # 1 USD mỗi bước 0,01 với 1 lot tiêu chuẩn
+        self.assertEqual(S.ghi(self.out, p, 0, NOW), 1)
+        self.assertEqual(S.ghi(self.out, p, 0, NOW, ung_vien=ung_vien), 1)
+        p2 = _goi()
+        dong = NEN + timedelta(minutes=5)
+        now = NOW + timedelta(minutes=5)
+        p2.update(luc=now.isoformat(), tick_ms=S._ms(now))
+        p2['ds'][0].update(dong=dong.isoformat(), het=(dong + timedelta(minutes=2)).isoformat())
+        self.assertEqual(S.ghi(self.out, p2, 0, now, ung_vien=ung_vien), 0)
+        goc, thu = self.rows()
+        self.assertEqual((goc['phien'], thu['phien']), (S.phien(), S.phien(ung_vien)))
+        self.assertAlmostEqual(thu['phi_gia'] + thu['buoc'], .28)
+        self.assertEqual(S.tong_hop(self.out, 'A', 'XAUUSDp')['ds'][0]['so'], 1)
+        self.assertEqual(S.tong_hop(self.out, 'A', 'XAUUSDp', ung_vien=ung_vien)['ds'][0]['so'], 1)
+
     def test_stop_ban_dung_ask_va_khong_tru_spread_lan_hai(self):
         self.assertEqual(S.ghi(self.out, _goi('BÁN'), 7, NOW), 1)
         moc = S._ms(NOW)
@@ -142,8 +160,6 @@ class TienCuuTest(unittest.TestCase):
         cfg = {'gia': {'ma_vang': 'XAUUSDp'}, 'canh_bao': {'tien_cuu': True}}
         p = _goi()
         p['so_le'] = 2
-        p['account_scope'] = 'test-owner-scope'
-        p['ds'][0]['atr'] = 1.
         p['account_scope'] = 'test-owner-scope'
         p['ds'][0]['atr'] = 1.
         worker = canh_bao.VongCanh(lambda: cfg, lambda _: self.out)

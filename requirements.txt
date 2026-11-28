@@ -10,5 +10,6 @@ defusedxml>=0.7
 
 # cryptography: mã hóa khóa API các nhà cung cấp AI lưu trên máy (webapp nạp khi khởi động). Pillow: ảnh bài đăng tuần, ảnh Threads, ảnh biểu đồ.
 cryptography>=46.0
-Pillow>=12.3.0
 Pillow>=11.0
+smartmoneyconcepts==0.0.27
+ta==0.11.0

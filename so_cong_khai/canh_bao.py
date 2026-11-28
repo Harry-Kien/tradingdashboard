@@ -142,14 +142,16 @@ class VongCanh(threading.Thread):
         out = self.out_fn(cfg)
         cb = cfg.get('canh_bao') or {}
         if fr.get('nguon') == 'mt5' and cb.get('ngan_han', True):
-            for ma in tin_hieu_tien_cuu.ma_theo_doi(cfg):
+            for i, ma in enumerate(tin_hieu_tien_cuu.ma_theo_doi(cfg)):
                 try:
-                    kq = tin_hieu_ngan.doc(cfg, ma, luc_thu)
+                    ung_vien = tin_hieu_tien_cuu.cau_hinh_nghien_cuu() if i == 0 and cb.get('tien_cuu', True) else {}
+                    kq = tin_hieu_ngan.doc(cfg, ma, luc_thu, **({'ung_vien': ung_vien} if ung_vien else {}))
                     from . import entry_feed
                     shared = entry_feed.doc(cfg, ma, luc_thu, research=ma == tin_hieu_ngan.da_ma.ma_vang(cfg) and cb.get('tien_cuu', True), out=out)
                     alerts.extend(ngan_han(shared))
                     if cb.get('tien_cuu', True):
                         tin_hieu_tien_cuu.ghi_cau_hinh(out, cfg, kq, luc_thu)
+                        tin_hieu_tien_cuu.ghi_nghien_cuu(out, cfg, kq)
                 except (ValueError, OSError, RuntimeError, sqlite3.Error) as e:
                     loi.append(f'{ma} · tín hiệu ngắn hạn: {e}')
         new = ghi_moi(out, alerts, now)

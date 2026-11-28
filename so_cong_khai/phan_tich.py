@@ -41,39 +41,60 @@ def _khong(ma: str, ten: str, kieu: str, vi_sao: str) -> dict:
 
 
 def ngan(cfg: dict, ma: str, tf: str) -> dict:
-    """Kịch bản quan sát trên đúng khung, dùng bộ quét đã có cho M5/M30."""
+    """Kịch bản quan sát theo đúng khung đang được yêu cầu."""
     from . import entry_feed
-    data = entry_feed.doc(cfg, ma, khung=tf)
+
+    return ngan_tu_du_lieu(entry_feed.doc(cfg, ma, khung=tf), tf)
+
+
+def ngan_tu_du_lieu(data: dict, tf: str) -> dict:
+    """Dựng hai thẻ của một khung từ cùng ảnh chụp Bid/Ask và nến đã đóng."""
     a = next((r for r in data['ds'] if r['tf'] == tf), {})
     trang_thai = a.get('trang_thai')
+    if trang_thai == 'dat' and not (a.get('plan_locked') and a.get('plan_id') and a.get('plan_hash')):
+        trang_thai = 'ke_hoach_loi'
     co = trang_thai == 'dat'
-    cho_tick = trang_thai in ('gia_cu', 'gia_di_xa', 'spread', 'muc_gia')
+    trang_thai_them = {'ke_hoach_loi': 'Chưa khóa được kế hoạch giá. Đang chờ lượt kiểm tra tiếp theo.'}
     p = []
     for loai, chip in (('pha_vo', 'pha_vo'), ('hoi_ema', 'ema_hoi')):
-        co_loai = (co or cho_tick) and a.get('loai') == loai
+        co_loai = co and a.get('loai') == loai
         row = {'ma': f'ngan:{tf}:{loai}', 'ten': tin_hieu_ngan.LOAI[loai] + f' · {tf}', 'chip': chip, 'nhom': 'pp', 'khung': tf,
                'co': co_loai, 'hieu_luc': co and co_loai, 'quan_sat': True,
                'kieu': f'Quan sát nến {tf} đã đóng', 'thong_ke': 'Bộ quét ngắn hạn đang được theo dõi tiến cứu.'}
         row['thong_ke'] = 'Bộ quét nến và bối cảnh đa khung đang được kiểm định riêng; không coi là phương pháp đã chứng minh lợi nhuận.'
         row['ly_do'] = 'Mẫu nến đã đóng; chỉ quan sát khi khung nối, H1/H4 và D1 cùng chiều.'
-        if a.get('plan_id') and co_loai:
+        if co_loai:
             row.update(plan_id=a['plan_id'], plan_hash=a.get('plan_hash'), plan_locked=True)
             row['kieu'] += ' · Kế hoạch ' + a['plan_id'][-6:] + ' · Giá đã khóa'
-        if co_loai:
             row.update(huong='BAN' if a['huong'] == 'BÁN' else a['huong'], vao=a.get('vao'), sl=a.get('sl'),
-                       tp=[a['tp']] if co else [], rr=[a['rr']] if co else [],
-                       rui_ro_gia=abs(a['vao'] - a['sl']) if co else None, nen=a['dong'],
-                       thuc_thi={'loai': 'tt', 'tu': a['dong'], 'het': a['het'], 'atr': a['atr'], 'moc': a['moc'], 'cho_tick': cho_tick,
-                                  'ngan': {'day': a['day'], 'dinh': a['dinh'], 'buoc': data['buoc_gia']}})
+                       tp=[a['tp']], rr=[a['rr']], rui_ro_gia=abs(a['vao'] - a['sl']), nen=a['dong'],
+                       thuc_thi={'loai': 'tt', 'tu': a['dong'], 'het': a['het'], 'atr': a['atr'], 'moc': a['moc'],
+                                  'stops': data.get('minimum_stop', 0.)})
         else:
             row['vi_sao'] = data.get('ly_do') or (
-                tin_hieu_ngan.TRANG_THAI.get(a.get('trang_thai'), 'Chưa có dữ liệu.') if a.get('loai') in (None, loai)
+                tin_hieu_ngan.TRANG_THAI.get(trang_thai, trang_thai_them.get(trang_thai, 'Chưa có dữ liệu.')) if a.get('loai') in (None, loai)
                 else 'Nến này không xác nhận phương pháp.')
+            if not a or trang_thai in ('thieu_nen', 'gia_cu', 'ke_hoach_loi'):
+                row['thieu_du_lieu'] = True
         p.append(row)
     return {**{k: data[k] for k in ('ma', 'luc', 'nguon', 'bid', 'ask', 'tick_ms', 'so_le') if k in data},
             'het': datetime.fromtimestamp(data['tick_ms'] / 1000, timezone.utc).isoformat() if data.get('tick_ms') else None,
             'khung_phan_tich': tf, 'quy_trinh_ngan': True, 'phuong_an': [], 'phuong_phap': p, 'con_hieu_luc': int(co),
             'boi_canh': {'topdown': a.get('topdown'), 'atr_khung': a.get('atr')}, 'canh_bao': [], 'loi': [], 'ms': {}}
+
+
+def gop_da_khung(cfg: dict, ma: str, data: dict) -> dict:
+    """Chế độ "Tất cả" của bảng phân tích (28/11/2026): các phương pháp M15 cộng bộ quét đa khung M5/M15/M30, mỗi khung một thẻ riêng.
+    Gọi SAU khi đã ghi nhật ký, để bộ quét (còn đang kiểm định tiến cứu) không lẫn vào sổ tín hiệu của các phương pháp."""
+    for k in ('M5', 'M15', 'M30'):
+        try:
+            rows = ngan(cfg, ma, k)['phuong_phap']
+        except Exception:                                                 # noqa: BLE001 - bộ quét lỗi không làm mất phần phương pháp
+            continue
+        for r in rows:
+            r['chip'], r['ten_ngan'] = f'da_khung_{k}', f'Đa khung · {k}'
+            data.setdefault('phuong_phap', []).append(r)
+    return data
 
 
 def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
@@ -93,10 +114,8 @@ def phan_tich(cfg: dict, now: datetime | None = None) -> dict:
     bid = float(fr.get('bid') or m5['close'].iloc[-1])
     ask = float(fr.get('ask') or bid + float(g.get('spread', 0.17)))
     out: dict = {'luc': now.isoformat(), 'het': het.isoformat(), 'tuoi_phut': tuoi, 'nguon': fr.get('nguon', 'kho'), 'bid': _r(bid), 'ask': _r(ask),
+                 'tick_ms': int(het.timestamp() * 1000) if fr.get('nguon') == 'mt5' and fr.get('bid') and fr.get('ask') else None,
                  'phuong_an': [], 'canh_bao': [], 'loi': [], 'ms': ms}
-    # Context is independent of the author's optional private rules. Keep it
-    # available on a fresh install without inventing signals when rules fail.
-    out['boi_canh'] = {'topdown': ai_timeframes.from_frames(fr, 'M15', now.timestamp()), 'spread': _r(ask - bid)}
     if tuoi > 20:
         out['canh_bao'].append(f'Giá đã cũ {tuoi} phút (thị trường nghỉ, MT5 mất kết nối, hoặc đang dùng kho nến). Các mức dưới đây tính trên giá cũ, không dùng để vào lệnh.')
     try:

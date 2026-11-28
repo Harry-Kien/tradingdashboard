@@ -135,7 +135,7 @@ và lệnh thua; thêm một lần chạy không đặt chốt lời (giữ tớ
 # Điểm vào của luật bot tín hiệu: biến thể và cổng ghi TRƯỚC khi đo
 
 Ngày ghi: 24/11/2026, trước khi chạy `cong-cu/diem_vao_bot.py` lần đầu. Chủ dự án đồng ý: "Có, đo đi". Chỉ ĐO và báo lại; mã của bot
-(`<LOCAL_RULES_ROOT>\tinhieu`) không bị sửa. Không thử thêm biến thể nào ngoài các bản dưới đây.
+(`D:\Tele dự báo\tinhieu`) không bị sửa. Không thử thêm biến thể nào ngoài các bản dưới đây.
 
 Bộ tín hiệu: đúng các lệnh mà bộ kiểm của bot đã vào trên vàng 2015–11/2026 với cấu hình webapp đang dùng (khung M5 và M15, tối đa ba lệnh mở,
 lệnh mới sau khi lệnh trước đạt TP1), lấy nguyên từ `tinhieu.backtest.simulate`. Mỗi lệnh được chấm RIÊNG bằng phép mô phỏng của
@@ -244,7 +244,7 @@ giá mà không phép đo nào đã nhìn thấy hay không.
 
 # Đo lại các phép đo của luật bot sau khi mã bot đổi (24/11/2026, 23:42)
 
-Mã bot (`<LOCAL_RULES_ROOT>\tinhieu`: rules.py, service.py, stats.py, chat.py, fmt.py) được sửa lúc 23:42–23:43 ngày 24/11/2026, ngoài phiên đo này;
+Mã bot (`D:\Tele dự báo\tinhieu`: rules.py, service.py, stats.py, chat.py, fmt.py) được sửa lúc 23:42–23:43 ngày 24/11/2026, ngoài phiên đo này;
 `do_lai_du_lieu_moi.py --doi-chieu` phát hiện số lệnh 2022–2026 đổi từ 1.239 thành 1.332. Chủ dự án xác nhận và đồng ý đo lại: "Tôi biết, đo lại bot".
 Chạy lại NGUYÊN các công cụ và luật đã đăng ký ở trên (`diem_vao_bot.py`, `ty_le_thang_nam.py`, `loc_lenh_bot.py`), không thêm biến thể, không đổi
 cổng. Kết quả cũ (bot trước 23:42) giữ ở `out/luu/bot-truoc-2342-24-11-2026/`. Vì bot vừa được chỉnh khi đã nhìn dữ liệu tới nay, số của phần
@@ -283,7 +283,7 @@ cổng; huấn luyện thêm trên cùng dữ liệu giá chỉ làm mô hình h
 - **Giữ nguyên mọi thứ của bản 1:** cùng lệnh của luật bot (bản bot hiện tại), cùng nhãn, cùng 15 đặc trưng giá vàng, cùng hai mô hình và tham số, cùng
   hai mức giữ, cùng kiểm định chéo có tách khoảng, cùng chia học 2015–2021 / kiểm 2022–2026, cùng cổng (≥ 100 lệnh, R mỗi lệnh và tỷ lệ thắng cao hơn
   không lọc, hơn lọc ngẫu nhiên với p < 0,05).
-- **Thêm 7 đặc trưng**, chỉ dùng nến/bản tin đã có TRƯỚC lúc vào lệnh (dữ liệu thô MT5 ở `<LOCAL_RULES_ROOT>\data\raw`, cùng mốc giờ với nến vàng, đã kiểm
+- **Thêm 7 đặc trưng**, chỉ dùng nến/bản tin đã có TRƯỚC lúc vào lệnh (dữ liệu thô MT5 ở `D:\EA Promax\data\raw`, cùng mốc giờ với nến vàng, đã kiểm
   lệch 0 giờ), đổi dấu theo chiều lệnh khi có chiều:
   1. Đà 4 giờ của bạc (XAGUSD H1). 2. Vàng và bạc cùng chiều đà 4 giờ (1/0). 3. Tỷ lệ vàng/bạc so với trung bình 60 ngày (điểm z).
   4. Đà 24 giờ của dầu Brent (H1). 5. Đà 5 ngày của S&P 500 (D1).
@@ -472,3 +472,30 @@ Ngày ghi: 26/11/2026 (khoảng 23 giờ 30), trước khi đo phần này lần
 tín hiệu từ 00:00 UTC ngày 27/11/2026; kỳ vọng là R mỗi lệnh của bản H2 ở phần kiểm 2022–2026 (`out/hop-luu.json`). Cách kết luận y như phần "Đo lại
 trên dữ liệu mới" (dưới 30 lệnh chưa kết luận; khoảng tin cậy 90%; "kém kỳ vọng rõ"). Với `--doi-chieu`, mốc 01/01/2022 phải ra đúng số phần kiểm của
 bản H2. Chạy cùng nhịp hằng tháng; không chỉnh luật theo số này. Elliott có khoảng 50 lệnh mỗi năm sau bộ lọc, nên cần khoảng 7–8 tháng mới đủ 30 lệnh.
+
+
+# Đồng bộ quy tắc hủy lệnh chờ khi giá chạy tới 2R trước khi khớp (ghi TRƯỚC)
+
+Ngày ghi: 28/11/2026, trước khi đo lần nào. Lý do: bản chạy trực tiếp (`phuong_phap.hien_tai`) bỏ lệnh chờ khi giá đã chạy tới mục tiêu 2R trước
+khi về mức chờ, nhưng phép chấm đã đo (`phuong_phap.cham`) KHÔNG có quy tắc này; bản trực tiếp lại chỉ xét nến M15 đã đóng nên áp không đều
+(phát hiện 27/11: ICT còn "hiệu lực" khi bid 3650,9 đã qua 2R 3642,42). Hai bên phải cùng một quy tắc.
+
+Áp cho ba phương pháp lệnh chờ: `ict`, `ict_fvg`, `fib`. Không đổi gì khác (cách vào, SL, TP 2R, giữ 24 giờ, spread và phí của cấu hình).
+- A: phép chấm hiện tại (không hủy ở 2R).
+- B: như A, thêm: trước nến khớp, nếu giá chạm mức vào ± 2 × |vào − SL| về phía có lãi (MUA: đỉnh M1 ≥ mức đó; BÁN: đáy M1 + spread ≤ mức đó)
+  thì lệnh chờ bị hủy (thứ tự trong cùng một nến: coi là chạm 2R trước, như bản trực tiếp).
+
+Cách đo: như "Chuẩn hóa theo sách" ở trên (vàng từ 2015, M1 + M15 của webapp, `quet` + phép chấm, mỗi lúc một lệnh). Hai nửa HỌC trước 1/5/2023,
+KIỂM từ 1/5/2023. Báo: số lệnh, thắng, R mỗi lệnh, tổng R, số lệnh bị hủy thêm, cho từng phương pháp và từng nửa.
+
+Quyết định, theo từng phương pháp, không xem lại sau khi có số:
+- Giữ B (bản trực tiếp tính cả giá tick, phép chấm thêm quy tắc 2R) nếu R mỗi lệnh của B cao hơn A ở CẢ HAI nửa.
+- Còn lại: bỏ quy tắc hủy 2R khỏi bản trực tiếp để khớp với số đã đo (A).
+Đây là đồng bộ định nghĩa, không phải tìm bản có lãi: cả hai nhánh đều làm bản trực tiếp khớp phép đo. Một biến thể tốt hơn ở cả hai nửa vẫn có thể do may.
+
+Kết quả (28/11/2026, `cong-cu/do_huy_2r.py`, `out/huy-2r.json`; bản chép khi tắt quy tắc mới khớp từng lệnh với `phuong_phap.cham`):
+- ict: A 4575 lệnh, R mỗi lệnh −0,093 (HỌC −0,1205, KIỂM −0,0323); B hủy thêm 119, R −0,090 (HỌC −0,1140, KIỂM −0,0376). Không cao hơn ở nửa KIỂM → theo A.
+- ict_fvg: A 4581 lệnh, −0,1496 (HỌC −0,1859, KIỂM −0,0710); B hủy thêm 352, −0,1539 (HỌC −0,1908, KIỂM −0,0754). Kém hơn cả hai nửa → theo A.
+- fib: A 3700 lệnh, −0,1011 (HỌC −0,1132, KIỂM −0,0725); B hủy thêm 134, −0,1024 (HỌC −0,1162, KIỂM −0,0691). Không cao hơn ở nửa HỌC → theo A.
+Đã áp: bỏ quy tắc hủy 2R khỏi `phuong_phap.hien_tai`; bản trực tiếp giờ đúng định nghĩa đã đo. Ghi chú: ở định nghĩa gốc cả ba phương pháp có R mỗi
+lệnh âm ở cả hai nửa; đây không phải bằng chứng có lợi thế.

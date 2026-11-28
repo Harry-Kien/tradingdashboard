@@ -27,18 +27,17 @@ class CongDocQuyen(unittest.TestCase):
     def test_mo_cong_truoc_khi_bat_vong_nen(self):
         """Bản thứ hai phải chết ở bước mở cổng, trước khi vòng Telegram hay nhật ký kịp chạy."""
         s = (GOC / 'so_cong_khai' / 'web.py').read_text(encoding='utf-8')
-        moc = 'def khoi_dong(' if 'def khoi_dong(' in s else 'def main('
-        main = s[s.index(moc):]                                # main gọi khoi_dong; thứ tự mở cổng và bật vòng nằm ở đó
+        main = s[s.index('def khoi_dong('):]                                # main gọi khoi_dong; thứ tự mở cổng và bật vòng nằm ở đó
         self.assertLess(main.index('srv = tao_may_chu('), main.index('.start()'))
-        if moc == 'def khoi_dong(':
-            self.assertIn('srv = khoi_dong(', s[s.index('def main('):])
+        self.assertIn('srv = khoi_dong(', s[s.index('def main('):])
 
     @unittest.skipUnless((GOC / 'TU_CHAY_WEBAPP.bat').is_file(), 'Bản chia sẻ không có trình tự khởi động lại riêng của bản app')
     def test_tep_tu_chay_tu_dung_day_va_khong_chay_trung(self):
         t = (GOC / 'TU_CHAY_WEBAPP.bat').read_text(encoding='utf-8')
         lap = t[t.index(':lap'):]
-        self.assertLess(lap.index('LISTENING'), lap.index('python -X utf8 -m so_cong_khai.web'))   # mỗi vòng đều xem cổng trước
-        self.assertIn('if not errorlevel 1 exit /b 0', lap)                                        # thoát bình thường thì không chạy lại
+        self.assertLess(lap.index('LISTENING'), lap.index('python -X utf8 -m so_cong_khai.launch_local'))   # mỗi vòng đều xem cổng trước
+        self.assertIn('if %ERRORLEVEL% EQU 0 exit /b 0', lap)                                      # thoát bình thường thì không chạy lại
+        self.assertNotIn('if not errorlevel 1', lap)                                               # mã -1 (bị dừng bằng Stop-Process) phải chạy lại
         self.assertIn('goto lap', lap)
 
 

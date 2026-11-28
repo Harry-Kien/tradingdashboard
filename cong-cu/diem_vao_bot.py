@@ -4,7 +4,7 @@ lời, bối cảnh. Biến thể và cổng ghi TRƯỚC khi đo ở cong-cu/CH
 
 Bộ tín hiệu là đúng các lệnh mà bộ kiểm của bot đã vào (tinhieu.backtest.simulate, cấu hình webapp đang dùng). Mỗi lệnh được chấm RIÊNG bằng phép mô
 phỏng của cong-cu/diem_vao.py: spread của từng nến, phí 0,18, trượt giá lúc tin, phí qua đêm, giữ tối đa 24 giờ. Chọn trên 2015–2021, xác nhận trên
-2022 trở đi. Công cụ CHỈ ĐO: mã của bot (<LOCAL_RULES_ROOT>\\tinhieu) không bị sửa; vài hàm của nó chỉ bị bọc tạm trong bộ nhớ để ghi lại lệnh rồi được
+2022 trở đi. Công cụ CHỈ ĐO: mã của bot (D:\\Tele dự báo\\tinhieu) không bị sửa; vài hàm của nó chỉ bị bọc tạm trong bộ nhớ để ghi lại lệnh rồi được
 trả lại ngay. Chỉ đọc tệp nến; không nối MT5. Kết quả ghi ở out/diem-vao-bot.json.
 
     python -X utf8 cong-cu/diem_vao_bot.py

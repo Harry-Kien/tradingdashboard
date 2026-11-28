@@ -23,6 +23,7 @@ from . import bieu_do, canh_bao, cot, da_ma, gia, hoc, hoc_ma, kiem_chung, kien_
 from . import cong_cu, dich, hoc_giao_dich, lich_mang, tam_ly, thi_truong, thi_truong_trang, tin_tuc, tin_tuc_trang, trang
 from . import do_lai
 from . import canh_bao_ve, hinh_ve, kiem_tin_hieu, kiem_tin_hieu_trang, mau_chi_bao
+from . import cau_truc_live, danh_muc_diem_vao, smc_harry
 from . import cai_dat, giam_sat, hieu_suat, hieu_suat_trang, ke_hoach, ke_hoach_trang, kiem_lenh, kiem_lenh_trang, ky_luat, ky_luat_trang, nhieu_tai_khoan, sao_luu, telegram_nhom, tin_phan_ung
 from . import duong, vo_app
 from . import bao_mat_http, tai_khoan_chart
@@ -246,6 +247,10 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
             if path == '/api/phien-ban':
                 body = {'san_pham': thuong_hieu.TEN, 'build': self.server.local_build, 'cong': self.server.server_port,
                         'che_do': self.server.runtime_mode, 'chi_doc_mt5': True}
+                if tien_cuu_vong is not None:
+                    body['theo_doi_tick'] = {'dang_chay': tien_cuu_vong.is_alive() and not tien_cuu_vong.dung.is_set(),
+                                             'lan_quet': tien_cuu_vong.luc_quet, 'co_du_lieu': bool(tien_cuu_vong.trang_thai),
+                                             'loi': bool(tien_cuu_vong.loi)}
                 return self._gui(200, LOAI['.json'], json.dumps(body, ensure_ascii=False).encode(), dich_noi_dung=False)
             if path == '/api/mcp/tool':
                 try:
@@ -552,12 +557,19 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                 if path.startswith('/telegram/anh/'):                      # ảnh biểu đồ kèm tin (xem trước ở trang /telegram)
                     ten = unquote(path[len('/telegram/anh/'):])
                     f = telegram_nhom.thu_muc_anh() / ten
-                    if re.fullmatch(r'lenh-\d+\.png', ten) and f.is_file():
+                    if re.fullmatch(r'(?:lenh-\d+|ban-tin-[0-9a-f]{14})\.png', ten) and f.is_file():
                         return self._gui(200, LOAI['.png'], f.read_bytes())
                     return self._gui(404, 'text/plain; charset=utf-8', 'Không có ảnh này.'.encode('utf-8'))
                 if path == '/api/telegram':
                     cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
                     return self._gui(200, LOAI['.json'], json.dumps(telegram_nhom.xem(cfg), ensure_ascii=False, default=str).encode('utf-8'))
+                if path == '/api/cau-truc-live':
+                    cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                    try:
+                        data = cau_truc_live.doc(_out(cfg))
+                    except (OSError, ValueError, KeyError, sqlite3.Error):
+                        return self._gui(503, LOAI['.json'], b'{"bat":false,"su_kien":[]}')
+                    return self._gui(200, LOAI['.json'], json.dumps(data, ensure_ascii=False).encode('utf-8'))
                 if path == '/sao-luu':                                     # sao lưu toàn bộ hệ thống mỗi ngày
                     return self._gui(200, 'text/html; charset=utf-8', sao_luu.trang_sao_luu(thuong_hieu.TEN).encode('utf-8'))
                 if path == '/api/sao-luu':
@@ -657,7 +669,11 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                     ma = (q.get('ma', [''])[0] or '').strip()
                     tf = q.get('tf', ['M15'])[0]
                     try:
-                        if tf in ('M5', 'M30') or (tf == 'M15' and q.get('topdown', ['0'])[0] == '1'):
+                        if q.get('danh_muc', ['0'])[0] == '1':
+                            data = danh_muc_diem_vao.tao(cfg, ma, tf, _out(cfg))
+                            return self._gui(200, LOAI['.json'], json.dumps(data, ensure_ascii=False).encode('utf-8'))
+                        gop = q.get('gop', ['0'])[0] == '1'                      # chế độ "Tất cả": phương pháp M15 + bộ quét đa khung
+                        if not gop and (tf in ('M5', 'M30') or (tf == 'M15' and q.get('topdown', ['0'])[0] == '1')):
                             data = phan_tich.ngan(cfg, ma, tf)
                         else:
                             data = da_ma.phan_tich(cfg, ma) if ma and ma != da_ma.ma_vang(cfg) else phan_tich.phan_tich(cfg)
@@ -667,6 +683,16 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                                 nhat_ky.ghi(cfg, data)
                         except Exception:                                      # noqa: BLE001 - nhật ký hỏng không được làm hỏng phần phân tích
                             pass
+                        if gop and not data.get('quy_trinh_ngan'):
+                            phan_tich.gop_da_khung(cfg, ma, data)
+                        if tf in smc_harry.T.KHUNG:
+                            khung = (tf, *(k for k in smc_harry.T.KHUNG if k != tf)) if gop else (tf,)
+                            try:
+                                rows = smc_harry.doc(cfg, ma, khung, _out(cfg))
+                            except (AttributeError, ImportError, OSError, RuntimeError, ValueError):
+                                rows = [{**smc_harry.the(chip, k, ten), 'vi_sao': 'Phương pháp chưa đọc được dữ liệu hoặc thư viện.'}
+                                        for k in khung for chip, ten in smc_harry.TEN.items()]
+                            data.setdefault('phuong_phap', []).extend(rows)
                     except gia.ChuaCoGia as e:
                         return self._gui(503, 'text/plain; charset=utf-8', f'Chưa có giá trực tiếp: {e}'.encode('utf-8'))
                     except ValueError as e:
@@ -719,7 +745,10 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                         data['tien_cuu'] = {**tien_cuu, 'ma_theo_doi': data['ma'] in tin_hieu_tien_cuu.ma_theo_doi(cfg),
                                             'bat': bool(cb.get('tien_cuu', True) and cb.get('ngan_han', True)),
                                             'dang_chay': any(t and t.is_alive() and not t.dung.is_set() for t in (vong, tien_cuu_vong)),
-                                            'loi_vong': bool(tien_cuu_vong and tien_cuu_vong.loi)}
+                                            'loi_vong': bool(tien_cuu_vong and tien_cuu_vong.loi),
+                                            'nghien_cuu': tin_hieu_tien_cuu.tong_hop_nghien_cuu(_out(cfg), data.get('may_chu', ''), data['ma'])
+                                            if data['ma'] == da_ma.ma_vang(cfg) else [],
+                                            'lan_quet': tien_cuu_vong.trang_thai.get(data['ma']) if tien_cuu_vong else None}
                     except sqlite3.Error:
                         data['tien_cuu'] = {'ly_do': 'Chưa đọc được sổ tiến cứu.'}
                     for k in ('tien_tk', 'buoc_gia', 'gia_tick', 'bid', 'ask', 'tick_ms'):
@@ -1125,6 +1154,10 @@ def tao_may_chu(cau_hinh: str, host: str = '127.0.0.1', port: int = local_runtim
                     elif viec == 'phan_tich':                                   # đăng (hoặc soạn xem trước) một bài phân tích vàng ngay
                         kq = telegram_nhom.dang_phan_tich(json.loads(Path(cau_hinh).read_text(encoding='utf-8')))
                         ok, nhan = kq['ok'], kq['ly_do']
+                    elif viec == 'xem_truoc_cau_truc':
+                        cfg = json.loads(Path(cau_hinh).read_text(encoding='utf-8'))
+                        kq = telegram_nhom.xem_truoc_cau_truc(cfg, str(yc.get('ma') or '').strip())
+                        return self._gui(200 if kq['ok'] else 400, LOAI['.json'], json.dumps(kq, ensure_ascii=False).encode('utf-8'))
                     elif viec == 'tim_nhom':
                         ok, ds = telegram_nhom.tim_nhom()
                         nhan, ds = (None, ds) if ok else (ds, None)
@@ -1212,6 +1245,7 @@ def khoi_dong(cau_hinh: str, port: int = local_runtime.PORT) -> ThreadingHTTPSer
     from . import doi_chieu_mt5
     doi_chieu_mt5.VongDoiChieu(lambda: json.loads(Path(cau_hinh).read_text(encoding='utf-8')), cau_hinh).start()
     telegram_nhom.VongTelegram(lambda: json.loads(Path(cau_hinh).read_text(encoding='utf-8')), dia_chi=f'http://127.0.0.1:{port}').start()   # nhóm Telegram (mặc định chỉ xem trước)
+    cau_truc_live.Vong(lambda: json.loads(Path(cau_hinh).read_text(encoding='utf-8')), _out, gui_that=True).start()
     lay_gia = canh_bao_ve.lay_tu_mt5(lambda: json.loads(Path(cau_hinh).read_text(encoding='utf-8')))   # đọc thẳng nến và Bid từ MT5 (nhẹ)
     canh_bao_ve.VONG = canh_bao_ve.VongCanhVe(lay_gia, goc=Path(cau_hinh).resolve().parent)  # kiểm đúng kho của cấu hình đang mở
     canh_bao_ve.VONG.start()

@@ -32,15 +32,21 @@ class Vung:
     loai: str = 'FVG'
 
 
+def ma_vung(v: Vung) -> str:
+    s = (v.tu, v.chieu, v.loai, float(v.duoi), float(v.tren))
+    return hashlib.sha256(repr(s).encode()).hexdigest()[:16]
+
+
 def da_dong(b: pd.DataFrame, tf: str, moc: datetime) -> pd.DataFrame:
     phut = KHUNG[tf]
     if b.index.tz is None or b.index.has_duplicates or not b.index.is_monotonic_increasing:
         raise ValueError(f'Nến {tf} cần có múi giờ và thứ tự tăng dần.')
     x = b.loc[b.index + pd.Timedelta(minutes=phut) <= moc, ['open', 'high', 'low', 'close']]
-    return x.dropna()
+    return x.loc[np.isfinite(x).all(axis=1) & (x > 0).all(axis=1) &
+                 (x['high'] >= x[['open', 'close', 'low']].max(axis=1)) & (x['low'] <= x[['open', 'close']].min(axis=1))]
 
 
-def phat_vung(h1: pd.DataFrame):
+def phat_vung(h1: pd.DataFrame, fvg_repo: dict[int, tuple[int, float, float]] | None = None):
     """Phát trạng thái sau mỗi lần đóng H1; iFVG cần nến đóng xuyên biên, chỉ đảo vai một lần."""
     gio = h1.index.as_unit('s').asi8 + 3600
     mo, h, l, c = (h1[k].to_numpy(dtype=float) for k in ('open', 'high', 'low', 'close'))
@@ -64,7 +70,11 @@ def phat_vung(h1: pd.DataFrame):
         if j >= 2 and gio[j] - gio[j - 2] == 7200:
             luc = c[j - 1] - mo[j - 1]
             a = atr[j]
-            if luc >= .40 * a and l[j] - h[j - 2] >= .08 * a:
+            if fvg_repo is not None:
+                z = fvg_repo.get(j)
+                if z and z[0] * luc >= .40 * a and z[2] - z[1] >= .08 * a:
+                    moi.append(Vung(z[1], z[2], z[0], t))
+            elif luc >= .40 * a and l[j] - h[j - 2] >= .08 * a:
                 moi.append(Vung(h[j - 2], l[j], 1, t))
             elif luc <= -.40 * a and l[j - 2] - h[j] >= .08 * a:
                 moi.append(Vung(h[j], l[j - 2], -1, t))
@@ -81,7 +91,7 @@ def xu_huong(b: pd.DataFrame) -> int:
     return int(np.sign(lech)) if math.isfinite(a) and abs(lech) >= .12 * a else 0
 
 
-def xac_nhan(b: pd.DataFrame, tf: str, v: Vung, px: float, atr: float) -> dict:
+def xac_nhan(b: pd.DataFrame, tf: str, v: Vung, px: float, atr: float, *, cham_tick: int | None = None) -> dict:
     """Chỉ đếm lần đổi cấu trúc đã đóng, phát sinh từ nến chạm vùng gần nhất trở đi."""
     kq = {'tf': tf, 'tt': 'chua_cham'}
     b = b.iloc[-64:]
@@ -90,7 +100,8 @@ def xac_nhan(b: pd.DataFrame, tf: str, v: Vung, px: float, atr: float) -> dict:
     phut = KHUNG[tf]
     mo = b.index.as_unit('s').asi8
     h, l, c = (b[k].to_numpy(dtype=float) for k in ('high', 'low', 'close'))
-    cham = np.flatnonzero((mo >= v.tu) & (l <= v.tren) & (h >= v.duoi))
+    cham = np.flatnonzero((mo >= v.tu) & (l <= v.tren) & (h >= v.duoi)) if cham_tick is None else np.flatnonzero(
+        (mo * 1000 <= cham_tick) & (cham_tick < (mo + phut * 60) * 1000))
     if not len(cham):
         return kq
     pha, _ = phuong_phap._pha_cau_truc(h, l, c)
@@ -111,7 +122,7 @@ def xac_nhan(b: pd.DataFrame, tf: str, v: Vung, px: float, atr: float) -> dict:
     return kq
 
 
-def lap(ma: str, fr: dict, bid: float, ask: float, tick_ms: int, moc: datetime, so_le: int) -> dict:
+def lap(ma: str, fr: dict, bid: float, ask: float, tick_ms: int, moc: datetime, so_le: int, *, dang_theo_doi=None) -> dict:
     if not re.fullmatch(r'[\w.#+-]{1,32}', ma) or not all(math.isfinite(x) and x > 0 for x in (bid, ask)) or ask < bid or tick_ms <= 0:
         raise ValueError('Mã hoặc Bid/Ask của nguồn giá không hợp lệ.')
     nen = {k: da_dong(fr[k], k, moc) for k in KHUNG}
@@ -135,8 +146,10 @@ def lap(ma: str, fr: dict, bid: float, ask: float, tick_ms: int, moc: datetime, 
             continue
         if abs(px - (v.duoi + v.tren) / 2) > 3 * atr:
             continue
-        dk = [xac_nhan(nen[k], k, v, px, atr) for k in ('M5', 'M15', 'M30')]
-        vung.append({**v.__dict__, 'vo_hieu': v.duoi if huong > 0 else v.tren,
+        id_ = ma_vung(v)
+        cham = (dang_theo_doi or {}).get(id_)
+        dk = [xac_nhan(nen[k], k, v, ask if v.chieu > 0 else bid, atr, cham_tick=cham) for k in ('M5', 'M15', 'M30')]
+        vung.append({**v.__dict__, 'id': id_, 'vo_hieu': v.duoi - .05 * atr if huong > 0 else v.tren + .05 * atr,
                      'cach_atr': max(v.duoi - px, px - v.tren, 0) / atr, 'xac_nhan': dk})
         if len(vung) == 2:
             break
@@ -158,7 +171,7 @@ def lap(ma: str, fr: dict, bid: float, ask: float, tick_ms: int, moc: datetime, 
     return kq
 
 
-def doc(cfg: dict, ma: str = '') -> dict:
+def doc(cfg: dict, ma: str = '', *, dang_theo_doi=None) -> dict:
     g = cfg['gia']
     ma = ma or da_ma.ma_vang(cfg)
     if not re.fullmatch(r'[\w.#+-]{1,32}', ma):
@@ -172,10 +185,13 @@ def doc(cfg: dict, ma: str = '') -> dict:
             raise ValueError(f'Mã {ma} chưa có trong Market Watch.')
         fr = {k: da_ma._nen(mt5, ma, k, 280) for k in KHUNG}
         tick = mt5.symbol_info_tick(ma)
+        tk = mt5.account_info() if hasattr(mt5, 'account_info') else None
     if tick is None:
         raise ValueError('MT5 chưa trả Bid/Ask cho mã này.')
     ms = int(getattr(tick, 'time_msc', 0) or tick.time * 1000)
-    return lap(ma, fr, float(tick.bid), float(tick.ask), ms, datetime.now(timezone.utc), int(s.digits))
+    kq = lap(ma, fr, float(tick.bid), float(tick.ask), ms, datetime.now(timezone.utc), int(s.digits), dang_theo_doi=dang_theo_doi)
+    kq['feed'] = hashlib.sha256(str(getattr(tk, 'server', '')).encode()).hexdigest()[:12]
+    return kq
 
 
 TT = {'gia_cu': 'Dữ liệu lưu gần nhất · chỉ xem lại', 'lech_khung': 'Đứng ngoài · xu hướng chưa đồng thuận',
@@ -199,7 +215,8 @@ def van_ban(kq: dict) -> str:
     for i, z in enumerate(kq['vung'], 1):
         dau = 'dưới' if z['chieu'] > 0 else 'trên'
         ra.append(f'\n<b>{i}. {z["loai"]} H1 · {so(kq, z["duoi"])}–{so(kq, z["tren"])}</b>\n'
-                  f'Chờ phá cấu trúc {"tăng" if z["chieu"] > 0 else "giảm"} sau khi giá chạm vùng. '
+                  + ('Vùng dự phòng nếu nhịp hồi xuyên vùng 1. ' if i == 2 else '')
+                  + f'Theo dõi CHoCH {"tăng" if z["chieu"] > 0 else "giảm"} sau cú chạm. '
                   f'Vô hiệu nếu H1 đóng {dau} {so(kq, z["vo_hieu"])}.')
         ra.append('  '.join(f'{d["tf"]} {DK[d["tt"]]}' + (f' ({so(kq, d["moc"])})' if 'moc' in d else '') for d in z['xac_nhan']))
     ra.append(f'\n<code>{kq["bang_chung"]}</code> · Nghiên cứu cấu trúc giá. Không phải lời khuyên đầu tư.')

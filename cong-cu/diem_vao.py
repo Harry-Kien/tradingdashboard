@@ -27,6 +27,7 @@ import pandas as pd
 GOC = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(GOC))
 from so_cong_khai import gia, hoc, phuong_phap as PP  # noqa: E402
+from so_cong_khai.diem_vao_rt import dat_gia  # noqa: E402
 from so_cong_khai.phieu import THI_TRUONG, muc_cho, muc_sl, nhom  # noqa: E402 - cùng hàm với phiếu vào lệnh của webapp
 
 PHUT = 60 * 10 ** 9
@@ -91,7 +92,8 @@ def so_dem(t_vao: int, t_ra: int) -> int:
 
 
 # ---- một lệnh ---------------------------------------------------------------------------------------------------------------------------------
-def mo_phong(D: dict, s: dict, ma: str, vao: str = 'V0', sl: str = 'S0', tp: str = 'T0', chi_phi_cu: float | None = None, khong_tp: bool = False) -> dict:
+def mo_phong(D: dict, s: dict, ma: str, vao: str = 'V0', sl: str = 'S0', tp: str = 'T0', chi_phi_cu: float | None = None,
+             khong_tp: bool = False, cong_gia: bool = False) -> dict:
     """Chấm một tín hiệu theo một bộ (kiểu vào, dừng lỗ, chốt lời). Trả {'khop': False, 'vi': …} hoặc
     {'khop': True, 't_vao', 't_ra', 'gia', 'rui', 'r', 'ket', 'mae', 'mfe'} (r, mae, mfe tính bằng R; r đã trừ chi phí).
     `chi_phi_cu`: nếu đưa một số thì dùng spread cố định đó và chỉ trừ PHI (cách tính cũ của webapp), để có mốc so sánh."""
@@ -116,10 +118,33 @@ def mo_phong(D: dict, s: dict, ma: str, vao: str = 'V0', sl: str = 'S0', tp: str
 
     cho = loai != 'tt'
     thi_truong = loai in ('tt', 'dung', 'xn')
+    if cong_gia and loai == 'tt':
+        moc = s['vao']
+        muc_tp_goc = moc + PP.TP_R * (moc - sl_truoc)
+        if not dat_gia(loai, s['huong'], moc, sl_truoc, muc_tp_goc, O[j], O[j] + sp(j), s['atr'], moc):
+            return {'khop': False, 'vi': 'cong_gia'}
     if loai == 'tt':
         bat, gia_khop = j, (O[j] + sp(j) if mua else O[j])
     elif loai in ('gh', 'dung'):
-        if loai == 'gh':
+        if loai == 'gh' and cong_gia:
+            # Ghi nhận mức chờ khi một giá mở M1 quan sát được còn ở phía trước mức vào và nằm trong ngưỡng.
+            # Nếu đã chạm trước đó thì bỏ. Nếu chạm đích và entry cùng một phút, ưu tiên bỏ vì thiếu thứ tự tick.
+            vao_mo = O[j:han] + spr(j, han) if mua else O[j:han]
+            rui_goc = abs(muc - sl_truoc)
+            kc = (vao_mo - muc) * dau
+            hop = np.flatnonzero((kc > 0) & (kc <= min(s['atr'], rui_goc)))
+            cham = (L[j:han] + spr(j, han) <= muc) if mua else (H[j:han] >= muc)
+            dich = muc + dau * PP.TP_R * rui_goc
+            het = (H[j:han] >= dich) if mua else (L[j:han] + spr(j, han) <= dich)
+            if not len(hop) or not len(kc) or kc[0] <= 0 or cham[:hop[0]].any():
+                return {'khop': False, 'vi': 'cong_gia'}
+            if not cham.any():
+                return {'khop': False, 'vi': 'khong_khop'}
+            k1 = int(np.argmax(cham))
+            if het[:k1 + 1].any():
+                return {'khop': False, 'vi': 'cham_tp_truoc'}
+            khop = cham
+        elif loai == 'gh':
             if (O[j] <= muc) if mua else (O[j] >= muc):
                 return {'khop': False, 'vi': 'da_qua'}                # giá đã ở bên kia mức chờ lúc tín hiệu đến
             khop = (L[j:han] + spr(j, han) <= muc) if mua else (H[j:han] >= muc)

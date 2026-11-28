@@ -13,7 +13,7 @@ class ChartRequests(unittest.TestCase):
         result = node(chart_realtime.JS + '''
 let ES=null,esKhoa='',SG=null,LECH=null,sgMS=0,ma='A',tf='M15',esLoi=0;
 const D={nguon:'mt5'},document={visibilityState:'visible'},sgK=()=>ma+'|'+tf,srcVe=()=>{},sgHen=()=>{},seen=[];
-const sgAp=x=>{seen.push(x.bid);return true};
+const sgAp=x=>{seen.push(x.bid);return true},ptTheoTick=()=>seen.push('plan'),aiTheoGia=()=>{};
 window.EventSource=class{constructor(url){this.url=url}close(){this.closed=true}};
 ''' + bieu_do.JS[start:end] + '''
 sgMo();const old=ES.onmessage;ma='B';sgMo();ma='A';sgMo();
@@ -21,7 +21,7 @@ old({data:JSON.stringify({ms:Date.now(),bid:99,ask:100})});
 ES.onmessage({data:JSON.stringify({ms:Date.now()+1,bid:10,ask:11})});
 console.log(JSON.stringify(seen));
 ''')
-        self.assertEqual(result, [10])
+        self.assertEqual(result, [10, 'plan'])
 
     def test_request_generation_rejects_A_B_A_and_same_key_overlap(self):
         result = node(chart_realtime.JS + '''

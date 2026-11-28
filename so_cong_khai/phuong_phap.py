@@ -429,13 +429,19 @@ def hien_tai(ma: str, m15: pd.DataFrame, h1: pd.DataFrame, bid: float, ask: floa
     if s is None:
         return None, DS[ma]['khong']
     mua, sau = s['huong'] == 'MUA', m.iloc[s['i'] + 1:]
-    thap = min(float(sau['low'].min()), bid) if len(sau) else bid
-    cao = max(float(sau['high'].max()), bid) if len(sau) else bid
-    if (mua and thap <= s['sl']) or (not mua and cao >= s['sl']):
-        return None, 'Tín hiệu gần nhất đã hỏng: giá đã chạm mức dừng lỗ trước khi khớp lệnh chờ.'
-    if (mua and (thap <= s['vao'] or ask <= s['vao'])) or (not mua and cao >= s['vao']):
-        return None, 'Tín hiệu gần nhất đã qua: giá đã quay về mức chờ rồi (lệnh chờ coi như đã khớp).'
+    # Nến MT5 ở phía Bid. Chỉ ước lượng Ask trên nến lịch sử bằng spread vừa đọc.
+    # Với tick hiện tại dùng đúng hai phía và chỉ ghi nhận giá chạm, không suy ra lệnh đã khớp.
+    thap, cao = (float(sau['low'].min()), float(sau['high'].max())) if len(sau) else (float('inf'), float('-inf'))
+    sp = max(0., ask - bid)
+    if (mua and min(thap, bid) <= s['sl']) or (not mua and max(cao + sp, ask) >= s['sl']):
+        return None, 'Tín hiệu gần nhất đã qua mức dừng lỗ.'
+    if (mua and min(thap + sp, ask) <= s['vao']) or (not mua and max(cao, bid) >= s['vao']):
+        return None, 'Tín hiệu gần nhất đã qua mức chờ theo dữ liệu giá.'
     rui = abs(s['vao'] - s['sl'])
+    # 28/11/2026: bỏ quy tắc "giá đã qua mục tiêu 2R trước khi khớp thì hủy". Phép chấm đã đo (cham) không có quy tắc này, bản trực tiếp lại chỉ
+    # xét nến đã đóng nên áp không đều. Đo trước/sau theo CHUAN_HOA_DANG_KY.md (cong-cu/do_huy_2r.py, out/huy-2r.json): thêm quy tắc không làm
+    # R mỗi lệnh tốt hơn ở cả hai nửa với ict, ict_fvg, fib, nên bản trực tiếp theo đúng định nghĩa đã đo: lệnh chờ chỉ hủy khi chạm SL trước,
+    # khi có tín hiệu mới thay, hoặc khi hết 4 giờ.
     con = CHO_NEN * 15 - int((now - s['t'].to_pydatetime()).total_seconds() // 60)
     if con <= 0:
         return None, 'Tín hiệu gần nhất đã quá 4 giờ mà giá chưa quay về mức chờ: lệnh chờ hết hạn.'

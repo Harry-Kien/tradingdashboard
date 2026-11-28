@@ -83,7 +83,7 @@ def _bang(f: pd.DataFrame, h1: pd.DataFrame, d1: pd.DataFrame, t: pd.DatetimeInd
     return out
 
 
-def du_lieu(cfg: dict, tu_nam: int = 2015) -> pd.DataFrame:
+def du_lieu(cfg: dict, tu_nam: int = 2015, *, include_risk: bool = False) -> pd.DataFrame:
     """Mọi tín hiệu của tám phương pháp trên vàng từ `tu_nam`, kèm đặc trưng và kết quả khi chốt ở 1R, 2R (mỗi tín hiệu chấm độc lập)."""
     spec = importlib.util.spec_from_file_location('nghien_cuu', HERE / 'cong-cu' / 'nghien_cuu.py')      # dùng chung phép chấm với phần nghiên cứu
     nc = importlib.util.module_from_spec(spec)
@@ -106,6 +106,8 @@ def du_lieu(cfg: dict, tu_nam: int = 2015) -> pd.DataFrame:
         b.insert(1, 'ma', ma)
         b.insert(2, 'nam', t.year)
         b.insert(3, 'huong', df['huong'].to_numpy())
+        if include_risk:
+            b['risk_price'] = df['rui'].to_numpy()
         for k in TPS:
             b[f'r{k:g}'] = df[f'r{k:g}'].to_numpy()
         parts.append(b)

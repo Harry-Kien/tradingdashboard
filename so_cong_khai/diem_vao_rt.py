@@ -1,7 +1,7 @@
 """Đối chiếu phương án đã phân tích với Bid/Ask hiện tại trong trình duyệt."""
 
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def dat_gia(loai: str, huong: str, vao: float, sl: float, tp: float, bid: float, ask: float,
@@ -30,7 +30,8 @@ def ghi_duoc(p: dict, pt: dict, now: datetime) -> bool:
     if not tt:
         return True  # dữ liệu luật cũ chưa có thông tin thực thi có cấu trúc
     try:
-        gia_luc = datetime.fromisoformat(pt['het'])
+        gia_luc = (datetime.fromtimestamp(pt['tick_ms'] / 1000, timezone.utc) if 'tick_ms' in pt
+                   else datetime.fromisoformat(pt['het']))
         if pt.get('nguon') != 'mt5' or not -5 <= (now - gia_luc).total_seconds() <= 15:
             return False
         if tt.get('het') and now > datetime.fromisoformat(tt['het']):
@@ -53,9 +54,10 @@ window.ENTRY_RT=(()=>{
   const han=Date.parse(ext.het||''),den=Date.parse(ext.tu||p.nen||'');
   const id=[p.plan_id||q?.ma||'',p.ma,side,loai,ext.tu||p.nen||'',cho?muc:''].join('|');
   const da=Number.isInteger(soLe)?Math.max(0,Math.min(12,soLe)):2;
-  const doi=(rt,them={})=>({...p,...them,rt,loai_vao:loai,hieu_luc:rt==='san_sang'});
-  if(!p.hieu_luc)return doi('tham_khao');
-  if(!side||!so(rui)||rui<=0||side*(muc-p.sl)<=0||!tp.length||tp.some(t=>!so(t)||side*(t-muc)<=0))return doi('sai_muc');
+  const doi=(rt,them={})=>({...p,...(rt!=='san_sang'&&ext.ngan?.xoa_khi_cho?{vao:null,sl:null,tp:[],rr:[],rui_ro_gia:null}:{}),
+      ...them,rt,loai_vao:loai,hieu_luc:rt==='san_sang'});
+  if(!p.hieu_luc&&!(p.quan_sat&&ext.cho_tick))return doi('tham_khao');
+  if(!side)return doi('sai_muc');
   if(so(han)&&now>han)return doi('het_han');
   if(ket?.has(id))return doi(ket.get(id));
   if(!q||!so(q.ms)||!so(q.bid)||!so(q.ask)||q.bid<=0||q.ask<q.bid||now-q.ms>quoteAge||q.ms-now>5000||(so(den)&&q.ms<den))return doi('gia_cu');
@@ -67,10 +69,24 @@ window.ENTRY_RT=(()=>{
    if(!so(rui)||rui<=0||side*(muc-p.sl)<=0||!tp.length||tp.some(t=>!so(t)||side*(t-muc)<=0))return doi('sai_muc');
    if(side*(ra-p.sl)<=0)return voHieu('cham_sl');
    if(side*(ra-tp.at(-1))>=0)return voHieu('cham_tp');
+   if(so(ext.stops)&&(side*(ra-p.sl)<ext.stops||side*(tp[0]-ra)<ext.stops))return doi('sai_muc');
    if(kc>.25*(A?Math.min(A,rui):rui))return doi('gia_di_xa');
    if(q.ask-q.bid>.15*rui)return doi('spread');
    return doi('san_sang');
   }
+  if(ext.ngan){
+   const {day,dinh,buoc,dich_r=1.5,spread_atr=.15,stops=0,khoa_gia_xa=false}=ext.ngan;
+   if(!A||!so(ext.moc)||!so(day)||!so(dinh)||!so(buoc)||buoc<=0)return doi('sai_muc');
+   if(Math.abs(q.bid-ext.moc)>.25*A)return khoa_gia_xa?voHieu('bo_lo'):doi('gia_di_xa');
+   const sp=q.ask-q.bid;if(sp>spread_atr*A)return doi('spread');
+   const step=(x,len)=>Number(((len?Math.ceil(x/buoc-1e-8):Math.floor(x/buoc+1e-8))*buoc).toFixed(da));
+   const mua=side>0,gia=step(vao,mua),sl=step(mua?Math.min(day-.12*A,gia-.65*A):Math.max(dinh+.12*A,gia+.65*A),!mua);
+   const risk=Math.abs(gia-sl),dich=step(gia+side*dich_r*risk,mua);
+   if(Math.min(gia,sl,dich)<=0||risk<=0||risk>2.5*A||side*(ra-sl)<=0||side*(ra-sl)<stops||side*(dich-ra)<stops)return doi('sai_muc');
+   if(sp>.15*risk)return doi('spread');
+   return doi('san_sang',{vao:gia,sl,tp:[dich],rui_ro_gia:risk,rr:[Math.round(Math.abs(dich-gia)/risk*100)/100]});
+  }
+  if(!so(rui)||rui<=0||side*(muc-p.sl)<=0||!tp.length||tp.some(t=>!so(t)||side*(t-muc)<=0))return doi('sai_muc');
   if(side*(ra-p.sl)<=0)return voHieu('cham_sl');
   if(cho){
    if((stop&&d>=0)||(!stop&&d<=0))return voHieu('da_cham');

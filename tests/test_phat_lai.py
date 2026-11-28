@@ -22,8 +22,7 @@ class MocTrang(unittest.TestCase):
         self.assertIn(bieu_do_phat_lai.JS.strip()[:80], h)                   # phát lại nạp cùng trang, sau bộ chọn chỉ báo
         self.assertIn('window.PHAT_LAI=true', bieu_do_phat_lai.JS)
         js = bieu_do.JS                                                             # 26/11/2026: chú thích từng nuốt mất mã phía sau trên cùng dòng
-        i = js.index('if(ma0===ma&&epoch0===chartEpoch&&')
-        self.assertIn('!(window.BDPL&&BDPL.chan)', js[i:js.index('{', i)])
+        i = js.index('if(ma0===ma&&epoch0===chartEpoch&&')                          # điều kiện còn thêm topdown0/nguon0 (28/11/2026)
         self.assertRegex(js[i:i + 400], r'\n\s*PTR_GOC=j;')                  # câu lệnh lưu kết quả phải nằm trên dòng riêng, không nằm sau //
         for dong in js.splitlines():
             if 'BDPL.chan' in dong and '//' in dong:

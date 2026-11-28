@@ -6,27 +6,48 @@ xem web.py: _cung_may). Mô-đun này không nhập app.py hay pywebview: app.py
 việc của vỏ thành không làm gì. Kiểm và tải bản mới chỉ chạy ở bản đóng gói (cap_nhat.py tự chặn khi chạy từ mã nguồn)."""
 from __future__ import annotations
 
+import json
 import os
 import time
+import urllib.error
 import urllib.request
 
 from . import cap_nhat, duong
 from .phien_ban import PHIEN_BAN
 
-CONG_CU = 8765                                       # cổng của webapp chạy từ mã nguồn (BAT_DAU.bat); app dùng cổng khác nếu cổng này đã bận
+# Cổng của webapp chạy riêng, ngoài app (R14): 8769 là webapp chạy từ mã nguồn (local_runtime.PORT, các tệp .bat), 8765 là bản zip cũ.
+# App không bao giờ dùng hai cổng này (dải của app là 8790 tới 8800, xem app.UU_TIEN); có webapp trả lời ở đó thì máy đang chạy một bản riêng.
+CONG_WEBAPP_RIENG = (8769, 8765)
 VO: dict = {'hien': None, 'thoat': None, 'cong': None}   # app.py gán: hien() đưa cửa sổ lên trước, thoat() đóng app, cong = cổng app đang dùng
 _nho_cong: dict = {}                                 # cổng → (lúc dò, kết quả): mỗi trang mở đều hỏi /api/app, không dò cổng cũ mỗi lần
 
 
-def _co_webapp(cong: int) -> bool:
-    """Có một webapp đang trả lời ở `cong` không: GET /api/tinh-trang (chỉ đọc) trả 200 trong 1 giây. Nhớ kết quả 60 giây."""
+def _hoi_get(url: str) -> tuple[int, bytes]:
+    """GET một địa chỉ trên chính máy này (không qua proxy, hạn 1 giây): (mã HTTP, thân). Mã lỗi HTTP cũng trả về, không ném."""
+    mo = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with mo.open(url, timeout=1) as r:                                   # noqa: S310 - địa chỉ http://127.0.0.1 cố định, chỉ đọc
+            return r.status, r.read(4096)
+    except urllib.error.HTTPError as e:
+        return e.code, b''
+
+
+def _co_webapp(cong: int, hoi=None) -> bool:
+    """Có một webapp đang trả lời ở `cong` không (chỉ đọc, mỗi lần hỏi hạn 1 giây; nhớ kết quả 60 giây). Bản zip cũ trả 200 ở /api/tinh-trang.
+    Webapp mới khóa /api/tinh-trang sau đăng nhập (401/403) nhưng /api/phien-ban thì công khai và có khóa `san_pham`: chỉ khi bị khóa mới
+    hỏi tiếp chỗ đó, để chương trình lạ trả 401 không bị nhận nhầm là webapp. `hoi(url) -> (mã, thân)`: thay lời gọi mạng khi kiểm thử."""
     luc, kq = _nho_cong.get(cong, (0.0, False))
     if time.monotonic() - luc < 60:
         return kq
-    try:                                             # không qua proxy: chỉ hỏi chính máy này
-        mo = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with mo.open(f'http://127.0.0.1:{int(cong)}/api/tinh-trang', timeout=1) as r:   # noqa: S310 - địa chỉ cố định trên chính máy này, chỉ đọc
-            kq = r.status == 200
+    hoi = hoi or _hoi_get
+    goc = f'http://127.0.0.1:{int(cong)}'
+    try:
+        ma, _ = hoi(goc + '/api/tinh-trang')
+        kq = ma == 200
+        if ma in (401, 403):
+            ma, than = hoi(goc + '/api/phien-ban')
+            d = json.loads(than.decode('utf-8')) if ma == 200 else None
+            kq = isinstance(d, dict) and 'san_pham' in d
     except (OSError, ValueError):
         kq = False
     _nho_cong[cong] = (time.monotonic(), kq)
@@ -35,13 +56,18 @@ def _co_webapp(cong: int) -> bool:
 
 def trang_thai(cfg: dict, do_cong=None) -> dict:
     """Trạng thái cho giao diện (GET /api/app). `cap_nhat.ban_moi` là chuỗi phiên bản (không phải cả kê khai: địa chỉ tải và mã băm không
-    ra tới trang). `ban_cu_8765`: app chạy ở cổng khác 8765 mà cổng 8765 có webapp trả lời, tức máy này còn chạy bản zip cũ."""
+    ra tới trang). `ban_cu_8765` (giữ tên khóa cũ): đang chạy trong app và một cổng của CONG_WEBAPP_RIENG khác cổng của app có webapp trả
+    lời, tức máy này còn chạy một webapp riêng (từ mã nguồn hay bản zip) với thư mục dữ liệu khác; `cong_webapp_rieng` là cổng đó (int) hoặc None."""
     tt = cap_nhat.trang_thai()
     bm = tt['ban_moi'] if isinstance(tt['ban_moi'], dict) else None
     cau = cfg.get('cap_nhat') if isinstance(cfg, dict) else None
     cong = VO['cong']
-    cu = cong is not None and cong != CONG_CU and bool((do_cong or _co_webapp)(CONG_CU))
-    return {'dong_goi': bool(duong.DONG_GOI), 'phien_ban': PHIEN_BAN, 'thu_muc_du_lieu': str(duong.goc_du_lieu()), 'cong': cong, 'ban_cu_8765': cu,
+    rieng = None
+    if cong is not None:                                                     # chạy từ mã nguồn (VO trống) thì không dò
+        do = do_cong or _co_webapp
+        rieng = next((c for c in CONG_WEBAPP_RIENG if c != cong and do(c)), None)
+    return {'dong_goi': bool(duong.DONG_GOI), 'phien_ban': PHIEN_BAN, 'thu_muc_du_lieu': str(duong.goc_du_lieu()), 'cong': cong,
+            'ban_cu_8765': rieng is not None, 'cong_webapp_rieng': rieng,
             'cap_nhat': {'bat': not (isinstance(cau, dict) and cau.get('bat') is False),    # không có mục cap_nhat thì coi như bật (như cap_nhat.kiem)
                          'ban_moi': str(bm['phien_ban']) if bm else None, 'ghi_chu': str(bm.get('ghi_chu') or '') if bm else '',
                          'lan_kiem': tt['lan_kiem'], 'loi': tt['loi'], 'dang_tai': bool(tt['dang_tai'])}}
@@ -123,10 +149,12 @@ fetch('/api/app',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{const 
  d.append(t,b,k);M.prepend(d)}).catch(()=>{})}catch(e){}})();
 """
 
-# Dòng báo trên trang Bắt đầu khi máy còn chạy webapp bản zip ở cổng 8765: app dùng thư mục dữ liệu riêng nên người dùng sẽ thấy app "trống".
+# Dòng báo trên trang Bắt đầu khi máy còn chạy một webapp riêng (cổng 8769 hay 8765, xem CONG_WEBAPP_RIENG): app dùng thư mục dữ liệu riêng
+# nên người dùng sẽ thấy app "trống". Câu đứng trọn trong MỘT chuỗi với số 8765 để bộ dịch tra được mục "…ở cổng {0}…" của en.json (số được
+# đặt lại nguyên văn vào bản dịch); rồi mới thay 8765 bằng cổng thật mà /api/app báo, ở cả hai ngôn ngữ.
 JS_BAT_DAU = r"""
 (()=>{try{fetch('/api/app',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(!j||!j.ban_cu_8765)return;const o=document.querySelector('.bd-top');if(!o)return;
  const p=document.createElement('p');p.className='note';p.style.marginTop='12px';
- p.textContent='Máy này đang chạy một webapp bản cũ ở cổng 8765. App dùng thư mục dữ liệu riêng nên chưa thấy hình vẽ và nhật ký cũ của bạn; xem mục "Chuyển từ bản zip" trong hướng dẫn.';
+ p.textContent='Máy này đang chạy một webapp bản cũ ở cổng 8765. App dùng thư mục dữ liệu riêng nên chưa thấy hình vẽ và nhật ký cũ của bạn; xem mục "Chuyển từ bản zip" trong hướng dẫn.'.replace('8765',String(j.cong_webapp_rieng||8765));
  o.appendChild(p)}).catch(()=>{})}catch(e){}})();
 """

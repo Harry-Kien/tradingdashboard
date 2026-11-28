@@ -9,7 +9,6 @@ Kết quả ở out/loc-lenh-bot-v2.json và .txt.
 """
 import importlib.util
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -19,7 +18,7 @@ import pandas as pd
 
 GOC = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(GOC))
-THO = Path(os.environ.get('HGR_RAW_DATA', 'data/raw'))
+THO = Path(r'D:\EA Promax\data\raw')
 MOI = ['bac_di_4h', 'vang_bac_cung', 'ty_le_vb_z', 'brent_di_1d', 'spx_di_5d', 'cot_mm_pct', 'cot_mm_doi']
 
 

@@ -2,7 +2,7 @@
 (pystray) và thông báo Windows cho cảnh báo giá. Bản đóng gói chạy tệp này; chạy từ mã nguồn vẫn dùng BAT_DAU.bat / so_cong_khai.web như cũ.
 
 Một máy chỉ chạy một bản app: mutex TEN_KHOA (bộ cài cũng dò đúng tên này để biết app đang mở). Lần mở thứ hai không dựng máy chủ thứ hai
-mà nhờ bản đang chạy hiện cửa sổ lên (POST /api/app {"viec": "hien"} tới cổng ghi trong du-lieu/app-chay.json) rồi thoát.
+mà nhờ bản đang chạy hiện cửa sổ lên (sự kiện có tên TEN_SU_KIEN_HIEN, chờ xác nhận ở TEN_SU_KIEN_DA_HIEN; R15) rồi thoát.
 Đóng cửa sổ chỉ ẩn xuống khay: vòng cảnh báo giá, Telegram, nhật ký vẫn chạy; muốn tắt hẳn thì bấm "Thoát" ở khay.
 
 `webview`, `pystray` và `PIL` chỉ được nhập bên trong hàm: bài kiểm và bản zip chạy bằng Python không có các thư viện đó. Mọi hàm thuần
@@ -21,14 +21,20 @@ import threading
 import time
 import traceback
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from . import duong
 from .thuong_hieu import TEN
 
 TEN_KHOA = 'HarryGoldResearch.App'                 # tên mutex Windows; kịch bản bộ cài (Nhiệm vụ 6) dùng đúng chuỗi này
-UU_TIEN = 8769                                      # cổng ưu tiên; localStorage của trang gắn theo cổng nên cổng phải ổn định giữa các lần mở
+# Kênh "lần mở thứ hai nhờ bản đầu hiện cửa sổ" (R15): hai sự kiện có tên, tự đặt lại. Trước đây là POST /api/app {"viec": "hien"} tới cổng
+# trong app-chay.json, nhưng máy chủ giờ khóa mọi yêu cầu không có cookie đăng nhập (khong_gian.py) nên lời gọi đó bị 401; không nới cổng
+# đăng nhập cho việc này. Sự kiện Windows chỉ tiến trình cùng phiên đăng nhập Windows mở được, không đi qua mạng.
+TEN_SU_KIEN_HIEN = 'HarryGoldResearch.App.Hien'     # bản thứ hai bật: "hiện cửa sổ đi"
+TEN_SU_KIEN_DA_HIEN = 'HarryGoldResearch.App.DaHien'   # bản đầu bật sau khi đã làm "Mở": xác nhận cho bản thứ hai
+# Cổng ưu tiên; localStorage của trang gắn theo cổng nên cổng phải ổn định giữa các lần mở. Dải riêng của app (R14): 8790 tới 8800. Không bao giờ
+# dùng 8769 (webapp chạy từ mã nguồn: các tệp .bat coi "cổng 8769 trả lời" là webapp đã chạy) hay 8765 (bản zip cũ).
+UU_TIEN = 8790
 SO_CONG_KE = 10                                     # bận thì thử thêm 10 cổng liền sau rồi mới lấy cổng do hệ điều hành cấp (R7)
 TOI_DA_LOG = 2 * 1024 * 1024                        # app.log lớn hơn thì cắt bỏ trước khi mở
 HAN_DICH_MO = 600                                   # giây: bấm "Mở" trong 10 phút sau một cảnh báo thì vào thẳng biểu đồ của mã đó
@@ -111,7 +117,7 @@ def chon_cong(uu_tien: int = UU_TIEN) -> int:
 
 
 def tep_chay(goc: Path) -> Path:
-    """Tệp {'cong', 'pid'} của bản app đang chạy, để lần mở thứ hai tìm được nó."""
+    """Tệp {'cong', 'pid'} của bản app đang chạy: cổng cho vo_app và Nhiệm vụ 6, pid để lần mở thứ hai nhường quyền lên trước (_cho_len_truoc)."""
     return goc / 'du-lieu' / 'app-chay.json'
 
 
@@ -136,28 +142,6 @@ def _doc_tep_chay(goc: Path) -> dict | None:
     if isinstance(cong, bool) or not isinstance(cong, int) or not 0 < cong <= 65535:
         return None
     return {'cong': cong, 'pid': pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None}
-
-
-def _goi_hien(cong: int) -> int:
-    """POST /api/app {"viec": "hien"} tới bản đang chạy trên chính máy này; trả mã HTTP (lỗi HTTP hay mạng thì ném)."""
-    rq = urllib.request.Request(f'http://127.0.0.1:{int(cong)}/api/app', data=b'{"viec": "hien"}', method='POST',   # noqa: S310 - địa chỉ cố định trên chính máy này
-                                headers={'Content-Type': 'application/json', 'X-So-Cong-Khai': '1'})
-    mo = urllib.request.build_opener(urllib.request.ProxyHandler({}))        # không qua proxy: chỉ hỏi chính máy này
-    with mo.open(rq, timeout=2) as r:                                         # noqa: S310 - địa chỉ cố định trên chính máy này
-        return r.status
-
-
-def ban_dang_chay(goc: Path, goi=None) -> int | None:
-    """Nhờ bản đang chạy hiện cửa sổ. Trả cổng của nó nếu nó trả 200; tệp chạy thiếu, hỏng, sai định dạng hay cổng chết thì None.
-    `goi(cong) -> mã HTTP`: thay lời gọi mạng khi kiểm thử."""
-    d = _doc_tep_chay(goc)
-    if d is None:
-        return None
-    try:
-        ma = (goi or _goi_hien)(d['cong'])
-    except Exception:                                                          # noqa: BLE001 - cổng chết, hết hạn, trả lời lạ: đều là "không liên lạc được"
-        return None
-    return d['cong'] if ma == 200 else None
 
 
 def trang_dau(goc: Path) -> str:
@@ -247,6 +231,84 @@ def _lay_khoa() -> bool:
         return False
     _TT['khoa'] = h
     return True
+
+
+WAIT_OBJECT_0, WAIT_TIMEOUT = 0, 0x102                 # mã trả của WaitForSingleObject
+
+
+def _k32():
+    """kernel32 với kiểu tham số đúng cho các hàm sự kiện (HANDLE là con trỏ: để mặc định int thì tay cầm 64 bit bị cắt)."""
+    import ctypes                                                              # noqa: PLC0415
+    from ctypes import wintypes                                                # noqa: PLC0415
+    k = ctypes.WinDLL('kernel32', use_last_error=True)
+    k.CreateEventW.restype = wintypes.HANDLE
+    k.CreateEventW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.BOOL, wintypes.LPCWSTR]
+    for ten in ('SetEvent', 'ResetEvent', 'CloseHandle'):
+        f = getattr(k, ten)
+        f.restype, f.argtypes = wintypes.BOOL, [wintypes.HANDLE]
+    k.WaitForSingleObject.restype = wintypes.DWORD
+    k.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    return k
+
+
+def _su_kien(k, ten: str):
+    """Mở sự kiện có tên `ten`, chưa có thì tạo: kiểu TỰ ĐẶT LẠI (mỗi tín hiệu đánh thức đúng một lần chờ rồi tự tắt), lúc tạo chưa bật.
+    Tay cầm, hoặc None khi không mở được."""
+    return k.CreateEventW(None, False, False, ten) or None
+
+
+def bao_ban_dang_chay(cho: float) -> bool:
+    """Lần mở thứ hai (R15): bật TEN_SU_KIEN_HIEN rồi chờ tới `cho` giây để bản đầu bật TEN_SU_KIEN_DA_HIEN. True khi bản đầu đã làm "Mở".
+    Trước khi bật thì xóa một xác nhận cũ có thể còn treo (bản đầu từng trả lời một lần mở đã bỏ chờ), để không nhận nhầm. Sự kiện tự đặt lại giữ
+    tín hiệu tới khi có người chờ: lần mở thứ hai đến lúc bản đầu chưa kịp dựng luồng chờ vẫn được trả lời, miễn là trong hạn `cho`."""
+    if sys.platform != 'win32':
+        return False
+    k = _k32()
+    hien, da = _su_kien(k, TEN_SU_KIEN_HIEN), _su_kien(k, TEN_SU_KIEN_DA_HIEN)
+    try:
+        if not hien or not da:
+            return False
+        k.ResetEvent(da)
+        k.SetEvent(hien)
+        return k.WaitForSingleObject(da, max(0, int(cho * 1000))) == WAIT_OBJECT_0
+    finally:
+        for h in (hien, da):
+            if h:
+                k.CloseHandle(h)
+
+
+def _cho_su_kien_hien(vo, buoc: float = 0.5) -> None:
+    """Luồng nền của bản đầu (R15): chờ TEN_SU_KIEN_HIEN; mỗi lần nó bật thì làm đúng hành động "Mở" của mục khay (vo.mo, gọi ngay trong
+    luồng này vì đây không phải luồng HTTP hay luồng giao diện), rồi bật TEN_SU_KIEN_DA_HIEN. Chờ từng `buoc` giây một để thấy app thoát mà dừng.
+    "Mở" trước khi có cửa sổ là an toàn (mo() bỏ qua, cửa sổ sẽ tự hiện); khi "Thoát" đã bắt đầu thì không làm gì, không xác nhận, và dừng."""
+    if sys.platform != 'win32':
+        return
+    k = _k32()
+    hien, da = _su_kien(k, TEN_SU_KIEN_HIEN), _su_kien(k, TEN_SU_KIEN_DA_HIEN)
+    try:
+        if not hien or not da:
+            _bao('không tạo được sự kiện hiện cửa sổ: lần mở thứ hai sẽ báo "không phản hồi"')
+            return
+        while not vo.xong.is_set() and not vo.dang_thoat:
+            r = k.WaitForSingleObject(hien, int(buoc * 1000))
+            if r == WAIT_TIMEOUT:
+                continue
+            if r != WAIT_OBJECT_0:
+                _bao(f'chờ sự kiện hiện cửa sổ lỗi (mã {r}): dừng luồng chờ')
+                return
+            if vo.dang_thoat:
+                _bao('nhận sự kiện hiện cửa sổ khi app đang thoát: bỏ qua')
+                return
+            _bao('nhận sự kiện hiện cửa sổ từ lần mở thứ hai')
+            try:
+                vo.mo()
+            except Exception:                                                  # noqa: BLE001 - luồng chờ không được chết vì một lần "Mở" hỏng
+                _bao('mở cửa sổ lỗi:\n' + traceback.format_exc())
+            k.SetEvent(da)
+    finally:
+        for h in (hien, da):
+            if h:
+                k.CloseHandle(h)
 
 
 def _cho_len_truoc(goc: Path) -> None:
@@ -358,6 +420,11 @@ class _Vo:
 
     # bước 10: "Mở"
     def mo(self) -> None:
+        if not self.trinh_duyet and self.window is None:
+            # Lệnh đến khi cửa sổ chưa dựng xong (lần mở thứ hai ngay sau lần đầu, nhập webview mất vài giây): cửa sổ sắp tự hiện, đừng mở thêm
+            # một thẻ trình duyệt. Giữ cảnh báo gần nhất cho lần "Mở" sau.
+            _bao('nhận lệnh hiện cửa sổ khi cửa sổ chưa dựng xong: bỏ qua, cửa sổ sẽ tự hiện')
+            return
         dich = dich_mo(self.canh_bao, time.time())
         try:
             if self.trinh_duyet or self.window is None:
@@ -517,8 +584,14 @@ def _chay_giao_dien(vo: _Vo, tu_thoat: float | None) -> None:
         t.daemon = True
         t.start()
         _bao(f'sẽ tự thoát sau {tu_thoat:g} giây')
+    # Khay, máy chủ và hẹn giờ --tu-thoat đều đã chạy từ đây, mà nhập webview (pythonnet) có thể mất vài giây ở bản đóng gói: "Thoát" có thể đến
+    # TRƯỚC khi có cửa sổ. Khi đó thoat() không có cửa sổ để đóng; nếu vẫn mở cửa sổ thì nó gắn với máy chủ đã chết, không còn khay, và tiến
+    # trình không bao giờ tự kết thúc. Nên: kiểm cờ đang thoát trước mỗi bước, và gán vo.window DƯỚI CÙNG khóa với thoat(), để hoặc thoat()
+    # thấy cửa sổ và đóng nó (destroy chờ cửa sổ hiện), hoặc ở đây thấy cờ và không start.
     url = vo.goc_url + trang_dau(vo.goc)
-    if co_webview2():                                                          # bước 7
+    if vo.dang_thoat:
+        _bao('đã nhận lệnh thoát trước khi mở cửa sổ')
+    elif co_webview2():                                                        # bước 7
         try:
             import webview                                                     # noqa: PLC0415
             webview.settings['ALLOW_DOWNLOADS'] = True                         # nút tải ảnh biểu đồ: hiện hộp lưu tệp
@@ -529,20 +602,29 @@ def _chay_giao_dien(vo: _Vo, tu_thoat: float | None) -> None:
             w.events.minimized += vo.khi_thu_nho
             w.events.maximized += vo.khi_phong_to
             w.events.restored += vo.khi_tro_lai
-            vo.window = w
-            _bao(f'mở cửa sổ ở {url}')
-            # private_mode=False: mặc định True xóa localStorage (cài đặt giao diện của các trang) mỗi lần mở (R6)
-            webview.start(private_mode=False, storage_path=str(vo.goc / 'webview'))
+            with vo.khoa:
+                mo_cua_so = not vo.dang_thoat
+                if mo_cua_so:
+                    vo.window = w
+            if mo_cua_so:
+                _bao(f'mở cửa sổ ở {url}')
+                # private_mode=False: mặc định True xóa localStorage (cài đặt giao diện của các trang) mỗi lần mở (R6)
+                webview.start(private_mode=False, storage_path=str(vo.goc / 'webview'))
+            else:
+                _bao('đã nhận lệnh thoát trong lúc dựng cửa sổ: không mở cửa sổ')
         except Exception:                                                      # noqa: BLE001 - bước 12: cửa sổ hỏng thì dùng trình duyệt
             _bao('mở cửa sổ lỗi, chuyển sang trình duyệt:\n' + traceback.format_exc())
             vo.window = None                                                   # cửa sổ đã tạo nhưng không chạy được: đừng coi là "người dùng đã đóng"
     else:
         _bao('máy không có WebView2 Runtime: dùng trình duyệt mặc định')
-    if not vo.dang_thoat:
-        if vo.window is not None and vo.icon is None:                          # không có khay: đóng cửa sổ là thoát
-            vo.thoat()
-        else:                                                                  # bước 12: trình duyệt mặc định, app vẫn chạy ở khay
-            vo.trinh_duyet, vo.window = True, None
+    if vo.window is not None and vo.icon is None and not vo.dang_thoat:       # cửa sổ đã đóng mà không có khay để mở lại: thoát
+        vo.thoat()
+    else:
+        with vo.khoa:                                                          # bước 12: trình duyệt mặc định, app vẫn chạy ở khay
+            dung_trinh_duyet = not vo.dang_thoat
+            if dung_trinh_duyet:
+                vo.trinh_duyet, vo.window = True, None
+        if dung_trinh_duyet:
             vo._mo_trinh_duyet(url[len(vo.goc_url):])
             vo.khi_hien()
             if vo.icon is None:
@@ -565,26 +647,22 @@ def main(argv: list[str] | None = None) -> int:
         cau_hinh = duong.chuan_bi()
         _bao(f'khởi động, pid {os.getpid()}, dữ liệu ở {goc}')
         if not _lay_khoa():                                                    # bước 3
-            _bao('đã có một bản app khác đang chạy: nhờ nó hiện cửa sổ')
+            _bao('đã có một bản app khác đang chạy: báo nó hiện cửa sổ (sự kiện Windows)')
             _cho_len_truoc(goc)
-            han = time.monotonic() + CHO_BAN_KHAC
-            while True:
-                cong = ban_dang_chay(goc)
-                if cong:
-                    _bao(f'bản đang chạy ở cổng {cong} đã nhận lệnh; thoát')
-                    return 0
-                if time.monotonic() >= han:
-                    break
-                time.sleep(0.5)
+            if bao_ban_dang_chay(CHO_BAN_KHAC):                               # R15: không qua HTTP (cổng đăng nhập trả 401)
+                _bao('bản đang chạy đã hiện cửa sổ; thoát')
+                return 0
             _hop_thoai(CHU_KHONG_PHAN_HOI)
             return 1
-        # Đã giữ mutex thì tệp chạy còn sót là của một bản đã chết (bị giết, mất điện). Xóa ngay: nếu không, lần mở thứ hai đến trong lúc bản
-        # này còn dựng máy chủ sẽ POST "hien" tới cổng cũ, mà cổng đó giờ có thể là của chương trình khác (chẳng hạn webapp ở 8765).
+        # Đã giữ mutex thì tệp chạy còn sót là của một bản đã chết (bị giết, mất điện). Xóa ngay, để vo_app, bộ cài và lần mở thứ hai (lấy pid
+        # để nhường quyền lên trước) không đọc phải cổng và pid cũ trong lúc bản này còn dựng máy chủ.
         tep_chay(goc).unlink(missing_ok=True)
         srv, cong = _mo_may_chu(cau_hinh)                                      # bước 4
         vo = _Vo(goc, cau_hinh, srv, cong)
         from . import vo_app                                                   # noqa: PLC0415
         vo_app.VO.update(hien=vo.hien_nen, thoat=vo.thoat_nen, cong=cong)
+        # R15: lần mở thứ hai báo bằng sự kiện có tên; luồng này làm "Mở" rồi xác nhận, và tự dừng khi app thoát.
+        threading.Thread(target=_cho_su_kien_hien, args=(vo,), name='app-su-kien-hien', daemon=True).start()
         threading.Thread(target=srv.serve_forever, name='may-chu', daemon=True).start()
         ghi_tep_chay(goc, cong)
         _bao(f'máy chủ chạy ở cổng {cong}')

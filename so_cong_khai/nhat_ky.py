@@ -204,7 +204,7 @@ def ghi(cfg: dict, pt: dict, now: datetime | None = None) -> list[dict]:
                               'nen': f.get('nen'), 'con_phut': f.get('con_phut'), 'ly_do': f.get('ly_do', ''), 'i_chinh': f.get('i_chinh'),
                               'thuc_thi': {'loai': f['loai']} if f.get('loai') and pt.get('nguon') == 'mt5' else None})
         for pa in list(pt.get('phuong_an') or []) + list(pt.get('phuong_phap') or []) + phieu:
-            if not (pa.get('co') and pa.get('hieu_luc')) or pa.get('sl') is None or not pa.get('tp'):
+            if pa.get('quan_sat') or not (pa.get('co') and pa.get('hieu_luc')) or pa.get('sl') is None or not pa.get('tp'):
                 continue
             if not diem_vao_rt.ghi_duoc(pa, pt, now):
                 continue
@@ -230,7 +230,9 @@ def ghi(cfg: dict, pt: dict, now: datetime | None = None) -> list[dict]:
                    'nhom': pa.get('nhom') or 'luat', 'huong': pa['huong'], 'kieu': pa.get('kieu', ''), 'vao': pa['vao'], 'sl': pa['sl'],
                    'tp': list(pa['tp']), 'rr': list(pa.get('rr') or []), 'muc_tieu': (pa.get('muc_tieu') or {}).get('gia'), 'nen': pa.get('nen'),
                    'cho': cho, 'loai': pa.get('loai'), 'i_chinh': pa.get('i_chinh'), 'het_han': (now + timedelta(minutes=int(pa['con_phut']))).isoformat() if cho else None,
-                   'so_le': pt.get('so_le', 2), 'gia': pt.get('bid'), 'phien': bc.get('phien'), 'bien_do': bc.get('bien_do'), 'ly_do': pa.get('ly_do', ''), 'mo_hinh': (pa.get('mo_hinh') or {}).get('hang'),
+                   'so_le': pt.get('so_le', 2), 'gia': pt.get('bid'), 'atr': (pa.get('thuc_thi') or {}).get('atr') or bc.get('atr_m15'),
+                   'han_gui': (pa.get('thuc_thi') or {}).get('het'), 'phien': bc.get('phien'), 'bien_do': bc.get('bien_do'),
+                   'ly_do': pa.get('ly_do', ''), 'mo_hinh': (pa.get('mo_hinh') or {}).get('hang'),
                    'mh_ban': _mh_ban() if (pa.get('mo_hinh') or {}).get('hang') is not None else None,
                    'tt': 'cho_khop' if cho else 'dang_mo', 'khop': None if cho else now.isoformat(), 'ra': None, 'r': None, 'cham_tp1': None}
             rec['bam_truoc'] = next((x['bam'] for x in reversed(ds) if x.get('bam')), None)

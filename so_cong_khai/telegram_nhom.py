@@ -18,9 +18,11 @@ hứa lãi, không nói tỷ lệ thắng chưa đo; mỗi tin có câu "không 
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
+import tempfile
 import threading
 import time
 import urllib.error
@@ -30,7 +32,7 @@ from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 
-from . import giu_lenh, nhat_ky, thuong_hieu, trang
+from . import cau_truc_ui, giu_lenh, nhat_ky, thuong_hieu, trang
 from .__main__ import HERE
 from .doc_so import VN
 
@@ -41,7 +43,7 @@ TOI_DA_TRE = 3                               # cùng hạn vào lệnh của bot
 GIU_TIN = 400                                # số tin giữ trong nhật ký gửi
 MAC_DINH = {'che_do': 'xem_truoc', 'chat': '', 'link_moi': '', 'ten_nhom': '', 'tin_hieu': True, 'ma': ['bot:'], 'ket_qua': True,
             'tin_tuc': True, 'nhac_truoc_phut': 15, 'tong_ket': True, 'gio_tong_ket': 22, 'phan_tich': True, 'gio_phan_tich': [8, 19],
-            'hoa_von_tp1': True, 'anh_bieu_do': False}
+            'hoa_von_tp1': True, 'anh_bieu_do': False, 'cau_truc_live': True, 'ma_bitcoin': ''}
 DIA_CHI = 'http://127.0.0.1:8769'             # địa chỉ của chính webapp, để chụp ảnh biểu đồ (web.py đặt theo cổng đang chạy)
 CHU_THICH_TOI_DA = 1024                        # Telegram: chú thích ảnh tối đa 1.024 ký tự (sau khi bỏ thẻ HTML)
 CHE_DO = ('xem_truoc', 'gui', 'tat')
@@ -118,8 +120,12 @@ def luu_cai(moi: dict, goc: Path = HERE) -> tuple[bool, str]:
         gio_pt = _gio_ds(moi.get('gio_phan_tich', c['gio_phan_tich']))
     except (TypeError, ValueError):
         return False, 'Giờ đăng phân tích: tối đa 4 giờ từ 0 tới 23, cách nhau dấu phẩy (ví dụ 8, 19).'
+    btc = str(moi.get('ma_bitcoin', c['ma_bitcoin']) or '').strip()
+    if btc and not re.fullmatch(r'(?:BTC|XBT)(?:USDT|USD)[\w.#+-]{0,14}', btc, re.I):
+        return False, 'Mã Bitcoin không hợp lệ.'
     c.update(chat=chat, link_moi=link, ten_nhom=str(moi.get('ten_nhom', c['ten_nhom']) or '').strip()[:60], ma=ma, nhac_truoc_phut=truoc, gio_tong_ket=gio,
-             gio_phan_tich=gio_pt, **{k: bool(moi.get(k, c[k])) for k in ('tin_hieu', 'ket_qua', 'tin_tuc', 'tong_ket', 'phan_tich', 'hoa_von_tp1', 'anh_bieu_do')})
+             gio_phan_tich=gio_pt, ma_bitcoin=btc, **{k: bool(moi.get(k, c[k])) for k in
+                                                     ('tin_hieu', 'ket_qua', 'tin_tuc', 'tong_ket', 'phan_tich', 'hoa_von_tp1', 'anh_bieu_do', 'cau_truc_live')})
     if c['che_do'] == 'gui' and not c['chat']:
         c['che_do'] = 'xem_truoc'
     _ghi_json(_tep('telegram.json', goc), c)
@@ -287,7 +293,7 @@ def _sym(s: str) -> str:
     return re.sub(r'p$', '', s or '')
 
 
-def soan_tin_hieu(r: dict, hv: dict | None = None) -> str:
+def soan_tin_hieu(r: dict, hv: dict | None = None, quote: tuple[float, float, int] | None = None) -> str:
     le = int(r.get('so_le') or 2)
     mua = r['huong'] == 'MUA'
     tps = list(r.get('tp') or [])
@@ -304,6 +310,10 @@ def soan_tin_hieu(r: dict, hv: dict | None = None) -> str:
         dong.append(f'Chấm thắng khi chạm TP{i + 1}' + (f' ({so(rr[i], 2)}R)' if len(rr) > i and rr[i] is not None else '') + '; chạm dừng lỗ trước là thua.')
     if r.get('ly_do'):
         dong.append(f'Lý do: {escape(str(r["ly_do"]))}')
+    if quote is not None:
+        bid, ask, ms = quote
+        luc = datetime.fromtimestamp(ms / 1000, VN)
+        dong.append(f'Đối chiếu MT5 {luc:%H:%M:%S} UTC+7 · Bid {so(bid, le)} · Ask {so(ask, le)}')
     if r.get('phien') or r.get('bien_do'):
         dong.append(' · '.join(x for x in (f'Phiên {r["phien"]}' if r.get('phien') else '', f'biên độ {r["bien_do"]}' if r.get('bien_do') else '') if x))
     if hv and r.get('ma') == 'bot:nen' and tps:
@@ -469,10 +479,18 @@ def dang_phan_tich(cfg: dict, now: datetime | None = None, goc: Path = HERE, c: 
     """Soạn và đăng (hoặc chỉ soạn, ở chế độ xem trước) một bài phân tích ngay. Trả {'ok', 'ly_do'}."""
     now = now or datetime.now(timezone.utc)
     c = c or cai(goc)
+    if lay_pt is None:
+        from . import ban_tin_cau_truc as CT, cau_truc_live  # noqa: PLC0415
+        try:
+            ma = cau_truc_live.ma_cho(cfg, now, c.get('ma_bitcoin') or '')
+            kq = CT.doc(cfg, ma)
+            if not kq['gia_moi']:
+                return {'ok': False, 'ly_do': 'Bid/Ask đã cũ. Bản tin chỉ có trong chế độ xem lại.'}
+            anh = luu_anh_ban_tin(kq, goc) if c.get('anh_bieu_do') else None
+            return _gui_ban_tin(CT.van_ban(kq), c, goc, goi, anh)
+        except (ValueError, OSError, RuntimeError, KeyError) as e:
+            return {'ok': False, 'ly_do': f'Chưa có dữ liệu phù hợp để dựng bản tin ({type(e).__name__}).'}
     try:
-        if lay_pt is None:
-            from . import phan_tich as PT                       # noqa: PLC0415 - nạp muộn: nặng, và chỉ cần khi tới giờ đăng
-            lay_pt = PT.phan_tich
         pt = lay_pt(cfg)
     except Exception as e:                                       # noqa: BLE001
         return {'ok': False, 'ly_do': f'Không phân tích được: {type(e).__name__}.'}
@@ -483,9 +501,24 @@ def dang_phan_tich(cfg: dict, now: datetime | None = None, goc: Path = HERE, c: 
     van_ban = soan_phan_tich(pt, ds_tin, now)
     if van_ban is None:
         return {'ok': False, 'ly_do': 'Giá đang cũ (thị trường nghỉ hoặc MT5 chưa nối), không đăng bài phân tích trên giá cũ.'}
-    kq = gui(van_ban, 'phan_tich', c, goc=goc, goi=goi)
+    return _gui_ban_tin(van_ban, c, goc, goi)
+
+
+def _gui_ban_tin(van_ban, c, goc, goi, anh=None):
+    kq = gui(van_ban, 'phan_tich', c, goc=goc, goi=goi, anh=anh)
     return {'ok': kq['ok'], 'ly_do': ('Đã gửi bài phân tích; mở kênh để xem.' if kq['that'] else 'Đã soạn bài phân tích (xem trước, chưa gửi).') if kq['ok']
             else f'Chưa gửi được: {kq["loi"]}'}
+
+
+def xem_truoc_cau_truc(cfg: dict, ma: str = '') -> dict:
+    """Dựng bản nháp trong bộ nhớ, không đọc chế độ gửi hoặc thông tin nhóm."""
+    from . import ban_tin_cau_truc as CT  # noqa: PLC0415
+    try:
+        kq = CT.doc(cfg, ma)
+        anh = base64.b64encode(CT.anh_png(kq)).decode('ascii')
+        return {'ok': True, 'van_ban': CT.van_ban(kq), 'anh': anh, 'ma': kq['ma']}
+    except (ValueError, OSError, RuntimeError, KeyError) as e:
+        return {'ok': False, 'ly_do': str(e) if isinstance(e, ValueError) else 'Chưa dựng được bản tin từ MT5.'}
 
 
 # --------------------------------------------------------------------------- vòng nền
@@ -497,6 +530,29 @@ def _hop(r: dict, c: dict) -> bool:
 
 def thu_muc_anh(goc: Path = HERE) -> Path:
     return _tep('anh-lenh', goc)
+
+
+def luu_anh_ban_tin(kq: dict, goc: Path) -> Path | None:
+    from . import ban_tin_cau_truc as CT  # noqa: PLC0415
+    tam = None
+    try:
+        dir_anh = thu_muc_anh(goc)
+        dir_anh.mkdir(parents=True, exist_ok=True)
+        tep = dir_anh / f'ban-tin-{kq["bang_chung"]}.png'
+        if not tep.is_file():
+            with tempfile.NamedTemporaryFile(dir=dir_anh, delete=False) as f:
+                tam = Path(f.name)
+                f.write(CT.anh_png(kq))
+            os.replace(tam, tep)
+        return tep
+    except (OSError, ImportError, ValueError):
+        return None
+    finally:
+        if tam is not None:
+            try:
+                tam.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def chup_anh(r: dict, goc: Path = HERE) -> Path | None:
@@ -511,7 +567,32 @@ def chup_anh(r: dict, goc: Path = HERE) -> Path | None:
         return None
 
 
-def mot_luot(cfg: dict, now: datetime | None = None, goc: Path = HERE, doc_nk=None, tin_toi=None, goi=_goi, lay_pt=None, chup=None) -> dict:
+def _quote_mt5(cfg: dict, ma: str) -> tuple[float, float, int] | None:
+    from . import da_ma, song  # noqa: PLC0415
+    mt5 = da_ma._mt5(cfg['gia'])
+    if mt5 is None:
+        return None
+    with song._khoa:
+        t = mt5.symbol_info_tick(ma)
+    if not t:
+        return None
+    return float(t.bid), float(t.ask), int(getattr(t, 'time_msc', 0) or t.time * 1000)
+
+
+def _dat_luc_gui(r, q, now):
+    from . import diem_vao_rt  # noqa: PLC0415
+    if not q or not -5 <= now.timestamp() - q[2] / 1000 <= 15 or not r.get('tp'):
+        return False
+    if any(r.get(k) and now >= datetime.fromisoformat(r[k]) for k in ('han_gui', 'het_han')):
+        return False
+    if r.get('cho') and r.get('tt') != 'cho_khop':
+        return False
+    loai = ('dung' if r.get('loai') == 'dung' else 'gh') if r.get('cho') else 'tt'
+    return diem_vao_rt.dat_gia(loai, r['huong'], r['vao'], r['sl'], r['tp'][-1], q[0], q[1], r.get('atr'), r['vao'])
+
+
+def mot_luot(cfg: dict, now: datetime | None = None, goc: Path = HERE, doc_nk=None, tin_toi=None, goi=_goi, lay_pt=None, chup=None,
+             kiem_gia=None) -> dict:
     """Một lượt: đăng tín hiệu mới, kết quả lệnh đã đóng, tin sắp ra, bài phân tích, tổng kết ngày. Trả số tin đã soạn theo loại."""
     now = now or datetime.now(timezone.utc)
     chup = chup or (lambda r: chup_anh(r, goc))
@@ -519,8 +600,11 @@ def mot_luot(cfg: dict, now: datetime | None = None, goc: Path = HERE, doc_nk=No
     dem = {'tin_hieu': 0, 'ket_qua': 0, 'tin_tuc': 0, 'phan_tich': 0, 'tong_ket': 0}
     if c['che_do'] == 'tat':
         return dem
+    if kiem_gia is None and c['che_do'] == 'gui' and doc_nk is None:
+        kiem_gia = lambda ma: _quote_mt5(cfg, ma)  # noqa: E731
     with _khoa:
         st = trang_thai(goc)
+        chan_gia = 0
         ds = doc_nk() if doc_nk else nhat_ky.danh_dau_trung(_doc_json(nhat_ky.tep(cfg), []))
         if 'moc_id' not in st:                                   # lần đầu: đặt mốc, không đăng lại lịch sử
             st.update(moc_id=max([r['id'] for r in ds] or [0]), bat_dau=st.get('gui_tu') or now.isoformat(timespec='seconds'), tin_hieu={},
@@ -534,11 +618,31 @@ def mot_luot(cfg: dict, now: datetime | None = None, goc: Path = HERE, doc_nk=No
                 if (now - datetime.fromisoformat(r['luc'])).total_seconds() > TOI_DA_TRE * 60 or r['tt'] in XONG:
                     th[str(r['id'])] = {'msg': None, 'bo_qua': True, 'bao': r['tt']}   # webapp vừa tắt lâu: không đăng muộn
                     continue
+                quote = None
+                if kiem_gia is not None:
+                    try:
+                        quote = kiem_gia(r['sym'])
+                        if not _dat_luc_gui(r, quote, now if doc_nk is not None else datetime.now(timezone.utc)):
+                            chan_gia += 1
+                            continue
+                    except (ValueError, TypeError, KeyError, OSError, RuntimeError):
+                        chan_gia += 1
+                        continue
                 # Lỗi đã gặp (rà soát 26/11/2026): chữ quá dài thì gửi ảnh trước rồi chữ; chữ lỗi mạng thì 30 giây sau gửi lại cả hai và ảnh bị đăng
                 # trùng. Nhớ các tín hiệu đã lên ảnh để lần thử lại chỉ gửi chữ.
                 da_anh = st.setdefault('da_anh', [])
-                kq = gui(soan_tin_hieu(r, hv), 'tin_hieu', c, goc=goc, goi=goi,
-                         anh=chup(r) if c.get('anh_bieu_do') and r['id'] not in da_anh else None)
+                anh = chup(r) if c.get('anh_bieu_do') and r['id'] not in da_anh else None
+                if kiem_gia is not None and c.get('anh_bieu_do') and doc_nk is None:
+                    try:
+                        quote = kiem_gia(r['sym'])
+                        gui_luc = datetime.now(timezone.utc)
+                        if (gui_luc - datetime.fromisoformat(r['luc'])).total_seconds() > TOI_DA_TRE * 60 or not _dat_luc_gui(r, quote, gui_luc):
+                            chan_gia += 1
+                            continue
+                    except (ValueError, TypeError, KeyError, OSError, RuntimeError):
+                        chan_gia += 1
+                        continue
+                kq = gui(soan_tin_hieu(r, hv, quote), 'tin_hieu', c, goc=goc, goi=goi, anh=anh)
                 if kq.get('anh_da_gui') and not kq['ok'] and r['id'] not in da_anh:
                     da_anh.append(r['id'])
                     st['da_anh'] = da_anh[-200:]
@@ -586,6 +690,7 @@ def mot_luot(cfg: dict, now: datetime | None = None, goc: Path = HERE, doc_nk=No
                 st['tong_ket'] = vn.strftime('%Y-%m-%d')
                 dem['tong_ket'] += 1
         st['luot_cuoi'] = now.isoformat(timespec='seconds')
+        st['chan_gia'] = chan_gia
         _luu_tt(st, goc)
     return dem
 
@@ -622,7 +727,7 @@ def xem(cfg: dict | None = None, goc: Path = HERE) -> dict:
         ds = []
     tin = _doc_json(_tep('telegram-tin.json', goc), [])
     return {'cai': c, 'co_token': bool(token(goc)), 'thanh_tich': thanh_tich(st, ds), 'luot_cuoi': st.get('luot_cuoi'), 'bat_dau': st.get('bat_dau'),
-            'loi': TT.get('loi') or TT.get('loi_vong'), 'tin': list(reversed(tin[-40:]))}
+            'loi': TT.get('loi') or TT.get('loi_vong'), 'chan_gia': st.get('chan_gia', 0), 'tin': list(reversed(tin[-40:]))}
 
 
 def link_moi(cfg: dict | None = None, goc: Path = HERE) -> str:
@@ -677,27 +782,37 @@ const ve=j=>{const c=j.cai,t=j.thanh_tich;
  $('#tg-cd').innerHTML=[['xem_truoc','Xem trước (không gửi)'],['gui','Gửi thật vào nhóm'],['tat','Tắt']].map(([k,n])=>`<button type="button" class="ghost" data-cd="${k}" aria-pressed="${c.che_do===k}">${n}</button>`).join('')+
   (c.che_do==='gui'?'<button type="button" id="thu">Gửi tin thử</button>':'')+'<button type="button" class="ghost" id="pt">Đăng bài phân tích ngay</button>';
  $('#tg-tt').innerHTML=`Mã bot: <b>${j.co_token?'đã đặt':'chưa đặt'}</b> · Mã nhóm: <b>${e(c.chat)||'chưa có'}</b>${j.luot_cuoi?' · lượt gần nhất '+new Date(j.luot_cuoi).toLocaleTimeString('vi-VN'):''}`+
+  (j.chan_gia?`<br>Tạm giữ ${e(j.chan_gia)} cảnh báo ở lượt gần nhất vì giá, vùng vào hoặc thời hạn.`:'')+
   (j.loi?`<br><span style="color:var(--loss)">Lỗi gần nhất: ${e(j.loi)}</span>`:'');
  $('#tg-so').innerHTML=`<div><small>Lệnh đã đăng, đã xong</small><b>${t.n}</b></div><div><small>Thắng / thua</small><b>${t.thang} / ${t.thua}</b></div>
   <div><small>Tổng</small><b>${t.n?sr(t.tong_r):'—'}</b></div><div><small>Còn mở hoặc chờ</small><b>${t.mo}</b></div>`;
  $('#tg-nhanh').innerHTML='<table><thead><tr><th>Nhánh tín hiệu</th><th>Lệnh xong</th><th>Có lãi</th><th>Tổng R</th></tr></thead><tbody>'+(t.theo_nhanh||[]).map(x=>`<tr><td>${e(x.ten)}</td><td>${x.n}</td><td>${x.ty_le==null?'Chưa có mẫu':e(x.ty_le)+'%'}${x.du_mau?'':' · chưa đủ mẫu đánh giá'}</td><td>${x.n?sr(x.tong_r):'—'}</td></tr>`).join('')+'</tbody></table><p class="small">Tỷ lệ có lãi tính theo R sau khi đóng, gồm cả lệnh hết giờ có lãi. Thành tích nhánh cũ được giữ nguyên; chưa thể suy ra tỷ lệ thắng thực tế của nhánh mới khi chưa đủ lệnh.</p>';
  const f=$('#tg-f');if(!f.dataset.da){f.dataset.da=1;for(const k of ['chat','link_moi','ten_nhom','nhac_truoc_phut','gio_tong_ket'])f[k].value=c[k];f.ma.value=(c.ma||[]).join(', ');
-  f.gio_phan_tich.value=(c.gio_phan_tich||[]).join(', ');for(const k of ['tin_hieu','ket_qua','tin_tuc','phan_tich','tong_ket','hoa_von_tp1','anh_bieu_do'])f[k].checked=!!c[k]}
+  f.gio_phan_tich.value=(c.gio_phan_tich||[]).join(', ');f.ma_bitcoin.value=c.ma_bitcoin||'';
+  for(const k of ['tin_hieu','ket_qua','tin_tuc','phan_tich','tong_ket','hoa_von_tp1','anh_bieu_do','cau_truc_live'])f[k].checked=!!c[k]}
  $('#tg-tin').innerHTML=j.tin.length?j.tin.map(m=>`<article class="${m.ok?'':'loi'}"><header>${LOAI[m.loai]||e(m.loai)} · ${new Date(m.luc).toLocaleString('vi-VN')} · ${m.che_do==='gui'?(m.ok?'đã gửi':'gửi lỗi: '+e(m.loi)):'xem trước, chưa gửi'}</header>${m.anh?`<a href="/telegram/anh/${encodeURIComponent(m.anh)}" target="_blank" rel="noopener"><img src="/telegram/anh/${encodeURIComponent(m.anh)}" alt="Ảnh biểu đồ kèm tin" loading="lazy" style="width:100%;max-width:640px;border-radius:8px;display:block;margin:4px 0 8px"></a>`:''}${m.loi_anh?`<div class="small" style="color:var(--loss)">Không gửi được ảnh (đã gửi chữ): ${e(m.loi_anh)}</div>`:''}${tg(m.van_ban)}</article>`).join('')
   :'<p class="small">Chưa có tin nào. Tin xuất hiện khi có tín hiệu mới, khi một lệnh đóng, 15 phút trước tin mạnh, vào giờ đăng phân tích và giờ tổng kết.</p>';
  document.querySelectorAll('[data-cd]').forEach(b=>b.onclick=()=>{const k=b.dataset.cd;
   if(k==='gui'&&!confirm('Từ giờ webapp sẽ tự gửi tín hiệu, kết quả, tin sắp ra, bài phân tích và tổng kết vào nhóm Telegram đã lưu. Bật gửi thật?'))return;
   gui({viec:'che_do',che_do:k}).then(r=>{bao(r.ly_do);nap()})});
  const th=$('#thu');if(th)th.onclick=()=>gui({viec:'thu'}).then(r=>{bao(r.ly_do);nap()});
- const pt=$('#pt');if(pt)pt.onclick=()=>{if(c.che_do==='gui'&&!confirm('Gửi ngay một bài phân tích vàng vào kênh?'))return;pt.disabled=true;bao('Đang phân tích…');gui({viec:'phan_tich'}).then(r=>{bao(r.ly_do);nap()}).finally(()=>{pt.disabled=false})}};
+ const pt=$('#pt');if(pt)pt.onclick=()=>{if(c.che_do==='gui'&&!confirm('Gửi ngay bản tin mã theo lịch vào kênh?'))return;pt.disabled=true;bao('Đang phân tích…');gui({viec:'phan_tich'}).then(r=>{bao(r.ly_do);nap()}).finally(()=>{pt.disabled=false})}};
 $('#tg-f').addEventListener('submit',ev=>{ev.preventDefault();const f=ev.target,o={viec:'luu'};
- for(const k of ['chat','link_moi','ten_nhom','ma','nhac_truoc_phut','gio_tong_ket','gio_phan_tich'])o[k]=f[k].value;for(const k of ['tin_hieu','ket_qua','tin_tuc','phan_tich','tong_ket','hoa_von_tp1','anh_bieu_do'])o[k]=f[k].checked;
+ for(const k of ['chat','link_moi','ten_nhom','ma','nhac_truoc_phut','gio_tong_ket','gio_phan_tich','ma_bitcoin'])o[k]=f[k].value;for(const k of ['tin_hieu','ket_qua','tin_tuc','phan_tich','tong_ket','hoa_von_tp1','anh_bieu_do','cau_truc_live'])o[k]=f[k].checked;
  gui(o).then(r=>{bao(r.ly_do);f.dataset.da='';nap()})});
 $('#tim').onclick=()=>gui({viec:'tim_nhom'}).then(r=>{if(!r.ok){bao(r.ly_do);return}
  $('#tim-kq').innerHTML=r.ds.length?r.ds.map(x=>`<button type="button" class="ghost" data-id="${e(x.id)}">${e(x.ten)} · ${e(x.loai)} · ${e(x.id)}</button>`).join(' ')
   :'Bot chưa thấy nhóm nào. Thêm bot vào nhóm, gửi một tin bất kỳ trong nhóm, rồi bấm lại.';
  document.querySelectorAll('#tim-kq [data-id]').forEach(b=>b.onclick=()=>{$('#tg-f').chat.value=b.dataset.id;bao('Đã điền mã nhóm; bấm Lưu.')})});
 const nap=()=>fetch('/api/telegram',{cache:'no-store'}).then(r=>r.json()).then(ve).catch(()=>bao('Không đọc được trạng thái.'));
+$('#tg-struct').addEventListener('submit',async ev=>{ev.preventDefault();const b=$('#tg-struct button'),out=$('#tg-struct-out');
+ b.disabled=true;out.textContent='Đang đọc nến và giá từ MT5…';
+ try{const r=await gui({viec:'xem_truoc_cau_truc',ma:$('#tg-struct-ma').value.trim()});
+  if(!r.ok){out.textContent=r.ly_do||'Chưa có dữ liệu để xem trước.';return}
+  out.replaceChildren();const anh=document.createElement('img');anh.alt='Biểu đồ H1 và các vùng giá đã xác minh';
+  anh.src='data:image/png;base64,'+r.anh;anh.className='tg-struct-img';out.append(anh);
+  const chu=document.createElement('div');chu.className='tg-struct-text';chu.innerHTML=tg(r.van_ban);out.append(chu);
+ }catch(_){out.textContent='Không đọc được bản tin.'}finally{b.disabled=false}});
 nap();setInterval(nap,30000);})();
 """
 
@@ -705,11 +820,17 @@ nap();setInterval(nap,30000);})();
 def trang_telegram(ten: str) -> str:
     return '\n'.join([
         '<!doctype html><html lang="vi" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Nhóm Telegram · {escape(ten)}</title><style>{trang.CSS}{CSS}</style></head><body>',
+        f'{trang.KHOI_TAO_NEN}{trang.BIEU_TUONG}<title>Nhóm Telegram · {escape(ten)}</title><style>{trang.CSS}{CSS}{cau_truc_ui.CSS}'
+        '.tg-struct-img{display:block;width:100%;max-width:720px;border-radius:10px;margin:12px 0}.tg-struct-text{white-space:pre-wrap;line-height:1.6;overflow-wrap:anywhere}</style></head><body>',
         trang.thanh_dau(ten, 'telegram', '<button id="theme" type="button">Nền tối</button>') + '<main>',
         '<div class="top"><div><h1>Nhóm Telegram</h1></div><div class="stamp">tín hiệu, kết quả, tin sắp ra<br>tự gửi vào một nhóm cố định</div></div>',
         '<div class="tg">',
         '<section class="card" id="tg-vao"></section>',
+        '<section class="card">' + cau_truc_ui.HTML + '</section>',
+        '<section class="card"><b>Bản tin cấu trúc đa khung</b><form id="tg-struct">'
+        '<label>Mã MT5<input id="tg-struct-ma" type="text" maxlength="32" placeholder="XAUUSDp hoặc mã trong Market Watch" autocomplete="off"></label>'
+        '<div><button type="submit">Xem trước bản tin</button></div></form>'
+        '<div id="tg-struct-out" role="status">Xem bản nháp tại đây, độc lập với chế độ gửi Telegram.</div></section>',
         '<section class="card"><b>Thành tích của chính nhóm</b><div class="so" id="tg-so"></div><div id="tg-nhanh" style="overflow-x:auto"></div>'
         '<div class="small">Chỉ tính các lệnh đã đăng vào nhóm, từ lúc bật. Mọi lệnh đều được báo kết quả, kể cả lệnh thua; mỗi tín hiệu kèm dấu của dòng nhật ký '
         'nên không ai sửa ngược được. Đây là cách cho người xem thấy hệ thống làm việc thật, thay cho lời hứa.</div></section>',
@@ -721,7 +842,9 @@ def trang_telegram(ten: str) -> str:
         '<label>Đăng tín hiệu của (mã bắt đầu bằng, cách nhau dấu phẩy)<input type="text" name="ma" placeholder="bot:" autocomplete="off"></label>'
         '<label>Nhắc trước tin mạnh (phút)<input type="number" name="nhac_truoc_phut" min="5" max="120"></label>'
         '<label>Giờ tổng kết ngày (giờ Việt Nam)<input type="number" name="gio_tong_ket" min="0" max="23"></label>'
-        '<label>Giờ đăng phân tích vàng (giờ Việt Nam, cách nhau dấu phẩy)<input type="text" name="gio_phan_tich" placeholder="8, 19" autocomplete="off"></label>'
+        '<label>Giờ đăng bản tin cấu trúc (giờ Việt Nam, cách nhau dấu phẩy)<input type="text" name="gio_phan_tich" placeholder="8, 19" autocomplete="off"></label>'
+        '<label>Mã Bitcoin cuối tuần<input type="text" name="ma_bitcoin" maxlength="24" placeholder="Tự nhận từ Market Watch" autocomplete="off"></label>'
+        '<label class="ck"><input type="checkbox" name="cau_truc_live"> Cảnh báo tự động FVG/iFVG · vàng thứ Hai–thứ Sáu, Bitcoin thứ Bảy–Chủ nhật (UTC+7)</label>'
         '<label class="ck"><input type="checkbox" name="tin_hieu"> Tín hiệu mới</label><label class="ck"><input type="checkbox" name="ket_qua"> Kết quả từng lệnh</label>'
         '<label class="ck"><input type="checkbox" name="tin_tuc"> Tin USD mạnh sắp ra</label><label class="ck"><input type="checkbox" name="phan_tich"> Bài phân tích vàng</label>'
         '<label class="ck"><input type="checkbox" name="tong_ket"> Tổng kết cuối ngày</label>'
@@ -741,4 +864,4 @@ def trang_telegram(ten: str) -> str:
         'chưa được cấp phép cho cá nhân. Nên hỏi luật sư trước khi mở nhóm công khai hoặc thu phí.</p></section>',
         '<section class="card"><b>Các tin gần đây</b><div class="tin" id="tg-tin"></div></section>',
         '</div>',
-        f'<footer>{escape(trang.MIEN_TRU)}</footer></main><script>{trang.JS}</script><script>{JS}</script></body></html>'])
+        f'<footer>{escape(trang.MIEN_TRU)}</footer></main><script>{trang.JS}</script><script>{JS}</script><script>{cau_truc_ui.JS}</script></body></html>'])

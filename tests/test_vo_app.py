@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Cầu nối giữa máy chủ và vỏ app (so_cong_khai/vo_app.py): trạng thái cho giao diện và các việc máy chủ làm hộ vỏ app
-(hiện cửa sổ, mở thư mục dữ liệu, kiểm và tải bản mới). Không bài nào gọi ra mạng hay chạm cổng 8765: hàm dò cổng, hàm mở thư mục,
+(hiện cửa sổ, mở thư mục dữ liệu, kiểm và tải bản mới). Không bài nào gọi ra mạng hay chạm cổng 8765, 8769: hàm dò cổng, hàm mở thư mục,
 hàm chạy bộ cài và phần tải của cap_nhat đều được thay bằng hàm giả."""
 import sys
 import unittest
@@ -28,7 +28,82 @@ class TrangThaiTest(unittest.TestCase):
             self.assertTrue(vo_app.trang_thai({}, do_cong=lambda c: True)['ban_cu_8765'])
             self.assertFalse(vo_app.trang_thai({}, do_cong=lambda c: False)['ban_cu_8765'])
         with mock.patch.dict(vo_app.VO, {'cong': 8765}):
-            self.assertFalse(vo_app.trang_thai({}, do_cong=lambda c: True)['ban_cu_8765'])
+            t = vo_app.trang_thai({}, do_cong=lambda c: c == 8765)                 # chỉ chính app trả lời ở cổng của nó
+            self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (False, None))
+
+    def test_webapp_rieng_r14(self):
+        self.assertEqual(vo_app.CONG_WEBAPP_RIENG, (8769, 8765))
+        hoi = []
+        with mock.patch.dict(vo_app.VO, {'cong': 8790}):
+            t = vo_app.trang_thai({}, do_cong=lambda c: hoi.append(c) or c == 8769)     # webapp chạy từ mã nguồn ở 8769
+            self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (True, 8769))
+            self.assertEqual(hoi, [8769])
+            t = vo_app.trang_thai({}, do_cong=lambda c: c == 8765)                 # chỉ có bản zip cũ ở 8765
+            self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (True, 8765))
+            t = vo_app.trang_thai({}, do_cong=lambda c: False)
+            self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (False, None))
+        hoi.clear()
+        with mock.patch.dict(vo_app.VO, {'cong': 8769}):                           # app (vì lý do nào đó) đang ở 8769: bỏ qua cổng của chính nó
+            t = vo_app.trang_thai({}, do_cong=lambda c: hoi.append(c) or True)
+            self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (True, 8765))
+            self.assertEqual(hoi, [8765])
+
+    def test_ma_nguon_khong_do_cong(self):
+        do = mock.Mock(return_value=True)
+        with mock.patch.dict(vo_app.VO, {'cong': None}):
+            t = vo_app.trang_thai({}, do_cong=do)
+        self.assertEqual((t['ban_cu_8765'], t['cong_webapp_rieng']), (False, None))
+        do.assert_not_called()
+
+
+class CoWebappTest(unittest.TestCase):
+    """Dò webapp chạy riêng bằng hàm hỏi giả (không gọi mạng). Webapp mới chặn /api/tinh-trang sau đăng nhập (401) nhưng /api/phien-ban công khai."""
+
+    def setUp(self):
+        p = mock.patch.dict(vo_app._nho_cong, clear=True)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def _hoi(self, tra):
+        hoi = []
+
+        def f(url):
+            hoi.append(url.rsplit(':', 1)[1])
+            return tra[url.split('/', 3)[3]]
+        return hoi, f
+
+    def test_ban_zip_cu_tra_loi_tinh_trang(self):
+        hoi, f = self._hoi({'api/tinh-trang': (200, b'{}')})
+        self.assertTrue(vo_app._co_webapp(8765, hoi=f))
+        self.assertEqual(hoi, ['8765/api/tinh-trang'])                           # không hỏi thêm
+
+    def test_webapp_moi_dang_nhap_thi_hoi_phien_ban(self):
+        hoi, f = self._hoi({'api/tinh-trang': (401, b'{"ok": false}'), 'api/phien-ban': (200, '{"san_pham": "Harry · Gold Research"}'.encode())})
+        self.assertTrue(vo_app._co_webapp(8769, hoi=f))
+        self.assertEqual(hoi, ['8769/api/tinh-trang', '8769/api/phien-ban'])
+
+    def test_khong_phai_webapp(self):
+        _, f = self._hoi({'api/tinh-trang': (401, b''), 'api/phien-ban': (200, b'{"khac": 1}')})
+        self.assertFalse(vo_app._co_webapp(8769, hoi=f))
+        vo_app._nho_cong.clear()
+        _, f = self._hoi({'api/tinh-trang': (404, b''), 'api/phien-ban': (200, '{"san_pham": "Harry · Gold Research"}'.encode())})
+        self.assertFalse(vo_app._co_webapp(8769, hoi=f))                         # 404: không phải webapp bị khóa, không hỏi tiếp
+        vo_app._nho_cong.clear()
+        self.assertFalse(vo_app._co_webapp(8769, hoi=mock.Mock(side_effect=OSError)))
+
+
+class BatDauTest(unittest.TestCase):
+    """Dòng báo trên trang Bắt đầu hiện đúng cổng của webapp chạy riêng, ở cả tiếng Việt lẫn tiếng Anh (qua bộ dịch thật)."""
+
+    def test_hien_dung_cong(self):
+        self.assertIn(".replace('8765',String(j.cong_webapp_rieng||8765))", vo_app.JS_BAT_DAU)
+
+    def test_ban_dich_tieng_anh_van_ap(self):
+        from so_cong_khai import dich
+        en = dich.dich_js(vo_app.JS_BAT_DAU, dich.tu_dien('en'))
+        self.assertNotIn('Máy này đang chạy', en)
+        self.assertIn("older webapp on port 8765.", en)
+        self.assertIn(".replace('8765',String(j.cong_webapp_rieng||8765))", en)
 
     def test_ban_moi_la_chuoi_phien_ban(self):
         with mock.patch.object(cap_nhat, 'trang_thai', return_value=_tt(BAN_MOI)):

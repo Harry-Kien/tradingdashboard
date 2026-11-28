@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT))
 from so_cong_khai import gia, hoc, tin_hieu_ngan as T  # noqa: E402
 
 
-def mo_phong(ds, m1, spread, news, phut: int, *, hoi_ema: bool) -> tuple[pd.DataFrame, int]:
+def mo_phong(ds, m1, spread, news, phut: int, *, hoi_ema: bool, dich_r: float = 1.5,
+             spread_atr: float = .15) -> tuple[pd.DataFrame, int]:
     """Vào ở phút kế, mô phỏng riêng theo khung. Một vị thế mô phỏng đồng thời mỗi khung."""
     t = m1.index.as_unit('ns').asi8
     o, h, l, c = (m1[k].to_numpy() for k in ('open', 'high', 'low', 'close'))
@@ -32,7 +33,7 @@ def mo_phong(ds, m1, spread, news, phut: int, *, hoi_ema: bool) -> tuple[pd.Data
         if j >= len(t) or t[j] != dong:
             continue
         bid, ask = o[j], o[j] + spread[j]
-        tt, x = T.muc_gia(r, bid, ask, .01, 2)
+        tt, x = T.muc_gia(r, bid, ask, .01, 2, dich_r=dich_r, spread_atr=spread_atr)
         if tt != 'dat':
             continue
         han = dong + 12 * phut * buoc
@@ -58,8 +59,9 @@ def mo_phong(ds, m1, spread, news, phut: int, *, hoi_ema: bool) -> tuple[pd.Data
         da_dong = t[kq]
         # XAUUSD 0,01 lot chuẩn = 1 oz. Phí 0,18 và trượt giá giả định 0,10 giá/lượt khứ hồi.
         net = (ra - vao) * r.phia - .18 - .10
-        rows.append((r.Index.year, r.loai, net / abs(vao - sl)))
-    return pd.DataFrame(rows, columns=['nam', 'loai', 'r']), int(loc.sum())
+        rui = abs(vao - sl)
+        rows.append((r.Index.year, r.loai, net / rui, (net - .25) / rui))
+    return pd.DataFrame(rows, columns=['nam', 'loai', 'r', 'r_stress']), int(loc.sum())
 
 
 def tom(df):

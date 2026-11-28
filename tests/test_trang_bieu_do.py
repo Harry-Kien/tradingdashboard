@@ -129,9 +129,29 @@ class CotPhai(unittest.TestCase):
         self.assertIn("if(!keep&&!ANH){const o=NHO.get(u);if(o&&Date.now()-o.luc<NHO_HAN){try{apD(JSON.parse(o.txt),0,1);daVe=true}catch(e){}}}", js)
         self.assertIn('let txt=NHO_DANG.has(u)?await NHO_DANG.get(u):null;if(cu())return;', js)            # lượt nạp trước đang chạy thì dùng luôn
         self.assertIn('txt=await r.text();if(cu())return;nhoGhi(u,txt)}', js)
-        self.assertIn("if(!tam){hisTai();tkTai();setTimeout(napNgam,2500)}", js)
+        self.assertIn("if(!tam){hisTai();tkTai();setTimeout(napNgam,2500);if(!PTR_GOC)ptTai(1)}", js)
         self.assertIn("e.target.closest('.seg.tf button[data-tf]');if(b&&b.dataset.tf!==tf)napTruoc(b.dataset.tf)", js)
         self.assertIn('while(NHO.size>16)', js)                                                            # bộ nhớ có giới hạn
+
+    @unittest.skipUnless(__import__('shutil').which('node'), 'máy không có Node.js')
+    def test_the_diem_vao_ghi_gio_tin_hieu(self):
+        """27/11/2026: lệnh chờ cách xa giá trông như phân tích cũ bị giữ lại; thẻ ghi tín hiệu lúc nào và lệnh chờ còn bao lâu."""
+        import json
+        import subprocess
+        js = bieu_do.JS
+        self.assertIn("<small>${esc(p.kieu||'')}</small>${plTg(p)}</div>", js)
+        src = js[js.index('function plTg'):js.index('const PH_TT={')]
+        chay = ("const esc=x=>String(x),vn=t=>new Date(t*1000).toISOString().slice(11,16);" + src +
+                "const n=Date.UTC(2026,10,27,16,50);Date.now=()=>n;const iso=m=>new Date(n+m*60000).toISOString();"
+                "console.log(JSON.stringify([plTg({loai_vao:'gh',thuc_thi:{tu:iso(-50),het:iso(190)}}),plTg({loai_vao:'tt',nen:iso(-3),thuc_thi:{het:iso(2)}}),"
+                "plTg({loai_vao:'gh',thuc_thi:{tu:iso(-300),het:iso(-60)}}),plTg({})]))")
+        r = subprocess.run(['node', '-e', chay], capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        a, b, c, d = json.loads(r.stdout)
+        self.assertIn('Tín hiệu lúc 16:00 · còn 3 giờ 10 phút', a)
+        self.assertIn('>Tín hiệu lúc 16:47</small>', b)                         # vào ngay: không đếm ngược
+        self.assertIn('>Tín hiệu lúc 11:50</small>', c)                         # đã hết hạn: không ghi "còn"
+        self.assertEqual(d, '')
 
     def test_doi_khung_ve_nen_moi_nhat(self):
         """Yêu cầu 27/11: đổi khung tự về nến mới nhất, bỏ tâm lịch sử và thang giá kéo tay."""

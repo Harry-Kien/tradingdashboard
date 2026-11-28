@@ -1,7 +1,6 @@
 """Mật độ hiển thị phân tích; chỉ thay cách trình bày, không sửa tín hiệu/mức giá."""
 
 HTML = '''<div class="pt-presentation" role="group" aria-label="Trình bày phân tích">
-<label class="pt-density">Bộ phân tích<select id="pt-source-mode" aria-label="Bộ phân tích"><option value="topdown">Đa khung M5 · M15 · M30</option><option value="methods">Các phương pháp hiện có</option></select></label>
 <div class="pt-current" hidden><b class="pt-direction"></b><span class="pt-method"></span><span class="pt-validity"></span><button type="button" class="pt-level-toggle" aria-expanded="false" aria-controls="pt-levels">Mức giá</button></div>
 <label class="pt-density">Nhãn phân tích<select id="pt-density" aria-label="Mật độ nhãn phân tích" title="Tinh gọn ưu tiên nến và SL/TP; Chi tiết hiện thêm nhãn bối cảnh."><option value="gon">Tinh gọn</option><option value="du">Chi tiết</option></select></label>
 <div id="pt-levels" class="pt-levels" role="region" aria-label="Mức giá của phương án đang xem" hidden></div></div>'''
@@ -27,7 +26,7 @@ JS = r'''
  const select=document.getElementById('pt-density'),bar=document.querySelector('.pt-current'),panel=document.getElementById('pt-levels'),toggle=bar&&bar.querySelector('.pt-level-toggle');let signature='',expanded=false;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const number=v=>typeof v==='number'&&Number.isFinite(v),fallback=v=>new Intl.NumberFormat(document.documentElement?.lang==='en'?'en-US':'vi-VN',{maximumFractionDigits:8}).format(v);
- function levels(p,format){const price=v=>number(v)?format(v):'—',rows=[['Điểm vào',price(p.vao)],['Dừng lỗ',price(p.sl)],...(Array.isArray(p.tp)?p.tp:[]).map((v,i)=>['TP'+(i+1),price(v)+(number(p.rr?.[i])?' · '+new Intl.NumberFormat(document.documentElement?.lang==='en'?'en-US':'vi-VN',{maximumFractionDigits:2}).format(p.rr[i])+'R':'')])];
+ function levels(p,format){const price=v=>number(v)?format(v):'—',rows=[[p.loai_vao==='gh'||p.loai_vao==='dung'?'Mức chờ':'Điểm vào',price(p.vao)],['Dừng lỗ',price(p.sl)],...(Array.isArray(p.tp)?p.tp:[]).map((v,i)=>['TP'+(i+1),price(v)+(number(p.rr?.[i])?' · '+new Intl.NumberFormat(document.documentElement?.lang==='en'?'en-US':'vi-VN',{maximumFractionDigits:2}).format(p.rr[i])+'R':'')])];
   const stamp=Date.parse(p.nen),when=Number.isFinite(stamp)?new Date(stamp).toLocaleString(document.documentElement?.lang==='en'?'en-US':'vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'—';
   const reasons=Array.isArray(p.vi_sao_het)?p.vi_sao_het.filter(x=>typeof x==='string').join(' '):'',incomplete=!number(p.vao)||!number(p.sl)||!Array.isArray(p.tp)||!p.tp.length||p.tp.some(v=>!number(v));
   return '<dl class="pt-level-grid">'+rows.map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>'
@@ -39,8 +38,8 @@ JS = r'''
  function fvg(fs,gia){const inside=fs.filter(z=>z.duoi<=gia&&z.tren>=gia),up=fs.filter(z=>z.duoi>gia).sort((a,b)=>a.duoi-b.duoi),down=fs.filter(z=>z.tren<gia).sort((a,b)=>b.tren-a.tren);
   return gon()?[...inside.slice(-1),...up.slice(0,1),...down.slice(0,1)]:[...inside,...up.slice(0,2),...down.slice(0,2)]}
  function paint(p,hidden,available=true,format=fallback){if(select)select.disabled=!available;if(!bar)return;bar.hidden=!p||hidden;if(bar.hidden){signature='';expanded=false;if(panel){panel.hidden=true;panel.textContent=''}if(toggle)toggle.setAttribute('aria-expanded','false');return}
-  const status=p.cu?'Đã quá hạn':p.hieu_luc===false?'Chỉ tham khảo':p.hieu_luc?'Còn hiệu lực':'Chưa xác định hiệu lực',sig=JSON.stringify([p.ma,p.huong,p.ten,status,p.vao,p.sl,p.tp,p.rr,p.kieu,p.nen,p.vi_sao_het]);if(panel)panel.hidden=!expanded;if(sig===signature)return;signature=sig;if(panel)panel.innerHTML=levels(p,format);
-  const side=bar.querySelector('.pt-direction'),method=bar.querySelector('.pt-method'),state=bar.querySelector('.pt-validity');side.textContent=p.huong||'—';side.dataset.side=p.huong||'';method.textContent=p.ten||'Phương án đang xem';method.title=p.ten||'';state.textContent=status;state.dataset.state=p.cu?'old':p.hieu_luc===false?'reference':'current'}
+  const status=p.nhan_gia||(p.cu?'Đã quá hạn':p.hieu_luc===false?'Chỉ tham khảo':p.hieu_luc?'Còn hiệu lực':'Chưa xác định hiệu lực'),sig=JSON.stringify([p.ma,p.huong,p.ten,status,p.vao,p.sl,p.tp,p.rr,p.kieu,p.nen,p.vi_sao_het,p.loai_vao]);if(panel)panel.hidden=!expanded;if(sig===signature)return;signature=sig;if(panel)panel.innerHTML=levels(p,format);
+  const side=bar.querySelector('.pt-direction'),method=bar.querySelector('.pt-method'),state=bar.querySelector('.pt-validity');side.textContent=p.huong||'—';side.dataset.side=p.huong||'';method.textContent=p.ten||'Phương án đang xem';method.title=p.ten||'';state.textContent=state.title=status;state.dataset.state=p.cu?'old':p.hieu_luc===false?'reference':'current'}
  if(toggle)toggle.addEventListener('click',()=>{if(bar.hidden||!panel)return;expanded=!expanded;panel.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded))});
  window.PTUI={gon,alpha,mien,fvg,paint,onChange:null};if(select){select.value=mode;select.addEventListener('change',()=>{mode=select.value==='du'?'du':'gon';try{localStorage.setItem('so-nhan-phan-tich',mode)}catch(e){}if(PTUI.onChange)PTUI.onChange()})}
 })();

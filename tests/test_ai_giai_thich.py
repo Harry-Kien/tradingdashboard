@@ -102,6 +102,36 @@ class AiGiaiThich(unittest.TestCase):
         self.assertEqual(r['tra_loi']['tom_tat'], '')
         self.assertEqual(len(r['loi_kiem']), 5)
 
+    def test_effort_va_bang_chung_gon(self):
+        c = Claude(tra_loi())
+        self.goi(c)
+        self.assertEqual(c.goi[-1]['output_config']['effort'], 'low')                    # chart: mặc định low (đo 28/11)
+        gui = json.loads(c.goi[-1]['messages'][0]['content'])
+        hv = next(b for b in gui['bang_chung'] if b['id'] == 'E_PP_HARRISON')
+        self.assertEqual(set(hv['gia_tri']), {'co', 'vi_sao', 'muc_kiem_chung'})          # phương pháp không có tín hiệu: chỉ gửi lý do
+        self.assertEqual({b['id'] for b in gui['bang_chung']}, {b['id'] for b in self.chup()()['bang_chung']})   # không bỏ bằng chứng nào
+        AG._nho.clear()
+        self.cfg['ai']['effort_giai_thich'] = 'high'
+        self.goi(Claude(tra_loi()))
+        c2 = Claude(tra_loi())
+        AG._nho.clear()
+        self.goi(c2)
+        self.assertEqual(c2.goi[-1]['output_config']['effort'], 'high')                  # cấu hình ghi đè
+        p = {'id': 'KH-1', 'phien_ban': 1, 'ma': 'XAUUSD', 'chieu': 'MUA', 'vao': 3555.0, 'sl': 3540.0, 'tp': [3560.0], 'rui_ro': {'trang_thai': 'chua_kiem'}}
+        del self.cfg['ai']['effort_giai_thich']
+        c3 = Claude(tra_loi())
+        AG.giai_thich(self.cfg, self.out, {'che_do': 'review', 'phieu': 'KH-1'}, client=c3, now=NOW, chup_fn=self.chup(), phieu_fn=lambda i: p)
+        self.assertEqual(c3.goi[-1]['output_config']['effort'], 'medium')                # review: medium
+
+    def test_so_trong_chu_va_ly_do_bo(self):
+        sn = {'id': 'SN-x', 'bang_chung': [{'id': 'E_A', 'gia_tri': {'vi_sao': 'sóng 1 chỉ dài 0,5 ATR, dưới mức tối thiểu 3 ATR'}}, {'id': 'E_B', 'gia_tri': {'gia': 3650.9}}]}
+        d = tra_loi(tom_tat='Giá 3.650,9', quan_sat=[{'noi_dung': 'Sóng 1 dài 0,5 ATR', 'bang_chung': ['E_A']}, {'noi_dung': 'Mục tiêu 3700,25', 'bang_chung': ['E_B']}],
+                    dieu_kien=[], kich_ban=[])
+        sach, loi = AG.kiem_dau_ra(d, sn)
+        self.assertEqual([x['noi_dung'] for x in sach['quan_sat']], ['Sóng 1 dài 0,5 ATR'])        # số lấy từ chữ của bằng chứng: giữ
+        self.assertEqual(sach['tom_tat'], 'Giá 3.650,9')
+        self.assertEqual(loi, ['Quan sát #2: có con số không có trong bằng chứng (3700,25)'])      # lý do ghi rõ con số bị bắt
+
     def test_sai_luoc_do_timeout_cat(self):
         self.assertIn('sai định dạng', self.goi(Claude('không phải json'))['chan'][0])
         r = self.goi(Claude(loi=TimeoutError('chậm')))

@@ -24,27 +24,26 @@ class PhanTichRealtime(unittest.TestCase):
         self.assertEqual(a['ma'], 'giu')
         self.assertIsNone(b)
 
-    def chay(self, tu=0, doi_ma=False, phat_lai=False, da_phat_lai=False, quay_lai=False, doi_bo=False):
+    def chay(self, tu=0, doi_ma=False, phat_lai=False, da_phat_lai=False, quay_lai=False, doi_khung=False):
         dau = bieu_do.JS.index('// --- Đợt 0:')                              # gồm khối độ tươi phân tích (PTR_GOC, ptApDung, ptDoi) ngay trước ptTai
         bieu_do.JS.index('let ptDang=0,ptCho=0,ptLan=0;async function ptTai', dau)
         cuoi = bieu_do.JS.index("$('#pt-btn').addEventListener", dau)
-        ca = json.dumps({'tu': tu, 'doiMa': doi_ma, 'phatLai': phat_lai, 'daPhatLai': da_phat_lai, 'quayLai': quay_lai, 'doiBo':doi_bo})
+        ca = json.dumps({'tu': tu, 'doiMa': doi_ma, 'phatLai': phat_lai, 'daPhatLai': da_phat_lai, 'quayLai': quay_lai, 'doiKhung': doi_khung})
         js = 'const ca=' + ca + ';\n' + r"""
-let PTR={marker:'old'},ma='XAUUSD',planTat=1,plan=null,ppChon='tat',view={},LW=null;
+let PTR={marker:'old'},ma='XAUUSD',planTat=1,plan=null,ppChon='tat',ppMuc='',view={},LW=null,tf='M15';
 let KC={san_sang:true},HOC={san_sang:true},window={BDPL:{chan:ca.daPhatLai}};
 const BDPL=window.BDPL;let chartEpoch=0;
 let PTB={hidden:false,innerHTML:''},renders=[],requests=0,draws=0;
 const response={marker:'fresh',phuong_phap:[],phuong_an:[]};
 const button={disabled:false,textContent:'',setAttribute(){},removeAttribute(){}};
-const source={value:'topdown',addEventListener(){}};
 const localStorage={getItem:()=>null,setItem(){}};
-const $=s=>s==='#pt-source-mode'?source:button;
-const fetch=async()=>{requests++;if(ca.doiBo)source.value='methods';if(ca.doiMa)ma='EURUSD';if(ca.phatLai)window.BDPL.chan=true;if(ca.quayLai)chartEpoch+=2;
+const $=s=>button;
+const fetch=async()=>{requests++;if(ca.doiKhung)tf='M30';if(ca.doiMa)ma='EURUSD';if(ca.phatLai)window.BDPL.chan=true;if(ca.quayLai)chartEpoch+=2;
  return {ok:true,json:async()=>response}};
 const ppNhom=()=>[],ptDs=()=>[],totNhat=()=>null,ppTot=()=>null;
 const bat=()=>true,ppKhoa=()=>'',draw=()=>{draws++},dvKiem=()=>{},nkTai=()=>{};
 const kcTai=()=>{},hocTai=()=>{},hep=()=>false,fsOn=()=>false,lwNay=()=>{};
-const ptVe=()=>renders.push(PTR.marker),esc=x=>String(x),dvVe=()=>{},tf='M15';
+const ptVe=()=>renders.push(PTR.marker),esc=x=>String(x),dvVe=()=>{};
 const _el=()=>({className:'',textContent:'',setAttribute(){},before(){},after(){}});
 const document={createElement:_el,querySelector:()=>_el(),getElementById:()=>_el(),addEventListener(){},head:{insertAdjacentHTML(){}}};
 const addEventListener=()=>{},setInterval=()=>{},matchMedia=()=>({matches:false});
@@ -76,8 +75,8 @@ ptTai(ca.tu).then(()=>process.stdout.write(JSON.stringify({marker:PTR.marker,ren
         self.assertEqual((r['marker'], r['renders'], r['draws']), ('old', [], 0))
         self.assertEqual((r['enabled'], r['busy']), (True, 0))
 
-    def test_doi_bo_phan_tich_khong_nhan_ket_qua_cu(self):
-        r = self.chay(doi_bo=True)
+    def test_doi_khung_phan_tich_khong_nhan_ket_qua_cu(self):
+        r = self.chay(doi_khung=True)
         self.assertEqual((r['marker'], r['renders'], r['draws']), ('old', [], 0))
         self.assertEqual((r['enabled'], r['busy']), (True, 0))
 

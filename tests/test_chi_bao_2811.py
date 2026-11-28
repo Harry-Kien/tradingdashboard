@@ -2,7 +2,6 @@
 """Chỉ báo thêm ngày 28/11/2026 (so_cong_khai.bieu_do_chi_bao): Pivot Points nhiều kiểu và kỳ, trung bình động khung lớn (MTF),
 Auto Fibonacci, Elder Force Index. Đối chiếu với định nghĩa gốc viết lại bằng pandas. Không có Node thì bỏ qua."""
 import json
-import shutil
 import subprocess
 import tempfile
 import unittest
@@ -10,26 +9,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from test_bieu_do_chi_bao import NODE, VO, _nen
 
 from so_cong_khai import bieu_do_chi_bao as M
-
-NODE = shutil.which('node')
-VO = r"""
-const noop=()=>{},el=()=>new Proxy({},{get:(t,k)=>k in t?t[k]:(k==='querySelector'?()=>el():k==='querySelectorAll'?()=>[]:k==='style'||k==='dataset'?{}:noop),set:(t,k,v)=>{t[k]=v;return true}});
-globalThis.window=globalThis;globalThis.document={createElement:el,querySelector:()=>null,querySelectorAll:()=>[],addEventListener:noop,body:{appendChild:noop},activeElement:null};
-globalThis.addEventListener=noop;globalThis.localStorage={getItem:()=>null,setItem:noop};
-"""
-
-
-def _nen(n=600, hat=7):
-    r = np.random.default_rng(hat)
-    c = 2000 + np.cumsum(r.normal(0, 3, n))
-    o = np.r_[c[0], c[:-1]] + r.normal(0, .5, n)
-    h = np.maximum(o, c) + np.abs(r.normal(0, 2, n))
-    l = np.minimum(o, c) - np.abs(r.normal(0, 2, n))  # noqa: E741
-    idx = pd.date_range('2026-01-05', periods=n, freq='15min', tz='UTC')
-    v = r.integers(80, 160, n) * np.where(r.random(n) < .06, 4, 1)
-    return pd.DataFrame({'open': o, 'high': h, 'low': l, 'close': c, 'vol': v}, index=idx)
 
 
 @unittest.skipUnless(NODE, 'không có Node')

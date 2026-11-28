@@ -128,6 +128,12 @@ class SharedPlans(unittest.TestCase):
         result=node(code)
         self.assertEqual((result['vao'],result['sl'],result['tp']),(100.,99.,[101.5]))
         self.assertTrue(result['hieu_luc'])
+        plan['thuc_thi']['stops'] = 1.10
+        blocked = node('globalThis.window=globalThis;'+diem_vao_rt.JS+'\nconsole.log(JSON.stringify(ENTRY_RT.xem('+
+                       json.dumps(plan)+','+json.dumps(q)+','+str(q['ms'])+',1,2,new Map())));')
+        self.assertFalse(blocked['hieu_luc'])
+        self.assertEqual(blocked['rt'], 'sai_muc')
+        self.assertEqual((blocked['vao'], blocked['sl'], blocked['tp']), (100., 99., [101.5]))
 
     def test_chart_and_alert_feed_request_same_context_scanner(self):
         d=snapshot();d['ds']=[]

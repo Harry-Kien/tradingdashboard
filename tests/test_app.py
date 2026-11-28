@@ -69,8 +69,14 @@ class AppTest(unittest.TestCase):
         self.assertEqual(app.chon_cong(c), c)
 
     def test_ung_vien_theo_thu_tu_r7(self):
-        self.assertEqual(app.ung_vien(8765), list(range(8765, 8776)))
+        self.assertEqual(app.ung_vien(9000), list(range(9000, 9011)))
         self.assertEqual(app.ung_vien(65534), [65534, 65535])
+
+    def test_dai_cong_rieng_cua_app_r14(self):
+        self.assertEqual(app.UU_TIEN, 8790)
+        self.assertEqual(app.ung_vien(), list(range(8790, 8801)))
+        for cong in (8765, 8769):                                   # bản zip cũ và webapp chạy từ mã nguồn
+            self.assertNotIn(cong, app.ung_vien())
 
     def test_chon_cong_thu_cong_ke_tiep_r7(self):
         p = _ba_cong_trong()
@@ -82,44 +88,42 @@ class AppTest(unittest.TestCase):
     def test_chon_cong_het_ung_vien_thi_he_thong_cap_r7(self):
         hoi = []
         with mock.patch.object(app, '_trong', side_effect=lambda c: hoi.append(c) or False):
-            c = app.chon_cong(8765)
-        self.assertEqual(hoi, list(range(8765, 8776)))
-        self.assertNotIn(c, range(8765, 8776))
+            c = app.chon_cong()
+        self.assertEqual(hoi, list(range(8790, 8801)))
+        self.assertNotIn(c, range(8790, 8801))
         self.assertGreater(c, 0)
 
     def test_tep_chay(self):
         self.assertEqual(app.tep_chay(Path('x')), Path('x') / 'du-lieu' / 'app-chay.json')
 
+    # Bài kiểm ban_dang_chay của bản giao việc, đổi theo R15: lần mở thứ hai báo bằng sự kiện Windows, không qua HTTP nữa; tệp chạy chỉ còn
+    # dùng để đọc cổng (vo_app, Nhiệm vụ 6) và pid (nhường quyền lên trước). Tệp cũ, hỏng hay sai định dạng đều đọc ra None.
     def test_tep_chay_cu_thi_khoi_dong_moi(self):
+        self.assertFalse(hasattr(app, 'ban_dang_chay'))                           # đường HTTP đã bỏ (R15)
+        self.assertFalse(hasattr(app, '_goi_hien'))
         with tempfile.TemporaryDirectory() as t:
             g = Path(t)
             (g / 'du-lieu').mkdir()
-            app.tep_chay(g).write_text('{"cong": 1, "pid": 999999}', encoding='utf-8')
-            self.assertIsNone(app.ban_dang_chay(g, goi=mock.Mock(side_effect=OSError)))
             app.tep_chay(g).write_text('hỏng', encoding='utf-8')
-            self.assertIsNone(app.ban_dang_chay(g, goi=mock.Mock(return_value=200)))
+            self.assertIsNone(app._doc_tep_chay(g))
 
-    def test_ban_dang_chay_tra_cong(self):
+    def test_doc_tep_chay_tra_cong_va_pid(self):
         with tempfile.TemporaryDirectory() as t:
             g = Path(t)
             (g / 'du-lieu').mkdir()
             app.tep_chay(g).write_text('{"cong": 51234}', encoding='utf-8')
-            goi = mock.Mock(return_value=200)
-            self.assertEqual(app.ban_dang_chay(g, goi=goi), 51234)
-            goi.assert_called_once_with(51234)
+            self.assertEqual(app._doc_tep_chay(g), {'cong': 51234, 'pid': None})
+            app.tep_chay(g).write_text('{"cong": 51234, "pid": 4321}', encoding='utf-8')
+            self.assertEqual(app._doc_tep_chay(g), {'cong': 51234, 'pid': 4321})
 
-    def test_ban_dang_chay_sai_dinh_dang_hay_khong_200(self):
+    def test_doc_tep_chay_sai_dinh_dang(self):
         with tempfile.TemporaryDirectory() as t:
             g = Path(t)
-            goi = mock.Mock(return_value=200)
-            self.assertIsNone(app.ban_dang_chay(g, goi=goi))                       # chưa có tệp
+            self.assertIsNone(app._doc_tep_chay(g))                                # chưa có tệp
             (g / 'du-lieu').mkdir()
             for sai in ('[1]', '{"cong": "51234"}', '{"cong": true}', '{"cong": 0}', '{"cong": 70000}', '{}'):
                 app.tep_chay(g).write_text(sai, encoding='utf-8')
-                self.assertIsNone(app.ban_dang_chay(g, goi=goi), sai)
-            goi.assert_not_called()
-            app.tep_chay(g).write_text('{"cong": 51234, "pid": 1}', encoding='utf-8')
-            self.assertIsNone(app.ban_dang_chay(g, goi=mock.Mock(return_value=403)))
+                self.assertIsNone(app._doc_tep_chay(g), sai)
 
     def test_trang_dau(self):
         with tempfile.TemporaryDirectory() as t:
@@ -204,6 +208,7 @@ class AppTest(unittest.TestCase):
 
     def test_chu_co_dinh(self):
         self.assertEqual(app.TEN_KHOA, 'HarryGoldResearch.App')
+        self.assertEqual((app.TEN_SU_KIEN_HIEN, app.TEN_SU_KIEN_DA_HIEN), ('HarryGoldResearch.App.Hien', 'HarryGoldResearch.App.DaHien'))   # R15
         self.assertEqual(app.CHU_KHONG_PHAN_HOI, 'Harry · Gold Research đang chạy nhưng không phản hồi. Hãy thoát nó ở khay hệ thống rồi mở lại.')
         self.assertEqual(app.CHU_BAO_KHAY, 'Harry · Gold Research vẫn chạy ở khay hệ thống để cảnh báo giá hoạt động. Bấm chuột phải vào biểu tượng để thoát.')
         self.assertEqual(app.chu_loi(Path('C:/x/app.log')), f'Không khởi động được. Chi tiết nằm trong {Path("C:/x/app.log")}')
@@ -228,18 +233,18 @@ class MoMayChuTest(unittest.TestCase):
         self.addCleanup(p.stop)
 
     def test_bo_qua_cong_da_thay_ban(self):
-        srv = mock.Mock(server_address=('127.0.0.1', 8771))
-        with mock.patch.object(app, '_trong', side_effect=lambda c: c >= 8771), \
+        srv = mock.Mock(server_address=('127.0.0.1', 8792))
+        with mock.patch.object(app, '_trong', side_effect=lambda c: c >= 8792), \
                 mock.patch.object(self.web, 'khoi_dong', return_value=srv) as kd:
-            self.assertEqual(app._mo_may_chu(Path('cau-hinh.json')), (srv, 8771))
-        kd.assert_called_once_with('cau-hinh.json', 8771)
+            self.assertEqual(app._mo_may_chu(Path('cau-hinh.json')), (srv, 8792))
+        kd.assert_called_once_with('cau-hinh.json', 8792)
 
     def test_thua_cuoc_dua_gianh_cong_thi_thu_cong_ke_r11(self):
-        srv = mock.Mock(server_address=('127.0.0.1', 8770))
+        srv = mock.Mock(server_address=('127.0.0.1', 8791))
         with mock.patch.object(app, '_trong', return_value=True), \
                 mock.patch.object(self.web, 'khoi_dong', side_effect=[OSError('bận'), srv]) as kd:
-            self.assertEqual(app._mo_may_chu(Path('c.json')), (srv, 8770))
-        self.assertEqual([c.args[1] for c in kd.call_args_list], [8769, 8770])
+            self.assertEqual(app._mo_may_chu(Path('c.json')), (srv, 8791))
+        self.assertEqual([c.args[1] for c in kd.call_args_list], [8790, 8791])
 
     def test_het_ung_vien_thi_he_thong_cap(self):
         srv = mock.Mock(server_address=('127.0.0.1', 50001))
@@ -276,18 +281,18 @@ class MainTest(unittest.TestCase):
     def test_ban_khac_dang_chay_tra_0(self):
         with tempfile.TemporaryDirectory() as t, mock.patch.dict(os.environ, {'HGR_DU_LIEU': t}), \
                 mock.patch.object(app, '_lay_khoa', return_value=False), \
-                mock.patch.object(app, 'ban_dang_chay', return_value=51234) as bdc, \
+                mock.patch.object(app, 'bao_ban_dang_chay', return_value=True) as bao, mock.patch.object(app, 'CHO_BAN_KHAC', 0.7), \
                 mock.patch.object(app, '_mo_may_chu') as mmc, mock.patch.object(app, '_hop_thoai') as hop, \
                 mock.patch.object(sys, 'stdout', io.StringIO()):
             self.assertEqual(app.main([]), 0)
-        bdc.assert_called_once_with(Path(t))
+        bao.assert_called_once_with(0.7)                                           # đọc CHO_BAN_KHAC lúc gọi
         mmc.assert_not_called()
         hop.assert_not_called()
 
     def test_ban_khac_khong_phan_hoi_thi_hop_thoai_tra_1(self):
         with tempfile.TemporaryDirectory() as t, mock.patch.dict(os.environ, {'HGR_DU_LIEU': t}), \
                 mock.patch.object(app, '_lay_khoa', return_value=False), \
-                mock.patch.object(app, 'ban_dang_chay', return_value=None), mock.patch.object(app, 'CHO_BAN_KHAC', 0.2), \
+                mock.patch.object(app, 'bao_ban_dang_chay', return_value=False), \
                 mock.patch.object(app, '_mo_may_chu') as mmc, mock.patch.object(app, '_hop_thoai') as hop, \
                 mock.patch.object(sys, 'stdout', io.StringIO()):
             self.assertEqual(app.main([]), 1)
@@ -311,6 +316,110 @@ class KhoaTest(unittest.TestCase):
                 self.assertEqual(r.stdout.strip(), 'False', r.stderr)
             finally:
                 ctypes.windll.kernel32.CloseHandle(ctypes.c_void_p(app._TT['khoa']))
+
+
+@unittest.skipUnless(sys.platform == 'win32', 'sự kiện Windows')
+class SuKienHienTest(unittest.TestCase):
+    """R15: sự kiện có tên THẬT của Windows, dưới tên riêng của bài kiểm (không phải tên của app: app thật có thể đang chạy).
+    Bản đầu là luồng _cho_su_kien_hien với một _Vo thật (không cửa sổ, không khay); bản thứ hai là bao_ban_dang_chay."""
+
+    def setUp(self):
+        hau = f'thu-{os.getpid()}-{self._testMethodName}'
+        for p in (mock.patch.object(app, 'TEN_SU_KIEN_HIEN', f'HarryGoldResearch.App.Hien.{hau}'),
+                  mock.patch.object(app, 'TEN_SU_KIEN_DA_HIEN', f'HarryGoldResearch.App.DaHien.{hau}'),
+                  mock.patch.object(sys, 'stdout', io.StringIO())):
+            p.start()
+            self.addCleanup(p.stop)
+        self._t = tempfile.TemporaryDirectory()
+        self.addCleanup(self._t.cleanup)
+        g = Path(self._t.name)
+        (g / 'cau-hinh.json').write_text('{}', encoding='utf-8')
+        self.vo = app._Vo(g, g / 'cau-hinh.json', mock.Mock(), 50123)
+        self.mo = mock.Mock()
+        self.vo.mo = self.mo
+
+    def _bat_dau_cho(self):
+        t = threading.Thread(target=app._cho_su_kien_hien, args=(self.vo,), kwargs={'buoc': 0.1}, daemon=True)
+        t.start()
+        self.addCleanup(lambda: (self.vo.xong.set(), t.join(3)))
+        return t
+
+    def test_ban_thu_hai_bao_thi_ban_dau_mo_mot_lan_va_xac_nhan(self):
+        self._bat_dau_cho()
+        t0 = time.monotonic()
+        self.assertTrue(app.bao_ban_dang_chay(3))
+        self.assertLess(time.monotonic() - t0, 2)
+        self.mo.assert_called_once_with()
+        self.assertTrue(app.bao_ban_dang_chay(3))                                 # lần mở thứ ba cũng được
+        self.assertEqual(self.mo.call_count, 2)
+
+    def test_bao_truoc_khi_ban_dau_kip_cho(self):
+        """Lần mở thứ hai đến khi bản đầu chưa dựng xong luồng chờ: sự kiện tự đặt lại vẫn giữ tín hiệu tới khi có người chờ."""
+        kq = []
+        b = threading.Thread(target=lambda: kq.append(app.bao_ban_dang_chay(3)), daemon=True)
+        b.start()
+        time.sleep(0.3)
+        self._bat_dau_cho()
+        b.join(5)
+        self.assertEqual(kq, [True])
+        self.mo.assert_called_once_with()
+
+    def test_khong_ai_xac_nhan_thi_false_dung_han(self):
+        t0 = time.monotonic()
+        self.assertFalse(app.bao_ban_dang_chay(0.3))
+        self.assertLess(time.monotonic() - t0, 1.5)
+
+    def test_xac_nhan_cu_khong_lua_duoc_ban_thu_hai(self):
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        k32.CreateEventW.restype = ctypes.c_void_p
+        h = k32.CreateEventW(None, False, True, app.TEN_SU_KIEN_DA_HIEN)        # một lần xác nhận cũ còn treo
+        try:
+            self.assertFalse(app.bao_ban_dang_chay(0.3))
+        finally:
+            k32.CloseHandle(ctypes.c_void_p(h))
+
+    def test_main_ban_thu_hai_tra_1_va_hop_thoai_khi_khong_xac_nhan(self):
+        with tempfile.TemporaryDirectory() as t, mock.patch.dict(os.environ, {'HGR_DU_LIEU': t}), \
+                mock.patch.object(app, '_lay_khoa', return_value=False), mock.patch.object(app, 'CHO_BAN_KHAC', 0.3), \
+                mock.patch.object(app, '_mo_may_chu') as mmc, mock.patch.object(app, '_hop_thoai') as hop:
+            self.assertEqual(app.main([]), 1)
+        hop.assert_called_once_with(app.CHU_KHONG_PHAN_HOI)
+        mmc.assert_not_called()
+
+    def test_main_ban_thu_hai_tra_0_khi_ban_dau_xac_nhan(self):
+        self._bat_dau_cho()
+        with tempfile.TemporaryDirectory() as t, mock.patch.dict(os.environ, {'HGR_DU_LIEU': t}), \
+                mock.patch.object(app, '_lay_khoa', return_value=False), mock.patch.object(app, 'CHO_BAN_KHAC', 3), \
+                mock.patch.object(app, '_mo_may_chu') as mmc, mock.patch.object(app, '_hop_thoai') as hop:
+            self.assertEqual(app.main([]), 0)
+        hop.assert_not_called()
+        mmc.assert_not_called()
+        self.mo.assert_called_once_with()
+
+    def test_luong_cho_dung_khi_app_thoat(self):
+        t = self._bat_dau_cho()
+        time.sleep(0.2)
+        self.vo.thoat()                                                            # đi đúng đường "Thoát": bật cờ, xong.set()
+        t.join(2)
+        self.assertFalse(t.is_alive())
+        self.assertFalse(app.bao_ban_dang_chay(0.3))                              # không còn ai trả lời
+        self.mo.assert_not_called()
+
+    def test_dang_thoat_thi_khong_mo(self):
+        t = self._bat_dau_cho()
+        self.vo.dang_thoat = True                                                  # "Thoát" đã bắt đầu nhưng chưa xong
+        self.assertFalse(app.bao_ban_dang_chay(0.5))
+        self.mo.assert_not_called()
+        t.join(2)
+        self.assertFalse(t.is_alive())
+
+    def test_truoc_khi_co_cua_so_van_an_toan(self):
+        del self.vo.mo                                                             # dùng mo() thật: cửa sổ còn None, không chế độ trình duyệt
+        self._bat_dau_cho()
+        with mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self.assertTrue(app.bao_ban_dang_chay(3))
+        td.assert_not_called()
 
 
 class _CuaSoGia:
@@ -411,6 +520,14 @@ class VoTest(unittest.TestCase):
         self.vo.mo()
         self.assertEqual(self.w.goi[-1], 'show')
 
+    def test_mo_khi_cua_so_chua_dung_xong_thi_khong_mo_trinh_duyet(self):
+        self.vo.window = None                                                      # lần mở thứ hai đến trước khi cửa sổ kịp dựng
+        self.vo.canh_bao = {'ma': 'XAUUSD', 'tf': 'H1', 'luc': time.time()}
+        with mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self.vo.mo()
+        td.assert_not_called()
+        self.assertIsNotNone(self.vo.canh_bao)                                     # chưa dùng tới thì chưa quên cảnh báo
+
     def test_mo_o_che_do_trinh_duyet(self):
         self.vo.trinh_duyet, self.vo.window = True, None
         self.vo.canh_bao = {'ma': 'XAUUSD', 'tf': 'H1', 'luc': time.time()}
@@ -467,6 +584,64 @@ class GiaoDienTest(unittest.TestCase):
         td.assert_called_once_with('/bat-dau')
         self.assertTrue(self.vo.trinh_duyet)
         self.vo.srv.shutdown.assert_called_once()
+
+    def _chay_co_han(self, tu_thoat=None, han=10.0):
+        """Chạy _chay_giao_dien ở luồng riêng; treo quá `han` giây là hỏng (lỗi của Phát hiện 1 là treo mãi)."""
+        loi = []
+
+        def chay():
+            try:
+                app._chay_giao_dien(self.vo, tu_thoat)
+            except BaseException as e:                                             # noqa: BLE001 - chuyển lỗi về luồng bài kiểm
+                loi.append(e)
+        t = threading.Thread(target=chay, daemon=True)
+        t.start()
+        t.join(han)
+        self.assertFalse(t.is_alive(), '_chay_giao_dien không trả về')
+        if loi:
+            raise loi[0]
+
+    def test_thoat_truoc_khi_nhap_webview_thi_khong_mo_cua_so(self):
+        self.wv.start = mock.Mock()
+        with mock.patch.object(app, '_tao_khay', return_value=mock.Mock()), mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self.vo.thoat()                                                        # "Thoát" hay --tu-thoat ngắn đến trước cửa sổ
+            self._chay_co_han()
+        self.wv.start.assert_not_called()
+        td.assert_not_called()
+        self.vo.srv.shutdown.assert_called_once()
+
+    def test_thoat_trong_luc_dung_cua_so_thi_khong_start(self):
+        self.wv.start = mock.Mock()
+
+        def tao(*a, **k):                                                          # yêu cầu thoát đến đúng lúc cửa sổ đang được tạo
+            self.vo.thoat()
+            return self.cua_so
+        self.wv.create_window = mock.Mock(side_effect=tao)
+        with mock.patch.object(app, '_tao_khay', return_value=mock.Mock()), mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self._chay_co_han()
+        self.wv.start.assert_not_called()
+        td.assert_not_called()
+        self.assertIsNone(self.vo.window)
+
+    def test_thoat_truoc_khi_mo_trinh_duyet_thi_khong_mo(self):
+        with mock.patch.object(app, 'co_webview2', return_value=False), mock.patch.object(app, '_tao_khay', return_value=mock.Mock()), \
+                mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self.vo.thoat()
+            self._chay_co_han()
+        td.assert_not_called()
+        self.assertFalse(self.vo.trinh_duyet)
+
+    def test_tu_thoat_rat_ngan_khong_treo(self):
+        def cham(*a, **k):                                                         # nhập webview chậm (pythonnet ở bản đóng gói): --tu-thoat đến trước
+            time.sleep(0.5)
+            return self.cua_so
+        self.wv.create_window = mock.Mock(side_effect=cham)
+        self.wv.start = mock.Mock()
+        with mock.patch.object(app, '_tao_khay', return_value=mock.Mock()), mock.patch.object(app._Vo, '_mo_trinh_duyet') as td:
+            self._chay_co_han(tu_thoat=0.05)
+        self.wv.start.assert_not_called()
+        td.assert_not_called()
+        self.assertTrue(self.vo.xong.is_set())
 
     def test_khong_co_webview2_thi_mo_trinh_duyet(self):
         self.wv.start = mock.Mock()

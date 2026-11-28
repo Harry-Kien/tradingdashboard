@@ -34,11 +34,6 @@ def tearDownModule():
 
 class SucKhoeTest(unittest.TestCase):
     def setUp(self):
-        # Exercise the configured private-rule diagnostics; shared-install
-        # behavior has its own fixtures in test_ban_chia_se.py.
-        private_mode = patch.object(gia, 'ban_chia_se', return_value=False)
-        private_mode.start()
-        self.addCleanup(private_mode.stop)
         gia._nho.clear()
         song._tt.update(deps=None, mt5=None, fr=None, thu=0.0, luc=0.0)
         for m in (kiem_chung, hoc):

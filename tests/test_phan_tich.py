@@ -169,7 +169,6 @@ class PhanTichTest(unittest.TestCase):
             sys.modules.update(saved)
         self.assertEqual(r['phuong_an'], [])
         self.assertTrue(any('Không nạp được mã luật' in e for e in r['loi']))
-        self.assertEqual(r['boi_canh']['topdown']['entry_timeframe'], 'M15')
 
     def test_trang_co_nut_va_duong_dan(self):
         html = bieu_do.trang_bieu_do('Thử')

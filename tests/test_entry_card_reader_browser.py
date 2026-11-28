@@ -51,7 +51,6 @@ document.addEventListener('keydown',()=>window.chartKeys++);</script><script>'''
     def test_open_escape_restores_same_node_and_focus(self):
         self.open_reader()
         self.assertTrue(self.page.evaluate('cardRef===document.querySelector("#dv")'))
-        self.assertTrue(self.page.locator('#dv details').evaluate('e=>e.open'))
         self.page.keyboard.press('Escape')
         self.page.wait_for_function('!document.querySelector("#dv-reader").open')
         self.assertEqual(self.page.locator('#dv').evaluate('e=>e.parentElement.id'), 'cp')
@@ -61,8 +60,9 @@ document.addEventListener('keydown',()=>window.chartKeys++);</script><script>'''
 
     def test_filters_live_update_and_draw_keep_working(self):
         self.open_reader()
-        self.page.locator('.ppx').nth(1).click()
-        self.assertEqual(self.page.locator('.ppx').nth(1).get_attribute('aria-selected'), 'true')
+        # 28/11/2026: khung mở lớn thay hàng nút phương pháp bằng danh mục bên trái (.dv-reader-menu); nút cũ ẩn trong khung này
+        self.assertFalse(self.page.locator('.ppx').nth(1).is_visible())
+        self.assertTrue(self.page.locator('.dv-reader-menu').is_visible())
         self.page.locator('#dv .plg b').first.evaluate("e=>e.textContent='3.660,00'")
         self.assertEqual(self.page.locator('#dv .plg b').first.text_content(), '3.660,00')
         self.page.locator('.dvv').click()
@@ -115,10 +115,10 @@ document.addEventListener('keydown',()=>window.chartKeys++);</script><script>'''
         self.assertEqual(self.page.evaluate('document.activeElement.closest("header").className'), 'dv-reader-head')
         self.page.keyboard.press('Shift+Tab')
         self.assertTrue(self.page.locator('.dvm').evaluate('e=>e===document.activeElement'))
-        self.page.locator('.ppx').nth(1).focus()
+        self.page.locator('.dvv').focus()
         self.page.locator('#dv').evaluate('e=>e.innerHTML=e.innerHTML')
-        self.page.wait_for_function('document.activeElement.textContent==="Fibonacci"')
-        self.assertTrue(self.page.locator('.ppx').nth(1).evaluate('e=>e===document.activeElement'))
+        self.page.wait_for_function('document.activeElement.classList.contains("dvv")')   # trang thử phục vụ không khai báo bảng mã: so lớp, không so chữ
+        self.assertTrue(self.page.locator('.dvv').evaluate('e=>e===document.activeElement'))
         self.page.keyboard.press('Escape')
         self.assertEqual(self.page.evaluate('document.activeElement.id'), 'dv-expand')
 

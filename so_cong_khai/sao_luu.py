@@ -25,7 +25,7 @@ from html import escape
 from pathlib import Path
 
 from . import trang
-from . import ai_store, tin_hieu_tien_cuu
+from . import ai_store, cau_truc_live, tin_hieu_tien_cuu
 from .__main__ import HERE
 
 GIU = 14                                        # số bản giữ lại
@@ -191,7 +191,7 @@ def tao(goc: Path = HERE, dich: Path | None = None, now: datetime | None = None,
             with zipfile.ZipFile(tam, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
                 for p in ds:
                     try:
-                        if p.name in ('ai-platform.sqlite3', tin_hieu_tien_cuu.TEN_TEP):
+                        if p.name in ('ai-platform.sqlite3', tin_hieu_tien_cuu.TEN_TEP, cau_truc_live.TEN):
                             z.writestr(p.relative_to(goc).as_posix(), ai_store.backup_bytes(p))
                         else:
                             z.write(p, p.relative_to(goc).as_posix())

@@ -109,7 +109,8 @@ def loc_ung_vien(d: pd.DataFrame, ung_vien: str) -> pd.DataFrame:
     return d.assign(phia=d[loc], loai=loc)
 
 
-def muc_gia(r, bid: float, ask: float, buoc_gia: float, so_le: int, *, dich_r: float = 1.5, spread_atr: float = .15) -> tuple[str, dict]:
+def muc_gia(r, bid: float, ask: float, buoc_gia: float, so_le: int, *, dich_r: float = 1.5, spread_atr: float = .15,
+            stops: float = 0.) -> tuple[str, dict]:
     """Dùng giá có thể giao dịch (Ask khi mua, Bid khi bán) và bước giá của hợp đồng."""
     if not all(math.isfinite(x) and x > 0 for x in (bid, ask, buoc_gia)) or ask < bid:
         return 'gia_cu', {}
@@ -128,6 +129,9 @@ def muc_gia(r, bid: float, ask: float, buoc_gia: float, so_le: int, *, dich_r: f
     rui_ro = abs(vao - sl)
     tp = lam(vao + r.phia * dich_r * rui_ro, mua)
     if min(vao, sl, tp) <= 0 or not 0 < rui_ro <= 2.5 * r.atr or (mua and sl >= bid) or (not mua and sl <= ask):
+        return 'muc_gia', {}
+    quote = bid if mua else ask
+    if (quote - sl) * r.phia < stops or (tp - quote) * r.phia < stops:
         return 'muc_gia', {}
     if ask - bid > .15 * rui_ro:
         return 'spread', {}
