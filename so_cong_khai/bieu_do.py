@@ -49,6 +49,7 @@ CSS = """
 @media(max-width:640px){.chartp.max #gon-btn{width:40px;padding:0;justify-content:center}#gon-btn .gt{display:none}
 .chartp.max.gon .tools .sel,.chartp.max.gon .tools .seg.zo,.chartp.max.gon .tools #pt-btn{display:none}
 .chartp.max.gon .tools .seg.tf{order:0;flex:1 1 0;min-width:0}.chartp.max.gon #gon-btn,.chartp.max.gon #fs-btn{order:1}}
+@media(max-width:640px){.chartp:not(.max) #gon-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px}.chartp.gon:not(.max) .tools.t2,.chartp.gon:not(.max) #bot-tt,.chartp.gon:not(.max) .pt-presentation,.chartp.gon:not(.max) .hv-save,.chartp.gon:not(.max) .hv-health{display:none!important}}
 .chartp{position:relative}.chartp.max{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;padding:10px 12px;border-radius:0;border:0;background:var(--card);overflow:auto}
 html.khoa{overflow:hidden}.chartp.max .stage{flex:1 1 0;min-height:320px}.chartp.max #dv{flex:none;max-height:min(30vh,280px);overflow:auto}.chartp.max .hint{display:none}
 main{max-width:1560px}.bar>div{max-width:1560px}

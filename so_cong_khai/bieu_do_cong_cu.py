@@ -16,6 +16,7 @@ bảng bung ra dòng 40 px, tiêu đề nhóm viết hoa, phím tắt bên phả
 from __future__ import annotations
 
 CSS = r"""
+@media(max-width:640px){.stage .vetb{top:48px}}   /* điện thoại: dòng giá OHLC xuống hai dòng, thanh vẽ nằm dưới để không đè chữ */
 .vetb.nhom{grid-template-columns:40px;gap:2px;padding:4px}
 .vetb.nhom button{width:40px;height:38px;border-radius:7px}
 .vetb.nhom svg{width:24px;height:24px;stroke-width:1.25}

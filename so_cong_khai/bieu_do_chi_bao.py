@@ -137,6 +137,24 @@ function fractal(H,L,n){const N0=H.length,pt=nul(N0),mk=[];for(let i=n;i<N0-n;i+
  for(let j=i-n;j<=i+n;j++){if(j===i)continue;if(H[j]>=H[i])up=false;if(L[j]<=L[i])dn=false}if(up){mk.push({i,len:0});pt[i]=H[i]}if(dn){mk.push({i,len:1});pt[i]=L[i]}}return[pt,mk]}
 function pdhl(H,L,C,T,gio){const n=H.length,a=nul(n),b=nul(n),c=nul(n);if(!T||T.length!==n)return[a,b,c];const d=ngay(T,gio);let ch=null,cl=null,cc=null,ph=null,pl=null,pc=null;
  for(let i=0;i<n;i++){if(i&&d[i]!==d[i-1]){ph=ch;pl=cl;pc=cc;ch=null;cl=null}ch=ch===null?H[i]:Math.max(ch,H[i]);cl=cl===null?L[i]:Math.min(cl,L[i]);cc=C[i];a[i]=ph;b[i]=pl;c[i]=pc}return[a,b,c]}
+// ---------------------------------------------------------------- 28/11/2026: Pivot Points nhiều kiểu, trung bình động khung lớn, Auto Fibonacci (công thức công khai)
+function ky(T,gio,k){return T.map(t=>{const s=t-gio*3600;if(k===2)return Math.floor((s+3*86400)/604800);if(k===3){const d=new Date(s*1000);return d.getUTCFullYear()*12+d.getUTCMonth()}return Math.floor(s/86400)})}   // 1 ngày, 2 tuần (từ thứ Hai), 3 tháng
+function mucPivot(h,l,c,kieu){const r=h-l;let p=(h+l+c)/3;                                  // trả [P, R1, R2, R3, S1, S2, S3]
+ if(kieu===2)return[p,p+.382*r,p+.618*r,p+r,p-.382*r,p-.618*r,p-r];
+ if(kieu===3)return[p,c+r*1.1/12,c+r*1.1/6,c+r*1.1/4,c-r*1.1/12,c-r*1.1/6,c-r*1.1/4];
+ if(kieu===4)p=(h+l+2*c)/4;
+ return[p,2*p-l,p+r,h+2*(p-l),2*p-h,p-r,l-2*(h-p)]}
+function pivots(H,L,C,T,gio,kieu,k){const n=H.length,o=[...Array(7)].map(()=>nul(n));if(!T||T.length!==n)return o;const d=ky(T,gio,k);let ch=null,cl=null,cc=null,M=null;
+ for(let i=0;i<n;i++){if(i&&d[i]!==d[i-1]){M=mucPivot(ch,cl,cc,kieu);ch=null;cl=null}ch=ch===null?H[i]:Math.max(ch,H[i]);cl=cl===null?L[i]:Math.min(cl,L[i]);cc=C[i];
+  if(M)for(let j=0;j<7;j++)o[j][i]=M[j]}return o}
+// trung bình động của khung lớn hơn: nến khung lớn đã đóng + giá đóng hiện tại của nến khung lớn đang chạy (không nhìn trước, nến cũ không bị vẽ lại)
+function maKhung(C,T,phut,gio,n,loai){const N0=C.length,o=nul(N0);if(!T||T.length!==N0||!(phut>0)||!(n>=1))return o;const s=phut*60,al=2/(n+1),dong=[];let e=null,dem=0,sum=0,b0=null,cuoi=null;
+ for(let i=0;i<N0;i++){const b=Math.floor((T[i]-gio*3600)/s);if(b0!==null&&b!==b0){const x=cuoi;dem++;e=e===null?x:al*x+(1-al)*e;dong.push(x);sum+=x;if(dong.length>n-1)sum-=dong.shift()}
+  b0=b;cuoi=C[i];if(dem+1<n)continue;o[i]=loai===2?(sum+C[i])/n:e===null?C[i]:al*C[i]+(1-al)*e}return o}
+const tenKhung=p=>p%1440===0?'D'+p/1440:p%60===0?'H'+p/60:'M'+p;
+const FIB=[0,.236,.382,.5,.618,.786,1];
+function autoFib(H,L,pt){const n=H.length,[,P]=zigzag(H,L,pt),o=FIB.map(()=>nul(n));if(P.length<2)return o;const[a,va]=P[P.length-2],[,vb]=P[P.length-1];
+ FIB.forEach((r,j)=>{const v=vb-(vb-va)*r;for(let i=a;i<n;i++)o[j][i]=v});return o}
 const L_=(t,a,k)=>[t,a,k||'duong'];
 const KLM='Vàng CFD dùng tick volume (số lần giá đổi trong nến), không phải khối lượng hợp đồng thật. Chỉ có khi đang nối MT5 trực tiếp.';
 const LIB={
@@ -245,6 +263,16 @@ const LIB={
  pdhl:{ten:'Đỉnh, đáy, đóng cửa ngày trước',nhom:'xu',khung:'gia',ts:[['gio','Giờ bắt đầu ngày (giờ UTC)',0,1,0]],
   mo:'Mức cao, thấp và giá đóng của ngày giao dịch trước, vẽ dạng bậc thang cho cả ngày hiện tại; hay được dùng làm vùng hỗ trợ, kháng cự trong ngày. Dùng trên khung dưới D1.',
   tinh:(H,L,C,O,p,V,T)=>{const[a,b,c]=pdhl(H,L,C,T,p.gio);return[L_('Đỉnh ngày trước',a,'bac'),L_('Đáy ngày trước',b,'bac'),L_('Đóng ngày trước',c,'bac')]}},
+ piv:{ten:'Pivot Points (cổ điển, Fibonacci, Camarilla, Woodie)',nhom:'xu',khung:'gia',ts:[['kieu','Kiểu: 1 cổ điển, 2 Fibonacci, 3 Camarilla, 4 Woodie',1,1,1,4],['ky','Kỳ: 1 ngày, 2 tuần, 3 tháng',1,1,1,3],['gio','Giờ bắt đầu ngày (giờ UTC)',0,1,0,23]],
+  mo:'Mức P, R1–R3, S1–S3 tính từ cao, thấp, đóng của kỳ trước (ngày, tuần hoặc tháng), vẽ bậc thang cho cả kỳ hiện tại. Hay dùng làm vùng phản ứng giá; không tự báo mua bán.',
+  tinh:(H,L,C,O,p,V,T)=>{const kieu=Math.min(4,Math.max(1,Math.round(p.kieu))),k=Math.min(3,Math.max(1,Math.round(p.ky))),o=pivots(H,L,C,T,p.gio,kieu,k);
+   return['P','R1','R2','R3','S1','S2','S3'].map((t,j)=>L_(t,o[j],'bac'))}},
+ mtf:{ten:'Trung bình động khung lớn (MTF)',nhom:'xu',khung:'gia',ts:[['phut','Khung lớn (phút: 60 là H1, 240 là H4, 1440 là D1)',240,1,1,10080],['n','Chu kỳ',50,1],['loai','Loại: 1 EMA, 2 SMA',1,1,1,2],['gio','Giờ bắt đầu ngày (giờ UTC)',0,1,0,23]],
+  mo:'EMA hoặc SMA tính trên nến của khung lớn hơn rồi vẽ lên khung đang xem, ví dụ EMA 50 H4 trên biểu đồ M15. Nến khung lớn đang chạy dùng giá hiện tại, nên giá trị cũ không bị vẽ lại.',
+  tinh:(H,L,C,O,p,V,T)=>{const loai=Math.round(p.loai)===2?2:1;return[L_((loai===2?'SMA ':'EMA ')+p.n+' '+tenKhung(p.phut),maKhung(C,T,p.phut,p.gio,p.n,loai))]}},
+ afib:{ten:'Auto Fibonacci (theo sóng ZigZag gần nhất)',nhom:'xu',khung:'gia',ts:[['pt','Độ đảo chiều tối thiểu (%)',.5,.05,.05]],
+  mo:'Tự kẻ các mức Fibonacci 0; 23,6; 38,2; 50; 61,8; 78,6; 100% trên sóng ZigZag gần nhất. Sóng cuối còn tạm nên các mức đổi theo khi giá tạo đỉnh, đáy mới.',
+  tinh:(H,L,C,O,p)=>{const o=autoFib(H,L,p.pt);return FIB.map((r,j)=>L_('Fib '+(r*100).toFixed(1).replace('.0',''),o[j],'bac'))}},
  // ---- khối lượng (tick volume MT5)
  vol:{ten:'Khối lượng (tick volume)',nhom:'kl',khung:'rieng',ts:[['n','Trung bình',20,1]],mo:'Cột khối lượng mỗi nến (xanh: nến tăng, đỏ: nến giảm) kèm đường trung bình. '+KLM,
   tinh:(H,L,C,O,p,V)=>{const v=coV(V,C.length)?V.map(x=>x==null?null:+x):nul(C.length);return[L_('KL',v,'kl'),L_('TB '+p.n,sma(v,p.n))]}},
@@ -258,6 +286,8 @@ const LIB={
   tinh:(H,L,C,O,p,V)=>[L_('MFI '+p.n,mfif(H,L,C,V,p.n))]},
  cmf:{ten:'Chaikin Money Flow (CMF)',nhom:'kl',khung:'rieng',ts:[['n','Chu kỳ',20,1]],muc:[0],mo:'Tổng khối lượng dòng tiền chia tổng khối lượng n nến; dương là áp lực mua, âm là áp lực bán. '+KLM,
   tinh:(H,L,C,O,p,V)=>{if(!coV(V,C.length))return[L_('CMF',nul(C.length))];return[L_('CMF',hop(tong(mfv(H,L,C,V),p.n),tong(V.map(v=>v==null?null:+v),p.n),(a,b)=>b?a/b:null))]}},
+ efi:{ten:'Elder Force Index (EFI)',nhom:'kl',khung:'rieng',ts:[['n','Chu kỳ',13,1]],muc:[0],mo:'EMA của (giá đóng − giá đóng trước) × khối lượng; dương là lực mua trội, âm là lực bán trội. '+KLM,
+  tinh:(H,L,C,O,p,V)=>{if(!coV(V,C.length))return[L_('EFI',nul(C.length))];return[L_('EFI '+p.n,ema(C.map((c,i)=>i&&V[i]!=null?(c-C[i-1])*V[i]:null),p.n))]}},
  ad:{ten:'Tích lũy, phân phối (A/D)',nhom:'kl',khung:'rieng',ts:[],mo:'Cộng dồn khối lượng dòng tiền Chaikin; A/D đi lên khi giá thường đóng gần đỉnh nến. '+KLM,
   tinh:(H,L,C,O,p,V)=>{if(!coV(V,C.length))return[L_('A/D',nul(C.length))];let s=0;return[L_('A/D',mfv(H,L,C,V).map(v=>v==null?null:(s+=v)))]}},
  // ---- dao động
@@ -356,7 +386,7 @@ function ve(){const B=window.BDCB&&window.BDCB();if(!B||!B.LW||!B.D||!B.D.candle
 }
 function nhanKetQua(items,cs,n){const LWC=window.LightweightCharts;
  for(const item of items)for(const it of SER.filter(s=>s.id===item.id)){const out=item.out[it.j];if(!out)continue;
-  CHART_RT.gui(it.s,n,i=>{const r=cs[i],v=out.values[i-out.start];return v==null||!isFinite(v)?{time:r[0]}:{time:r[0],value:v,...(it.kieu==='cot'?{color:v>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:it.kieu==='kl'?{color:r[4]>=r[1]?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}},cs,!['zz','frac','rsipk'].includes(item.k));
+  CHART_RT.gui(it.s,n,i=>{const r=cs[i],v=out.values[i-out.start];return v==null||!isFinite(v)?{time:r[0]}:{time:r[0],value:v,...(it.kieu==='cot'?{color:v>=0?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:it.kieu==='kl'?{color:r[4]>=r[1]?'rgba(38,166,154,.6)':'rgba(239,83,80,.6)'}:{})}},cs,!['zz','frac','rsipk','afib'].includes(item.k));
   if(out.markers&&LWC.createSeriesMarkers){if(!it.mk)it.mk=LWC.createSeriesMarkers(it.s,[]);it.mk.setMarkers(out.markers.filter(m=>m.i>=0&&m.i<n).slice(-300).map(m=>({time:cs[m.i][0],position:m.len?'belowBar':'aboveBar',color:m.len?'#26a69a':'#ef5350',shape:m.len?'arrowUp':'arrowDown',...(m.text?{text:m.text}:{})})))}}
 }
 // Same formulas run off the UI thread. Only one job plus the newest dirty state is retained.
